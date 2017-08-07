@@ -1,0 +1,118 @@
+<!DOCTYPE HTML>\
+<html>\
+  <head>\
+    <title>City Hydroponics - grow your own, in the city! - HydroMonitor output</title>\
+  </head> \
+  <body>\
+    <img src=\"https://www.cityhydroponics.hk/tmp/logo_banner.jpg\">   \
+    <h1>HydroMonitor - system settings.</h1>\
+    <h2>Set your system parameters here.</h2>\
+    <form action=\"/updateSettings\" method=\"post\">\
+      <table>\
+        <tr>\
+          <td>\
+            MySQL server host name:\
+          </td><td>\
+            <input type=\"text\" name=\"mysqlHostname\" maxlength=\"50\" size=\"50\">\
+          </td>\
+        </tr>\
+        <tr>\
+          <td>\
+            MySQL server base URL:\
+          </td><td>\
+            <input type=\"text\" name=\"mysqlUrlBase\" maxlength=\"100\" size=\"50\">\
+          </td>\
+        </tr>\
+        <tr>\
+          <td>\
+            MySQL user name:\
+          </td><td>\
+            <input type=\"text\" name=\"mysqlUsername\" maxlength=\"32\" size=\"32\">\
+          </td>\
+        </tr>\
+        <tr>\
+          <td>\
+            MySQL password:\
+          </td><td>\
+            <input type=\"password\" name=\"mysqlPassword\" maxlength=\"32\" size=\"32\">\
+          </td>\
+        </tr>\
+        <tr>\
+          <td>\
+            Distance from level sensor to bottom of the reservoir:\
+          </td>\
+          <td>\
+            <input type=\"text\" name=\"reservoirHeight\" min=\"0\" max=\"300\" size=\"3\"> cm.\
+          </td>\
+        </tr>\
+        <tr>\
+          <td>\
+            EC sensor calibrated slope:\
+          </td><td>\
+            <input type=\"text\" name=\"ECSlope\" size=\"10\">\
+          </td>\
+        </tr>\
+        <tr>\
+          <td>\
+            EC sensor calibrated offset:\
+          </td><td>\
+            <input type=\"text\" name=\"ECOffset\" size=\"10\">\
+          </td>\
+        </tr>\
+        <tr>\
+          <td>\
+            Altitude above sea level:\
+          </td>\
+          </td><td>\
+            <input type=\"text\" name=\"altitude\" size=\"6\"> meter.\
+          </td>\
+        </tr>\
+        <tr>\
+          <td>\
+            Brightness to switch on the lamp:\
+          </td><td>\
+            <input type=\"text\" name=\"lampSwitchBrightness\" min=\"0\" max=\"65535\"> lux.\
+          </td>\
+        </tr>\
+        <tr>\
+          <td>\
+            Time before the lamp is switched on/off:\
+          </td><td>\
+            <input type=\"text\" name=\"lampSwitchDelay\" min=\"0\" size=\"6\"> seconds.\
+          </td>\
+        </tr>\
+        <tr>\
+          <td>\
+            Time after which the lamp may be swiched on:\
+          </td><td>\
+            <input type=\"text\" name=\"lampOnHour\" min=\"0\" max=\"23\" size=\"2\"> :\
+            <input type=\"text\" name=\"lampOnMinute\" min=\"0\" max=\"59\" size=\"2\">\
+          </td>\
+        </tr>\
+        <tr>\
+          <td>\
+            Time after which the lamp must be swiched off:\
+          </td><td>\
+            <input type=\"text\" name=\"lampOffHour\" min=\"0\" max=\"23\" size=\"2\"> :\
+            <input type=\"text\" name=\"lampOffMinute\" min=\"0\" max=\"59\" size=\"2\">\
+          </td>\
+        </tr>\
+        <tr>\
+          <td>\
+            Use automatic daytime sensing?\
+          </td><td>\
+              <input type=\"radio\" name=\"lampDaylightAutomatic\" value=\"1\"> Yes\
+              <input type=\"radio\" name=\"lampDaylightAutomatic\" value=\"0\"> No\
+          </td>\
+        </tr>\
+        <tr>\
+          <td>\
+            <input type=\"submit\" value=\"Submit\" >\
+            <input type=\"reset\">\
+          </td>\
+          <td></td>\
+        </tr>\
+      </table>\
+    </form>\
+  </body>\
+</html>

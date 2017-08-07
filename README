@@ -1,0 +1,214 @@
+HydroMonitor library documentation.
+
+Library file: HydroMonitorECSensor
+
+Purpose: read the EC value from an EC probe. This is based on creating an AC current using a capacitor, and measuring the electrical resistance of the liquid by measuring the discharge time of the capacitor. For details, see comments in HydroMonitorECSensor.cpp.
+
+Available functions:
+
+float getEC(float waterTemperature)
+
+Measures the EC value, taking the water temperature (in °C) as input, returns the result (in mS/cm). If the temperature of the liquid to sample is not known, set this to 25°C.
+If debug or calibration mode is enabled, this function returns the measured discharge time in ns.
+
+
+void setPins(int capPos, int capNeg, int ECpin) 
+
+Sets which pins the EC probe is connected to.
+
+
+void setCalibration(double slope, double intercept)
+
+The EC value is normally calibrated using known NaCl solutions and is assumed to have a linear relationship with the concentration (which is quite true for concentratinos of no more than about 2,000 ppm NaCl in water - at these concentrations 500 ppm = 1 mS/cm conductivity). 
+The slope and intercept are the regression values calculated from the calibration measurements: discharge time (in ns) against 1/EC (EC in mS/cm).
+
+
+void setSamples(int samples)
+
+Sets the number of samples to be taken.
+Default value: 100.
+If samples < 1 or samples > 500 the value is ignored and the previous value is retained.
+
+
+void setLogging(void (*)(String))
+
+Sets the logging function to call with String messages, for the calling sketch to deal with. This is meant for debug purposes only and pretty noisy.
+
+
+void setCalibrationMode(true)
+
+True sets the probe to calibration mode; false to normal mode.
+If set, the getEC() function returns the discharge time (in nanoseconds, not temperature corrected) instead of the EC value.
+
+
+
+Library file: HydroMonitorBrightnessSensor
+
+This is basically a wrapper around the Adafruit library, making it even simpler. No pins or anything to be defined as the sensor is connected to the I2C bus.
+
+bool getStatus();
+
+true: sensor is connected and working.
+false: sensor is disconnected or saturated.
+
+
+int getBrightness()
+
+Get the current brightness value in lux (0-65535 lux).
+
+
+void setLogging(void (*)(String))
+
+Sets the logging function to call with String messages, for the calling sketch to deal with. This is meant for debug purposes only and pretty noisy.
+
+
+
+Library file: HydroMonitorGrowlight
+
+setPin(int pin)
+
+Set the GPIO pin number the grow light is connected to.
+
+
+checkLamp(int luxlevel)
+
+Switches the lamp on/off based on given lux value, taking time delay and on/off hours into account.
+
+
+setSwitchBrightness(int luxlevel)
+
+Sets the threshold brightness in lux. If brightness is below this value for longer than `delay` seconds, the light is switched on; if above this value for longer than `delay` seconds, the light is switched off.
+
+
+setSwitchDelay(int delay)
+
+Sets the delay for switching the light on and off in seconds. `delay` must be a positive value, any negative values are ignored and the original value is retained.
+
+
+setOnTime(int hour, int minute)
+
+Sets the time of the day after which the light may be swiched on. `hour` must be a number 0-23, `minute` must be a number 0-59. This time is ignored if the clock of the microprocessor has not been set.
+
+
+setOffTime(int hour, int minute)
+
+Sets the time of the day after which the light must be swiched off. `hour` must be a number 0-23, `minute` must be a number 0-59. This time is ignored if the clock of the microprocessor has not been set.
+
+
+on()
+
+Switches the lamp on. Using this function switches the control to manual mode, meaning luxlevels and on/off hours are ignored. Use setAutomatic() to return the control to automatic mode.
+
+
+off()
+
+Switches the lamp off. Using this function switches the control to manual mode, meaning luxlevels and on/off hours are ignored. Use setAutomatic() to return the control to automatic mode.
+
+
+setAutomatic()
+
+Returns control to Automatic mode, so based on brightness and time.
+
+
+void setLogging(void (*)(String))
+
+Sets the logging function to call with String messages, for the calling sketch to deal with. This is meant for debug purposes only and pretty noisy.
+
+
+
+Library file: HydroMonitorWaterLevelSensor
+
+Measures the current level of the water in the reservoir using an HC-SR04 ultrasonic range finder.
+
+
+setPins(int trigPin, int echoPin) 
+
+Sets the trig and echo pins of the HC-SR04 range finder.
+
+
+float getWaterLevel()
+
+Attempts to measure the water level.
+If successful, returns the recorded level in cm. Other return values:
+-1 sensor not found or invalid readings.
+-2 pins not configured.
+
+
+setReservoirHeight(int height)
+
+The distance from the sensor to the bottom of the reservoir in centimeters, used to calculate the actual water level as the sensor actually measures the distance between it and the surface of the water. Height must be a positive number and less than 300 cm (the limit of the range finder).
+
+
+bool getStatus()
+
+Returns true if the sensor is present and returns reasonable numbers.
+
+
+setSamples(int samples)
+
+Sets the number of samples taken to measure the level, default 10. Must be a positive number, and be less than 500 (safety).
+
+
+void setLogging(void (*)(String))
+
+Sets the logging function to call with String messages, for the calling sketch to deal with. This is meant for debug purposes only and pretty noisy.
+ 
+
+
+
+Library file: HydroMonitorWaterTempSensor
+
+
+setPin(int pin)
+
+Set the ADC pin the NTC is connected to.
+
+
+float getTemperature()
+
+Measure the temperature in °C. Special return values:
+-1 if the sensor is not present.
+-2 if the sensor is not properly configured.
+
+
+setSamples(int samples)
+
+Set the number of samples taken for one measurement. Samples must be greater than 0 and less than 500. Default: 10.
+
+
+setSeriesResistor(int R)
+
+Set the value of the series resistor in Ohm. Default: 10,000.
+
+
+setNominalTemperature(int R)
+
+Set the nominal value of the NTC in Ohm. Default: 10,000.
+
+
+bool getNTCPresent()
+
+Check whether an NTC has been found.
+
+
+setBCoefficient(int)
+
+Set the beta-coefficient of this NTC probe. Default: 3,900.
+
+
+setADCMax(int max)
+
+Sets the highest value the ADC can produce. Default: 1024.
+At 0V ADC output = 0, at Vcc ADC output = max.
+
+
+setTNominal(float)
+
+Sets the temperature (in °C) at which the NTC has its nominal resistance. Default: 25°C.
+
+
+void setLogging(void (*)(String))
+
+Sets the logging function to call with String messages, for the calling sketch to deal with. This is meant for debug purposes only and pretty noisy.
+
+
