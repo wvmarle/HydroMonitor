@@ -1,0 +1,5 @@
+- WiFi: detect whether connection is still there; try to reconnect if not.
+- WiFi: when no networks configured go into HOST mode and allow configuration (done) or allow to continue in host mode so no network needed (no uploading to server but app can connect).
+- Web interface: create links between the pages.
+- Web interface: switch all to POST rather than GET requests.
+

@@ -5,60 +5,73 @@
  * (C) Wouter van Marle / City Hydroponics
  * www.cityhydroponics.hk
  *
- * This library controls a simple EC probe.
+ * This library controls a simple but very effective EC probe.
  *
  * Return values:
  * - the EC, a positive number (in normal operation - normally in mS/cm, depending on the calibration values).
  * - -1 (no probe detected).
  */
- 
 
-// ensure this library description is only included once
 #ifndef EC_SENSOR_h
 #define EC_SENSOR_h
 
-#include <Arduino.h>              // Needed for the String type.
+#include <HydroMonitorCore.h>
+#include <Average.h>
+#include <ESP8266WebServer.h>
+#include <Time.h>
+#include <HydroMonitorMySQL.h>
 
-// library interface description
+#define ECSAMPLES 6                   // Take 2^ECSAMPLES = 64 samples to produce a single reading.
+
 class HydroMonitorECSensor
 {
-  // user-accessible "public" interface
   public:
     struct Settings {
-      double CalibratedSlope; 
-      double CalibratedIntercept;
-      unsigned char Samples;
     };
+    
+    HydroMonitorECSensor();           // The constructor.
+    
+    // The functions required for all sensors.
+    void begin(HydroMonitorMySQL*);
+    float readSensor(float);          // Measures the EC value, takes the water temperature as input, returns the result.
+    String dataHtml(void);            // Provides html code with the sensor data.
+    String settingsHtml(void);        // Provides html code with the settings.
+    void updateSettings(String[], String[], uint8_t);
+    
+    // Extra calibration-related functions for this sensor.
+    String getCalibrationHtml(void);
+    String getCalibrationData(void);
+    void doCalibration(ESP8266WebServer*, float);
+    void setSolutionVolume(uint16_t);
+    void setFertiliserConcentration(uint16_t);
+    void setTargetEC(float);
 
-    HydroMonitorECSensor();       // The constructor.
-    void begin(Settings, unsigned char, unsigned char, unsigned char);
-    double readSensor(double);    // Measures the EC value, takes the water temperature as input, returns the result.
-    void setCalibrationMode(bool);// Switches to calibration mode (return discharge time instead of EC value).
-    void setSettings(Settings);
-    String settingsHtml(void);    // Provides html code with the settings.
-
-  // library-accessible "private" interface
   private:
   
-    // Hardware parameters.
-    unsigned char capPos;                   // Pin number of capPos of this probe.
-    unsigned char capNeg;                   // Pin number of capNeg of this probe.
-    unsigned char ECpin;                    // Pin number of ECpin of this probe.
+    // Variables and functions related to the reading of the sensor.
+    uint32_t startCycle;              // Cycle number at the start of a sampling.
+    static void capDischarged(void);  // The interrupt handler. Must be made static as this way it can be attached to the interrupt.
     
+    // Variables and functions related to the calibration functions.
+    uint32_t takeReading();           // Measures the EC value, takes the water temperature as input, returns the result.
+    float calibratedSlope;            // The calculated slope of the calibration curve.
+    float calibratedIntercept;        // The calculated intercept of the calibration curve.
+    uint32_t timestamp[DATAPOINTS];   // The timestamps of the data points.
+    float ECValue[DATAPOINTS];        // The EC value of the data points.
+    uint32_t reading[DATAPOINTS];     // The raw reading of the data points.
+    bool enabled[DATAPOINTS];         // Whether a data point is enabled.
+    void readCalibration(void);       // Read the current calibration parameters from EEPROM.
+    void temperatureCorrection(uint32_t*, float);
+    float EC;
+    uint16_t solutionVolume;
+    uint16_t concentration;
+    float targetEC;
+    uint32_t lastWarned;
+
     // Other.
-    double waterTemp;
-    unsigned long startCycle;     // Cycle number at the start of a sampling.
-    unsigned long startTime;      // the time stamp (in microseconds) the measurement starts.
-    volatile unsigned long endTime; // the time stamp (in microseconds) the measurement is finished.
-    unsigned int dischargeTime;   // the time it took for the capacitor to discharge.
-    unsigned int chargeDelay;     // The time (in microseconds) given to the cap to fully charge/discharge - at least 5x RC.
-    unsigned int timeout;         // Discharge timeout in milliseconds - if not triggered within this time, the EC probe 
-                                  // is probably not there.
-    bool calibrationMode;         // Whether we're in calibration mode.
-    Settings settings;
-    
-    // Must be made static as this way it can be attached to the interrupt.
-    static void capDischarged(void); // The interrupt handler.
+    HydroMonitorCore core;            // Provides some utility functions.
+    Settings settings;                // The settings store.
+    HydroMonitorMySQL *logging; 
 };
 
 #endif

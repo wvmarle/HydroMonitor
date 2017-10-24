@@ -1,120 +1,89 @@
 #include <HydroMonitorHumiditySensor.h>
+
 /**
  * Manages the relative humidity sensor.
+ * Constructor.
  *
  */
- 
-//#include <Time.h>
-//#include <Arduino.h>
-//#include <HydroMonitorDHT.h>
-
 HydroMonitorHumiditySensor::HydroMonitorHumiditySensor () {
-  humiditySensorPresent = false;
+  humidity = -1;
 }
 
-void HydroMonitorHumiditySensor::begin(Settings s, String t, uint8_t p) {
+/*
+ * Configure the sensor as DHT22.
+ */
+#ifdef USE_HUMIDITY_SENSOR
+#ifdef DHT22_PIN
+void HydroMonitorHumiditySensor::begin(HydroMonitorMySQL *l, DHT22 *dht) {
+  dht22 = dht;
+  l->writeInfo("HydroMonitorHumiditySensor: configured DHT22 sensor.");
+#endif
 
-  setSettings(s);
-  sensor = t;
-  sensorPin = p;
-  if (sensor == "DHT22") {
-    DHT = HydroMonitorDHT();
-    DHT.begin(sensorPin);
-  }
-  humiditySensorPresent = true;
+/*
+ * Configure the sensor as BME280.
+ */
+#ifdef USE_BME280
+void HydroMonitorHumiditySensor::begin(HydroMonitorMySQL *l, BME280 *bme) {
+  bme280 = bme;
+  l->writeInfo("HydroMonitorHumiditySensor: configured BME280 sensor.");
+#endif
+  logging = l;
+  if (HUMIDITY_SENSOR_EEPROM > 0)
+    EEPROM.get(HUMIDITY_SENSOR_EEPROM, settings);
+
   return;
 }
-
-void HydroMonitorHumiditySensor::setSettings(Settings s) {
-
-  settings = s;
-  return;
+#endif
+  
+/*
+ * Take a measurement from the sensor.
+ */
+float HydroMonitorHumiditySensor::readSensor() {
+#ifdef USE_BME280
+  humidity = (float)bme280->readHumidity();
+#elif defined(DHT22_PIN)
+  humidity = (float)dht22->readHumidity();
+#endif
+  return humidity;
 }
 
-double HydroMonitorHumiditySensor::readSensor() {
-
-  if (sensor = "DHT22") return (double)readDHT22();
-//  if (sensor = "BME280") return readBME280;
-  return -2;
+/*
+ * Calculate the dewpoint - the temperature (in °C) at which condensation will take place.
+ */
+float calcDewpoint(float hum, float temp) {
+  float k;
+  k = log(hum/100) + (17.62 * temp) / (243.12 + temp);
+  return 243.12 * k / (17.62 - k);
 }
 	
-float HydroMonitorHumiditySensor::readDHT22() {
-  return DHT.readHumidity();
+/*
+ * The sensor settings as html.
+ */
+String HydroMonitorHumiditySensor::settingsHtml(void) {
+  return "";
 }
 
-String HydroMonitorHumiditySensor::settingsHtml(void) {
-  String html;
-  /*
-  html = F("<tr>\
-          <th colspan=\"2\">Grow Light Settings.</th>\
-        </tr><tr>\
-          <td>\
-            Brightness to switch on the growlight:\
-          </td><td>\
-            <input type=\"number\" name=\"growlight_switch_brightness\" min=\"0\" max=\"65535\" value=\"");
-  html += settings.SwitchBrightness;
-  html += F("\"> lux.\
-          </td>\
-        </tr><tr>\
-          <td>\
-            Time delay before the growlight is switched on/off:\
-          </td><td>\
-            <input type=\"number\" name=\"growlight_switch_delay\" min=\"0\" size=\"6\" value=\"");
-  html += settings.SwitchDelay;
-  html += F("\"> seconds.\
-          </td>\
-        </tr><tr>\
-          <td>\
-            Time after which the growlight may be swiched on:\
-          </td><td>\
-            <input type=\"number\" name=\"growlight_on_hour\" min=\"0\" max=\"23\" size=\"2\" value=\"");
-  html += settings.OnHour;
-  html += F("\"> :\
-            <input type=\"number\" name=\"growlight_on_minute\" min=\"0\" max=\"59\" size=\"2\" value=\"");
-  html += settings.OnMinute;
-  html += F("\">\
-          </td>\
-        </tr><tr>\
-          <td>\
-            Time after which the growlight may be swiched on:\
-          </td><td>\
-            <input type=\"number\" name=\"growlight_off_hour\" min=\"0\" max=\"23\" size=\"2\" value=\"");
-  html += settings.OffHour;
-  html += F("\"> :\
-            <input type=\"number\" name=\"growlight_off_minute\" min=\"0\" max=\"59\" size=\"2\" value=\"");
-  html += settings.OffMinute;
-  html += F("\">\
-          </td>\
-        </tr><tr>\
-          <td>\
-            Use automatic daytime sensing?\
-          </td><td>");
-  if (settings.DaylightAutomatic) {
-    html += F("<input type=\"radio\" name=\"growlight_daylight_automatic\" value=\"1\" checked> Yes\
-              <input type=\"radio\" name=\"growlight_daylight_automatic\" value=\"0\"> No");
+/*
+ * The sensor data as html.
+ */
+String HydroMonitorHumiditySensor::dataHtml(void) {
+  String html = F("<tr>\n\
+    <td>Relative humidity</td>\n\
+    <td>");
+  if (humidity < 0) html += F("Sensor not connected.</td>\n\
+  </tr>");
+  else {
+    html += String(humidity);
+    html += F(" %.</td>\n\
+  </tr>");
   }
-  else  {
-    html += F("<input type=\"radio\" name=\"growlight_daylight_automatic\" value=\"1\"> Yes\
-             <input type=\"radio\" name=\"growlight_daylight_automatic\" value=\"0\" checked> No");
-  }
-  html += F("</td>\
-        </tr><tr>\
-          <td>\
-            Current growlight status: ");
-  if (manualMode) html += F("manual, ");
-  else html += F("automatic, ");
-  if (getStatus()) html += F("on.");
-  else html += F("off.");
-  html += F("\
-          </td><td>\
-            <input type=\"submit\" formaction=\"/growlight_on\" formmethod=\"post\" name=\"growlight_on\" value=\"Switch On\">\
-            &nbsp;&nbsp;<input type=\"submit\" formaction=\"/growlight_off\" formmethod=\"post\" name=\"growlight_off\" value=\"Switch Off\">");
-  if (manualMode) html += F("&nbsp;&nbsp;<input type=\"submit\" formaction=\"/growlight_auto\" formmethod=\"post\" name=\"growlight_auto\" value=\"Automatic\">");
-  html += F("</td>\
-        </tr>");
-  */
   return html;
 }
 
-
+/*
+ * Update the settings for this sensor, if any.
+ */
+void HydroMonitorHumiditySensor::updateSettings(String keys[], String values[], uint8_t nArgs) {
+  return;
+}
 

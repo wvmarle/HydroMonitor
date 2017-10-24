@@ -6,35 +6,47 @@
  * www.cityhydroponics.hk
  */
  
-
-// ensure this library description is only included once
 #ifndef BRIGHTNESS_h
 #define BRIGHTNESS_h
 
-#include <Adafruit_TSL2561_U.h>
+#include <HydroMonitorBoardDefinitions.h>
+#include <HydroMonitorCore.h>
+#include <HydroMonitorMySQL.h>
 
-// library interface description
+#include <EEPROM.h>
+#include <Arduino.h>
+
+#if defined(USE_TSL2561)
+#include <TSL2561.h>
+#elif defined(USE_TSL2591)
+#include <TSL2591.h>
+#endif
+
 class HydroMonitorBrightnessSensor
 {
-  // user-accessible "public" interface
   public:
     
     struct Settings {
     };
 
     HydroMonitorBrightnessSensor(void);
-    void begin(Settings);
-    int readSensor(void);
+    void begin(HydroMonitorMySQL*);
+    int32_t readSensor(void);
+    String dataHtml(void);            // Provides html code with the sensor data.
     String settingsHtml(void);
-    void setSettings(Settings);
-        
-  // library-accessible "private" interface
+    void updateSettings(String[], String[], uint8_t);
+    
   private:
+    void setSettings(Settings);
     Settings settings;
+#if defined(USE_TSL2561)
+    TSL2561 tsl = TSL2561(TSL2561_ADDR_FLOAT, 12345);
+#elif defined(USE_TSL2591)
+    TSL2591 tsl;
+#endif
+    int32_t brightness;
     bool brightnessSensorPresent;
-    Adafruit_TSL2561_Unified tsl = Adafruit_TSL2561_Unified(TSL2561_ADDR_FLOAT, 12345);
-
+    HydroMonitorMySQL *logging;
 };
 
 #endif
-

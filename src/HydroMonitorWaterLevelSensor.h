@@ -7,40 +7,75 @@
  */
  
 
-#ifndef WATERLEVEL_h
-#define WATERLEVEL_h
+#ifndef HYDROMONITORWATERLEVELSENSOR_h
+#define HYDROMONITORWATERLEVELSENSOR_h
 
 #include <Arduino.h>        // Needed for the String type.
-#include <pcf8574_esp.h>    // Needed for the optional port extender on TrigPin.
-//#include <Wire.h>
+#include <HydroMonitorCore.h>
+#include <HydroMonitorBoardDefinitions.h>
+#include <HydroMonitorMySQL.h>
 
-// library interface description
+#if defined(TRIG_PCF_PIN)
+#include <pcf8574_esp.h>    // Needed for the optional port extender on TrigPin.
+#elif defined(TRIG_MCP_PIN)
+#include <Adafruit_MCP23008.h>
+#endif
+#if defined(USE_MS5837)
+#include <MS5837.h>
+#endif
+
+#define HCSR04SAMPLES 5 // Oversampling rate - power of 2 (5 = 32x, 6=64x).
+
 class HydroMonitorWaterLevelSensor
 {
   public:
   
     struct Settings {
-      double ReservoirHeight;
-      unsigned char Samples;
+      float reservoirHeight;
+      float zeroLevel;
     };
 
     HydroMonitorWaterLevelSensor(void);
-    void begin(Settings, unsigned char, unsigned char, bool);
-    void setSettings(Settings);
-    double readSensor(void);
-    void setPCF8574(PCF857x);
+#ifdef USE_HCSR04
+    float readSensor(void);
+#ifdef TRIG_PIN
+    void begin(HydroMonitorMySQL*);
+#elif defined(TRIG_MCP_PIN)
+    void begin(HydroMonitorMySQL*, Adafruit_MCP23008*);
+#elif defined(TRIG_PCF_PIN)
+    void begin(HydroMonitorMySQL*, PCF857x*);
+#endif
+#endif
+
+#ifdef USE_MS5837
+    void begin(HydroMonitorMySQL*, MS5837*);
+    float readSensor(float);
+    void setZero(float);
+#endif
+
+    String dataHtml(void);            // Provides html code with the sensor data.
     String settingsHtml(void);
+    void updateSettings(String[], String[], uint8_t);
 
-  // library-accessible "private" interface
   private:
-    unsigned char trigPin;
-    unsigned char echoPin;
+#ifdef USE_HCSR04
     float measureLevel(void);
-    bool sensorPresent;
-    bool usePCF;
+#endif
+#ifdef USE_MS5837
+    MS5837 *ms5837;
+#endif
+
+#ifdef TRIG_PCF_PIN
+    PCF857x *pcf8574;
+#elif defined(TRIG_MCP_PIN)
+    Adafruit_MCP23008 *mcp23008;
+#endif
+    float fill;
+    uint32_t lastWarned;
+    HydroMonitorCore core;
     Settings settings;
-
+    HydroMonitorMySQL *logging;
+    void warning(void);
 };
-
 #endif
 

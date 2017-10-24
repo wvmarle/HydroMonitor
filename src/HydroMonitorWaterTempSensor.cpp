@@ -1,89 +1,105 @@
-#include <HydroMonitorWaterTempSensor.h>
-
-#include <Average.h>
-#include <Adafruit_ADS1015.h>
-
-Adafruit_ADS1115 ads1115;
-      
 /*
- * Calculate the water temperature from the reading of the thermistor.
+ * Measure the water temperature through NTC or MS5837 sensor.
  */
+
+#include <HydroMonitorWaterTempSensor.h>
+ 
 HydroMonitorWaterTempSensor::HydroMonitorWaterTempSensor () {
-  NTCPresent = false;
-  useAds1115 = false;
+  waterTemp = -1;
 }
 
-void HydroMonitorWaterTempSensor::begin(Settings s, unsigned char sp, int sr, int nn, int b, float tn, int adc, Adafruit_ADS1115 ads) {
-
-  // This routing if we're connecting the NTC to an external ADS1115 ADC.
-  useAds1115 = true;
+#ifdef USE_WATERTEMPERATURE_SENSOR
+/*
+ * Configure the sensor.
+ */
+#ifdef USE_NTC
+#ifdef NTC_ADS_PIN
+void HydroMonitorWaterTempSensor::begin(HydroMonitorMySQL *l, Adafruit_ADS1115 *ads) {
   ads1115 = ads;
-  begin(s, sp, sr, nn, b, tn, adc);
-  return;
-}
-
-void HydroMonitorWaterTempSensor::begin(Settings s, unsigned char sp, int sr, int nn, int b, float tn, int adc) {
-
-  sensorPin = sp;
-  seriesResistor = sr;
-  NTCNominal = nn;
-  BCoefficient = b;
-  TNominal = tn;
-  ADCMax = adc;
+  l->writeTesting("HydroMonitorWaterTempSensor: configured NTC probe on ADS port expander.");
   
-  setSettings(s);
+#elif defined(NTC_PIN)
+void HydroMonitorWaterTempSensor::begin(HydroMonitorMySQL *l) {
+  l->writeTesting("HydroMonitorWaterTempSensor: configured NTC probe.");
+#endif
+#endif
+
+#ifdef USE_MS5837
+void HydroMonitorWaterTempSensor::begin(HydroMonitorMySQL *l, MS5837 *ms) {
+  ms5837 = ms;
+  l->writeTesting("HydroMonitorWaterTempSensor: configured MS5837 sensor.");
+#endif
+  logging = l;
+  if (WATERTEMPERATURE_SENSOR_EEPROM > 0)
+    EEPROM.get(WATERTEMPERATURE_SENSOR_EEPROM, settings);
   return;
 }
+#endif
 
-void HydroMonitorWaterTempSensor::setSettings(Settings s) {
+/*
+ * Get a reading from the sensor.
+ */
+float HydroMonitorWaterTempSensor::readSensor() {
 
-  // Retrieve and set the Settings.
-  settings = s;
-  // Check whether any settings have been set, if not apply defaults.
-  if (settings.Samples == 0 or settings.Samples > 100) {
-    settings.Samples = 10;
-  }
-  return;
-}
-
-double HydroMonitorWaterTempSensor::readSensor() {
-
+#ifdef USE_NTC 
   // read the value from the NTC sensor:
-  float reading;
-  Average<float> measurements(settings.Samples);
-
-  // Check whether the NTC sensor is present.
-  if (useAds1115) reading = ads1115.readADC_SingleEnded(sensorPin);
-  else reading = analogRead(sensorPin);
-  if (reading < 0.03*ADCMax || reading > 0.97*ADCMax) {
-    NTCPresent = false;
-    return -1;
-  }
-
-  NTCPresent = true;
-  for (int i = 0; i < settings.Samples; i++) {
-    if (useAds1115) reading = ads1115.readADC_SingleEnded(sensorPin);
-    else reading = analogRead(sensorPin);
+  uint16_t reading = 0;
   
-    //Calculate temperature using the Beta Factor equation
-    float measurement = 1.0 / (log (seriesResistor / ((ADCMax / reading - 1) * NTCNominal)) / BCoefficient + 1.0 / (TNominal + 273.15)) - 273.15;
-    measurements.push(measurement);    
+  // Check whether the NTC sensor is present.
+#ifdef NTC_ADS_PIN
+  reading = ads1115->readADC_SingleEnded(NTC_ADS_PIN);
+#elif defined(NTC_PIN)
+  reading = analogRead(NTC_PIN);
+#else
+#error no ntc pin defined.
+#endif
+  if (reading < 0.03*ADCMAX || reading > 0.97*ADCMAX) 
+    return -1;
+
+  for (uint8_t i = 0; (1 << NTCSAMPLES) - 1; i++) {
+#ifdef NTC_ADS_PIN
+    reading += ads1115->readADC_SingleEnded(NTC_ADS_PIN);
+#elif defined(NTC_PIN)
+    reading += analogRead(NTC_PIN);
+#endif
     delay(10);
     yield();
   }
-  float t = measurements.mean();
-  return t;
+  //Calculate temperature using the Beta Factor equation
+  waterTemp = 1.0 / (log (NTCSERIESRESISTOR / ((ADCMAX / (reading >> NTCSAMPLES) - 1) * THERMISTORNOMINAL)) / BCOEFFICIENT + 1.0 / (TEMPERATURENOMINAL + 273.15)) - 273.15;
+#elif defined(USE_MS5837)
+  waterTemp = ms5837->readTemperature();
+#endif
+  return waterTemp;
 }
 
+/*
+ * The settings as html.
+ */
 String HydroMonitorWaterTempSensor::settingsHtml() {
-  String html = F("<tr>\
-        <th colspan=\"2\">Water Temperature Sensor Settings.</th>\
-      </tr><tr>\
-        <td>Number of samples:</td>\
-        <td><input type=\"number\" name=\"watertemp_samples\" value=\"");
-  html += String(settings.Samples);
-  html += F("\"></td>\
-      </tr>");
+  return "";
+}
+
+/*
+ * The sensor data as html.
+ */
+String HydroMonitorWaterTempSensor::dataHtml() {
+  String html = F("<tr>\n\
+    <td>Water temperature</td>\n\
+    <td>");  
+  if (waterTemp < 0) html += F("Sensor not connected.</td>\n\
+  </tr>");
+  else {
+    html += String(waterTemp);
+    html += F(" &deg;C.</td>\n\
+  </tr>");
+  }
   return html;
 }
 
+/*
+ * Process the settings from the key/value pairs.
+ */
+ void HydroMonitorWaterTempSensor::updateSettings(String keys[], String values[], uint8_t nArgs) {
+  return;
+}

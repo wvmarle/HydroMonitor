@@ -7,8 +7,10 @@
 #define HYDROMONITORNETWORK_H
 
 #include <WiFiUdp.h>
-#include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
+#include <Time.h>
+#include <HydroMonitorCore.h>
+#include <HydroMonitorMySQL.h>
 
 // WiFi server settings.
 #define CONNECT_TIMEOUT   30      // Seconds
@@ -27,32 +29,12 @@
 #define NTP_SERVER_NAME "time.nist.gov"
 #define NTP_PACKET_SIZE 48        // NTP time stamp is in the first 48 bytes of the message
 
-
 class HydroMonitorNetwork
 {
   public:
 
     struct Settings {
-      char MysqlHostname[100];
-      char MysqlUrlBase[100];
-      char MysqlUsername[32];
-      char MysqlPassword[32];
-      char Hostname[32];
-      char Ssid[32];
-      char WiFiPassword[64];
-      char Timezone;
-    };
-
-    struct SensorData {
-      bool useECSensor; double EC;
-      bool useECSensor1; double EC1;
-      bool useECSensor2; double EC2;
-      bool useECSensor3; double EC3;
-      bool useBrightnessSensor; unsigned int brightness;
-      bool useWaterTempSensor; double waterTemp;
-      bool useWaterLevelSensor; double waterLevel;
-      bool usePressureSensor; double pressure;
-      bool useGrowlight; bool growlight;
+      int8_t timezone;
     };
 
     struct Request {
@@ -62,43 +44,37 @@ class HydroMonitorNetwork
     };
 
     HydroMonitorNetwork(void);
-    void begin(Settings);
-    void setSettings(Settings);
-    void WiFiBlink();
-    void connectInit();
-    void sendData(SensorData);
-    void settingsPage(String);
-    Request WiFiConnection(SensorData);
+    void begin(HydroMonitorMySQL*, ESP8266WebServer*);
+
     void ntpUpdateInit();
-    void ntpCheck();
-    unsigned long sendNTPpacket(IPAddress&);
-    bool doNtpUpdateCheck();
-    void htmlResponse(ESP8266WebServer, String);
-    void plainResponse(ESP8266WebServer, String);
-    String createSensorHtml(SensorData);
+    bool ntpCheck();
     String createHtmlPage(String, bool);
-    void handleNotFound(ESP8266WebServer);
-    String handleAPI(ESP8266WebServer, String*, int, String*, String*);
+    void htmlResponse(String);
+    void plainResponse(String);
+    String settingsHtml(void);
+    void updateSettings(String[], String[], uint8_t);
+	
     
   private:
-    
+   
     // For the internal time keeping and NTP connectivity.
-    String timestamp;
-    int NTPtries;
+    uint32_t sendNTPpacket(IPAddress&);
+    void connectInit();
+    bool doNtpUpdateCheck();
+    uint8_t NTPtries;
     IPAddress timeServerIP;               // time.nist.gov NTP server address
     byte packetBuffer[NTP_PACKET_SIZE];   //buffer to hold incoming and outgoing packets
     WiFiUDP udp;                          // A UDP instance to let us send and receive packets over UDP
-    unsigned long epoch;
-    WiFiClientSecure client;
-    unsigned char WiFiLED;
-    String createHtmlPage(SensorData);
-    Settings settings;
-    bool hasValue(String, String[], int);
-    
-    String validateDate(String);
-    String validateNumber(String);
-    
-    void handleRoot(void);
+    uint32_t epoch;
 
+//    WiFiClientSecure client;
+    Settings settings;
+    ESP8266WebServer *server;
+    
+    uint32_t startTime;
+    uint32_t updateTime;
+    HydroMonitorCore core;
+    HydroMonitorCore::SensorData sensorData;
+    HydroMonitorMySQL *logging;
 };
 #endif
