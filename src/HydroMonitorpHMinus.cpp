@@ -1,5 +1,12 @@
 #include <HydroMonitorpHMinus.h>
 
+#ifdef USE_PHMINUS
+
+#ifndef USE_PH_SENSOR
+#error Can't do pH-minus dosing without pH sensor.
+#endif
+
+
 /*
  * Handle the peristaltic pump that adds pH-minus solution to the system.
  */
@@ -8,18 +15,14 @@ HydroMonitorpHMinus::HydroMonitorpHMinus() {
   pHDelay = 30 * 60 * 1000; // Half an hour delay after adding fertiliser, to allow the system to mix properly.
   lastTimeAdded = -pHDelay; // When starting up, don't apply the delay.
   addpH = false;
-  solutionVolume = 0;
-  targetpH = 0;
-  concentration = 0;
 }
 
-#ifdef USE_PHMINUS
 /*
  * Setup the pH minus pump.
  * This is used for when the pump is connected to the MCP23008 port expander.
  */
 #ifdef PHMINUS_MCP_PIN
-void HydroMonitorpHMinus::begin(HydroMonitorMySQL *l, Adafruit_MCP23008 *mcp) {
+void HydroMonitorpHMinus::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, Adafruit_MCP23008 *mcp) {
   mcp23008 = mcp;
   mcp23008->pinMode(PHMINUS_MCP_PIN, OUTPUT);
   l->writeTesting("HydroMonitorpHMinus: configured pH-minus adjuster on MCP port expander.");
@@ -29,7 +32,7 @@ void HydroMonitorpHMinus::begin(HydroMonitorMySQL *l, Adafruit_MCP23008 *mcp) {
  * This is used for when the pump is connected to the PCF8574 port expander.
  */
 #elif defined(PHMINUS_PCF_PIN)
-void HydroMonitorpHMinus::begin(HydroMonitorMySQL *l, PCF857x *pcf) {
+void HydroMonitorpHMinus::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, PCF857x *pcf) {
   pcf8574 = pcf;
   l->writeTesting("HydroMonitorpHMinus: configured pH-minus adjuster on PCF port expander.");
 
@@ -37,11 +40,12 @@ void HydroMonitorpHMinus::begin(HydroMonitorMySQL *l, PCF857x *pcf) {
  * Setup the pH minus pump - connected to a GPIO pin.
  */
 #elif defined(PHMINUS_PIN)
-void HydroMonitorpHMinus::begin(HydroMonitorMySQL *l) {
+void HydroMonitorpHMinus::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l) {
   pinMode(PHMINUS_PIN, OUTPUT);
   l->writeTesting("HydroMonitorpHMinus: configured pH-minus adjuster.");
 #endif
 
+  sensorData = sd;
   logging = l;
   switchPumpOff();
   if (PHMINUS_EEPROM > 0)
@@ -54,7 +58,6 @@ void HydroMonitorpHMinus::begin(HydroMonitorMySQL *l) {
   }
   return;
 }
-#endif
 
 /*
  * The pH-minus handling.
@@ -67,7 +70,7 @@ void HydroMonitorpHMinus::begin(HydroMonitorMySQL *l) {
  *    if not: check whether the last time we had low enough pH was more than 10 minutes ago,
  *            and if so, calculate how much pH adjuster has to be added, and start the pump.
  */
-void HydroMonitorpHMinus::dopH(float currentpH) {
+void HydroMonitorpHMinus::dopH() {
 
   // If we're measuring the pump speed, switch it off after 60 seconds.
   if (measuring) {
@@ -83,7 +86,7 @@ void HydroMonitorpHMinus::dopH(float currentpH) {
   
   // All parameters must have been set.
   // The user may set the targetpH to 0 to stop this process.
-  if (targetpH == 0 || solutionVolume == 0 || concentration == 0) return;
+  if (sensorData->targetpH == 0 || sensorData->solutionVolume == 0 || sensorData->pHMinusConcentration == 0) return;
 
   // Check whether pH-minus is running, and if so whether it's time to stop.
   if (running && millis() - startTime > runTime) {
@@ -99,14 +102,14 @@ void HydroMonitorpHMinus::dopH(float currentpH) {
     
   // Check whether we have a pH value that's less than 0.2 points above target value.
   // Keep the time we saw this good value.
-  else if (currentpH - targetpH < 0.2) {
+  else if (sensorData->pH - sensorData->targetpH < 0.2) {
     lastGoodpH = millis();
     return;
   }
 
   // If more than 10 minutes since lastGoodpH, add 0.2 pH points worth of pH-minus.
   else if (millis() - lastGoodpH > 10 * 60 * 1000) {
-    float addVolume = 0.2 * solutionVolume * concentration; // The amount of fertiliser in ml to be added.
+    float addVolume = 0.2 * sensorData->solutionVolume * sensorData->pHMinusConcentration; // The amount of fertiliser in ml to be added.
     runTime = addVolume / settings.pumpSpeed * 60 * 1000; // the time in milliseconds pump A has to run.
     logging->writeTesting("HydroMonitorpHMinus: 10 minutes of too low pH; start adding pH-minus.");
     /*
@@ -178,19 +181,6 @@ void HydroMonitorpHMinus::measurePump() {
   }
 }
 
-void HydroMonitorpHMinus::setSolutionVolume(uint16_t v) {
-  solutionVolume = v;
-}
-
-void HydroMonitorpHMinus::setTargetpH(float pH) {
-  targetpH = pH;
-}
-
-void HydroMonitorpHMinus::setpHMinusConcentration(float c) {
-  concentration = c;
-}
-
-
 /*
  * HTML code to set the various settings.
  */
@@ -226,4 +216,5 @@ void HydroMonitorpHMinus::updateSettings(String keys[], String values[], uint8_t
   EEPROM.commit();
   return;
 }
+#endif
 

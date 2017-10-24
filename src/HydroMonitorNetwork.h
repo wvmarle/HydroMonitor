@@ -74,7 +74,7 @@ class HydroMonitorNetwork
     uint32_t startTime;
     uint32_t updateTime;
     HydroMonitorCore core;
-    HydroMonitorCore::SensorData sensorData;
+    HydroMonitorCore::SensorData *sensorData;
     HydroMonitorMySQL *logging;
 };
 #endif

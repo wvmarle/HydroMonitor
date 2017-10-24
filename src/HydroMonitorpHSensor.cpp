@@ -1,22 +1,21 @@
 #include <HydroMonitorpHSensor.h>
 
+#ifdef USE_PH_SENSOR
 /*
  * The constructor.
  */
 HydroMonitorpHSensor::HydroMonitorpHSensor() {
   calibratedSlope = 1;
   calibratedIntercept = 0;
-  pH = -1;
   lastWarned = millis() - WARNING_INTERVAL;
 }
 
-#ifdef USE_PH_SENSOR
 /*
  * Setup the sensor.
  * This function is for when the connector is connected to an external ADS1115 ADC.
  */
 #ifdef PH_SENSOR_ADS_PIN
-void HydroMonitorpHSensor::begin(HydroMonitorMySQL *l, Adafruit_ADS1115 *ads) {
+void HydroMonitorpHSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, Adafruit_ADS1115 *ads) {
   ads1115 = ads;
   l->writeTesting("HydroMonitorpHSensor: configured pH sensor on ADS port expander.");
 
@@ -25,9 +24,10 @@ void HydroMonitorpHSensor::begin(HydroMonitorMySQL *l, Adafruit_ADS1115 *ads) {
  * This function is for when the connector is connected to the internal ADC.
  */
 #elif defined(PH_SENSOR_PIN)
-void HydroMonitorpHSensor::begin(HydroMonitorMySQL *l) {
+void HydroMonitorpHSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l) {
   l->writeTesting("HydroMonitorpHSensor: configured pH sensor.");
 #endif
+  sensorData = sd;
   logging = l;
   if (PH_SENSOR_EEPROM > 0)
     EEPROM.get(PH_SENSOR_EEPROM, settings);
@@ -36,7 +36,6 @@ void HydroMonitorpHSensor::begin(HydroMonitorMySQL *l) {
   readCalibration();
   return;
 }
-#endif
 
 /*
  * Calculate the calibration factors.
@@ -59,31 +58,31 @@ void HydroMonitorpHSensor::readCalibration() {
 /*
  * Read the pH value.
  */
-float HydroMonitorpHSensor::readSensor(float waterTemp) {
-  uint32_t reading = takeReading(waterTemp);
-  pH = ((float)reading - calibratedIntercept)/calibratedSlope;
+void HydroMonitorpHSensor::readSensor() {
+  uint32_t reading = takeReading();
+  sensorData->pH = ((float)reading - calibratedIntercept)/calibratedSlope;
 
   // Send warning if it's been long enough ago & pH is > 1 point above target.
-  if (millis() - lastWarned > WARNING_INTERVAL && pH > targetpH + 1) {
+  if (millis() - lastWarned > WARNING_INTERVAL && sensorData->pH > sensorData->targetpH + 1) {
     lastWarned = millis();
     char message[110] = "pH level is too high; correction with pH adjuster is urgently needed.\nTarget set: ";
     char buf[5];
-    snprintf(buf, 5, "%f", targetpH);
+    snprintf(buf, 5, "%f", sensorData->targetpH);
     strcat(message, buf);
     strcat(message, ", current pH: ");
-    snprintf(buf, 5, "%f", pH);
+    snprintf(buf, 5, "%f", sensorData->pH);
     strcat(message, buf);
     strcat(message, ".");
     logging->sendWarning(message);
   }
-  return pH;
+  return;
 }
 
 /*
  * Read the pH value.
  * This version returns the raw, temperature corrected reading as int.
  */
-uint32_t HydroMonitorpHSensor::takeReading(float waterTemp) {
+uint32_t HydroMonitorpHSensor::takeReading() {
   uint32_t reading;
   //TODO detect whether a sensor is present based on reading.
   
@@ -99,10 +98,6 @@ uint32_t HydroMonitorpHSensor::takeReading(float waterTemp) {
 
   //TODO temperature correction.
   return reading;
-}
-
-void HydroMonitorpHSensor::setTargetpH(float p) {
-  targetpH = p;
 }
 
 /*
@@ -128,10 +123,10 @@ String HydroMonitorpHSensor::dataHtml() {
   String html = F("<tr>\n\
     <td>pH of the solution</td>\n\
     <td>");
-  if (pH < 0) html += F("Sensor not connected.</td>\n\
+  if (sensorData->pH < 0) html += F("Sensor not connected.</td>\n\
   </tr>");
   else {
-    html += String(pH);
+    html += String(sensorData->pH);
     html += F(".</td>\n\
   </tr>");
   }
@@ -157,7 +152,7 @@ String HydroMonitorpHSensor::getCalibrationData() {
 /*
  * Handle an html request for calibration, or a related function.
  */
-void HydroMonitorpHSensor::doCalibration(ESP8266WebServer *server, float waterTemp) {
+void HydroMonitorpHSensor::doCalibration(ESP8266WebServer *server) {
 
   // See whether it's a request to delete one of the calibrated values.
   if (server->hasArg("delete")) {
@@ -179,7 +174,7 @@ void HydroMonitorpHSensor::doCalibration(ESP8266WebServer *server, float waterTe
     if (argVal != "") { // if there's a value given, use this to create a calibration point.
       if (core.isNumeric(argVal)) {
         float val = argVal.toFloat();
-        uint16_t res = takeReading(val);
+        uint16_t res = takeReading();
         
         // Find the first available data point where the value can be stored.
         // This is any data point where the timestamp = 0, regardless of it being
@@ -214,9 +209,12 @@ void HydroMonitorpHSensor::doCalibration(ESP8266WebServer *server, float waterTe
   readCalibration();
   return;
 }
+
 /*
  * Update the settings.
  */
 void HydroMonitorpHSensor::updateSettings(String keys[], String values[], uint8_t nArgs) {
   return;
 }
+#endif
+

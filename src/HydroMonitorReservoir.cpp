@@ -12,7 +12,7 @@ HydroMonitorReservoir::HydroMonitorReservoir() {
  * Set up the solenoid, connected to a MCP23008 port expander.
  */
 #ifdef RESERVOIR_MCP_PIN
-void HydroMonitorReservoir::begin(HydroMonitorMySQL *l, Adafruit_MCP23008* mcp, HydroMonitorWaterLevelSensor* sens) {
+void HydroMonitorReservoir::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, Adafruit_MCP23008* mcp, HydroMonitorWaterLevelSensor* sens) {
   mcp23008 = mcp;
   mcp23008->pinMode(RESERVOIR_MCP_PIN, OUTPUT);
   l->writeTesting("HydroMonitorReservoir: configured reservoir refill on MCP port expander.");
@@ -21,7 +21,7 @@ void HydroMonitorReservoir::begin(HydroMonitorMySQL *l, Adafruit_MCP23008* mcp, 
  * Set up the solenoid, connected to a PCF8574 port expander.
  */
 #elif defined(RESERVOIR_PCF_PIN)
-void HydroMonitorReservoir::begin(HydroMonitorMySQL *l, PCF857x* pcf, HydroMonitorWaterLevelSensor* sens) {
+void HydroMonitorReservoir::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, PCF857x* pcf, HydroMonitorWaterLevelSensor* sens) {
   pcf8574 = pcf;
   l->writeTesting("HydroMonitorReservoir: configured reservoir refill on PCF port expander.");
 
@@ -29,10 +29,11 @@ void HydroMonitorReservoir::begin(HydroMonitorMySQL *l, PCF857x* pcf, HydroMonit
  * Set up the solenoid, connected to a GPIO port.
  */
 #elif defined(RESERVOIR_PIN)
-void HydroMonitorReservoir::begin(HydroMonitorMySQL *l, HydroMonitorWaterLevelSensor* sens) {
+void HydroMonitorReservoir::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, HydroMonitorWaterLevelSensor* sens) {
   pinMode(RESERVOIR_PIN, OUTPUT);
   l->writeTesting("HydroMonitorReservoir: configured reservoir refill.");
 #endif
+  sensorData = sd;
   logging = l;
   waterLevelSensor = sens;
   if (RESERVOIR_EEPROM > 0)
@@ -51,11 +52,7 @@ void HydroMonitorReservoir::begin(HydroMonitorMySQL *l, HydroMonitorWaterLevelSe
  *
  * This has to be called as frequent as possible for proper timing and preventing overfilling.
  */
-#ifdef USE_MS5837
-void HydroMonitorReservoir::doReservoir(float fill, float pressure) {
-#elif defined(USE_HCSR04)
-void HydroMonitorReservoir::doReservoir(float fill) {
-#endif
+void HydroMonitorReservoir::doReservoir() {
 
   // As long as the water level is above the set minimum and we're not in adding water now, 
   // there's nothing to do here other than keeping track of when this was.
@@ -77,15 +74,11 @@ void HydroMonitorReservoir::doReservoir(float fill) {
   // Measure the reservoir fill every 0.5 seconds.
   if (millis() - lastLevel > 500) {
     lastLevel += 500;
-#ifdef USE_MS5837
-    fill = waterLevelSensor->readSensor(pressure);
-#elif defined(USE_HCSR04)
-    fill = waterLevelSensor->readSensor();
-#endif
+    waterLevelSensor->readSensor();
   }
 
   // Check whether we have enough water, if so close the valve.
-  if (fill > settings.maxFill) {
+  if (sensorData.fill > settings.maxFill) {
     closeValve();
     core.writeTesting(F("HydroMonitorReservoir: water level high enough, closing the valve."));
     addWater = false;

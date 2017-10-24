@@ -107,6 +107,8 @@ class HydroMonitorCore
     struct SensorData {
 #ifdef USE_EC_SENSOR
       float EC;
+      uint16_t fertiliserConcentration;
+      float targetEC;
 #endif
 #ifdef USE_BRIGHTNESS_SENSOR
       int32_t brightness;
@@ -128,6 +130,8 @@ class HydroMonitorCore
 #endif
 #ifdef USE_PH_SENSOR
       float pH;
+      float pHMinusConcentration;
+      float targetpH;
 #endif
 #ifdef USE_DO_SENSOR
       float DO;
@@ -138,6 +142,10 @@ class HydroMonitorCore
 #ifdef USE_GROWLIGHT
       bool growlight;
 #endif
+#if defined(USE_EC_SENSOR) || defined(USE_PH_SENSOR)
+      uint16_t solutionVolume;
+#endif
+      char systemName[64];
     };
     
     // Various utility functions used by other modules.

@@ -37,17 +37,17 @@ class HydroMonitorWaterTempSensor
     HydroMonitorWaterTempSensor();
 #ifdef USE_NTC
 #ifdef NTC_ADS_PIN
-    void begin(HydroMonitorMySQL*, Adafruit_ADS1115*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*, Adafruit_ADS1115*);
     void setADC(Adafruit_ADS1115);      // Sets the ADS1115 ADC.
 #elif defined(NTC_PIN)
-    void begin(HydroMonitorMySQL*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*);
 #endif
 #endif
 #ifdef USE_MS5837
-    void begin(HydroMonitorMySQL*, MS5837*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*, MS5837*);
 #endif
-    float readSensor(void);             // Read the temperature using the probe.
-    String dataHtml(void);            // Provides html code with the sensor data.
+    void readSensor(void);              // Read the temperature using the probe.
+    String dataHtml(void);              // Provides html code with the sensor data.
     String settingsHtml(void);
     void updateSettings(String[], String[], uint8_t);
 
@@ -59,7 +59,7 @@ class HydroMonitorWaterTempSensor
 #ifdef USE_MS5837
     MS5837 *ms5837;
 #endif
-    float waterTemp;
+    HydroMonitorCore::SensorData *sensorData;
     HydroMonitorMySQL *logging;
 };
 

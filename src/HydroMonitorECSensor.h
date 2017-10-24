@@ -32,8 +32,8 @@ class HydroMonitorECSensor
     HydroMonitorECSensor();           // The constructor.
     
     // The functions required for all sensors.
-    void begin(HydroMonitorMySQL*);
-    float readSensor(float);          // Measures the EC value, takes the water temperature as input, returns the result.
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*);
+    void readSensor(void);            // Measures the EC value, takes the water temperature as input, returns the result.
     String dataHtml(void);            // Provides html code with the sensor data.
     String settingsHtml(void);        // Provides html code with the settings.
     void updateSettings(String[], String[], uint8_t);
@@ -42,9 +42,6 @@ class HydroMonitorECSensor
     String getCalibrationHtml(void);
     String getCalibrationData(void);
     void doCalibration(ESP8266WebServer*, float);
-    void setSolutionVolume(uint16_t);
-    void setFertiliserConcentration(uint16_t);
-    void setTargetEC(float);
 
   private:
   
@@ -61,16 +58,13 @@ class HydroMonitorECSensor
     uint32_t reading[DATAPOINTS];     // The raw reading of the data points.
     bool enabled[DATAPOINTS];         // Whether a data point is enabled.
     void readCalibration(void);       // Read the current calibration parameters from EEPROM.
-    void temperatureCorrection(uint32_t*, float);
-    float EC;
-    uint16_t solutionVolume;
-    uint16_t concentration;
-    float targetEC;
+    void temperatureCorrection(uint32_t*);
     uint32_t lastWarned;
 
     // Other.
     HydroMonitorCore core;            // Provides some utility functions.
     Settings settings;                // The settings store.
+    HydroMonitorCore::SensorData *sensorData;
     HydroMonitorMySQL *logging; 
 };
 

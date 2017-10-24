@@ -1,20 +1,20 @@
 #include <HydroMonitorTemperatureSensor.h>
 #include <Arduino.h>
 
+#ifdef USE_TEMPERATURE_SENSOR
+
 /*
  * Measure the air temperature.
  * Constructor.
  */
 HydroMonitorTemperatureSensor::HydroMonitorTemperatureSensor () {
-  temperature = -1;
 }
 
-#ifdef USE_TEMPERATURE_SENSOR
 /*
  * Configure the sensor as DHT22.
  */
 #ifdef DHT22_PIN
-void HydroMonitorTemperatureSensor::begin(HydroMonitorMySQL *l, DHT22 *dht) {
+void HydroMonitorTemperatureSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, DHT22 *dht) {
   dht22 = dht;
   logging = l;
   logging->writeTesting("HydroMonitorTemperatureSensor: configured DHT22 sensor.");
@@ -29,7 +29,7 @@ void HydroMonitorTemperatureSensor::begin(HydroMonitorMySQL *l, DHT22 *dht) {
  * Configure the sensor as BMP180.
  */
 #ifdef USE_BMP180
-void HydroMonitorTemperatureSensor::begin(HydroMonitorMySQL *l, BMP180 *bmp) {
+void HydroMonitorTemperatureSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, BMP180 *bmp) {
   bmp180 = bmp;
   l->writeTesting("HydroMonitorTemperatureSensor: configured BMP180 sensor.");
   
@@ -37,12 +37,13 @@ void HydroMonitorTemperatureSensor::begin(HydroMonitorMySQL *l, BMP180 *bmp) {
  * Configure the sensor as BMP280 or BME280.
  */
 #elif defined(USE_BMP280) || defined(USE_BME280)
-void HydroMonitorTemperatureSensor::begin(HydroMonitorMySQL *l, BME280 *bmp) {
+void HydroMonitorTemperatureSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, BME280 *bmp) {
   bmp280 = bmp;
   l->writeTesting("HydroMonitorTemperatureSensor: configured BMP280 sensor.");
 #endif
 
 #if defined(USE_BMP180) || defined(USE_BMP280) || defined(USE_BME280)
+  sensorData = sd;
   logging = l;
   if (TEMPERATURE_SENSOR_EEPROM > 0)
     EEPROM.get(TEMPERATURE_SENSOR_EEPROM, settings);
@@ -50,20 +51,19 @@ void HydroMonitorTemperatureSensor::begin(HydroMonitorMySQL *l, BME280 *bmp) {
   return;
 }
 #endif
-#endif
   
 /*
  * Take a measurement from the sensor.
  */
-float HydroMonitorTemperatureSensor::readSensor() {
+void HydroMonitorTemperatureSensor::readSensor() {
 #if defined(USE_BMP280) || defined(USE_BME280)
-  temperature = (float)bmp280->readTemperature();
+  sensorData->temperature = (float)bmp280->readTemperature();
 #elif defined(USE_BMP180)
-  temperature = (float)bmp180->readTemperature();
+  sensorData->temperature = (float)bmp180->readTemperature();
 #elif defined(USE_DHT22)
-  temperature = (float)dht22->readTemperature();
+  sensorData->temperature = (float)dht22->readTemperature();
 #endif
-  return temperature;
+  return;
 }
 
 /*
@@ -80,10 +80,10 @@ String HydroMonitorTemperatureSensor::dataHtml() {
   String html = F("<tr>\n\
     <td>Air temperature</td>\n\
     <td>");
-  if (temperature < 0) html += F("Sensor not connected.</td>\n\
+  if (sensorData->temperature < 0) html += F("Sensor not connected.</td>\n\
   </tr>");
   else {
-    html += String(temperature);
+    html += String(sensorData->temperature);
     html += F(" &deg;C.</td>\n\
   </tr>");
   }
@@ -96,3 +96,5 @@ String HydroMonitorTemperatureSensor::dataHtml() {
 void HydroMonitorTemperatureSensor::updateSettings(String keys[], String values[], uint8_t nArgs) {
   return;
 }
+#endif
+

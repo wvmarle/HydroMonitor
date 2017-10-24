@@ -21,7 +21,7 @@ class HydroMonitorGrowingParameters {
     HydroMonitorGrowingParameters(void);
 
     // The various functions to set up and control this module.
-    void begin(HydroMonitorMySQL*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*);
     String settingsHtml(void);    
     void updateSettings(String[], String[], uint8_t);
     
@@ -33,9 +33,11 @@ class HydroMonitorGrowingParameters {
     float getTargetpH(void);
     
   private:
+    void updateSensorData(void);
     Settings settings;
     HydroMonitorCore core;
-    HydroMonitorMySQL *logging; 
+    HydroMonitorCore::SensorData *sensorData;
+    HydroMonitorMySQL *logging;
 };
 
 #endif

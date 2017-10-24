@@ -11,7 +11,8 @@ HydroMonitorGrowingParameters::HydroMonitorGrowingParameters() {
 /*
  * Configure the module.
  */
-void HydroMonitorGrowingParameters::begin(HydroMonitorMySQL *l) {
+void HydroMonitorGrowingParameters::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l) {
+  sensorData = sd;
   logging = l;
   if (GROWING_PARAMETERS_EEPROM > 0)
     EEPROM.get(FERTILISER_EEPROM, settings);
@@ -25,29 +26,11 @@ void HydroMonitorGrowingParameters::begin(HydroMonitorMySQL *l) {
     settings.pHMinusConcentration = 0.05;  // ml of pH-minus per litre of solution for a 1 pH point change.
     settings.targetpH = 0;
     strcpy(settings.systemName, "HydroMonitor");
+    EEPROM.put(FERTILISER_EEPROM, settings);
+    EEPROM.commit();
   }
   logging->writeInfo("HydroMonitorGrowingParameters: set up all the growing parameters.");
   return;
-}
-
-float HydroMonitorGrowingParameters::getTargetEC() {
-  return settings.targetEC;
-}
-
-uint16_t HydroMonitorGrowingParameters::getSolutionVolume() {
-  return settings.solutionVolume;
-} 
-
-uint16_t HydroMonitorGrowingParameters::getFertiliserConcentration() {
-  return settings.fertiliserConcentration;
-}
-
-float HydroMonitorGrowingParameters::getpHMinusConcentration() {
-  return settings.pHMinusConcentration;
-}
-
-float HydroMonitorGrowingParameters::getTargetpH() {
-  return settings.targetpH;
 }
 
 /*
@@ -143,3 +126,20 @@ void HydroMonitorGrowingParameters::updateSettings(String keys[], String values[
   logging->writeTrace("HydroMonitorGrowingParameters: updated settings.");
   return;
 }
+
+void HydroMonitorGrowingParameters::updateSensorData() {
+
+#ifdef USE_EC_SENSOR
+  sensorData->targetEC = settings.targetEC;
+  sensorData->fertiliserConcentration = settings.fertiliserConcentration;
+#endif
+#ifdef USE_PH_SENSOR
+  sensorData->targetpH = settings.targetpH;
+  sensorData->pHMinusConcentration = settings.pHMinusConcentration;
+#endif
+#if defined(USE_EC_SENSOR) || defined(USE_PH_SENSOR)
+  sensorData->solutionVolume = settings.solutionVolume;
+#endif
+  strcpy(settings.systemName, "HydroMonitor");
+}
+

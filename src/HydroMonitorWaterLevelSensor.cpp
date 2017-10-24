@@ -1,12 +1,12 @@
 #include <HydroMonitorWaterLevelSensor.h>
 #include <Average.h>
 
+#ifdef USE_WATERLEVEL_SENSOR
+
 HydroMonitorWaterLevelSensor::HydroMonitorWaterLevelSensor() {
   lastWarned = millis() - WARNING_INTERVAL;
 }
 
-
-#ifdef USE_WATERLEVEL_SENSOR
 // The below set of #ifdef tags splits the function; the first bit is for the specific way the
 // trigPin is connected; the last chunk is the same for all three options.
 
@@ -18,7 +18,7 @@ HydroMonitorWaterLevelSensor::HydroMonitorWaterLevelSensor() {
  * Ultrasound sensor, trig pin connected through a MCP23008 port expander.
  */
 #if defined(TRIG_MCP_PIN)
-void HydroMonitorWaterLevelSensor::begin(HydroMonitorMySQL *l, Adafruit_MCP23008 *mcp) {
+void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, Adafruit_MCP23008 *mcp) {
 
   // Set the parameters.
   mcp23008 = mcp;
@@ -29,7 +29,7 @@ void HydroMonitorWaterLevelSensor::begin(HydroMonitorMySQL *l, Adafruit_MCP23008
 /*
  * Ultrasound sensor, trig pin connected through a PCF8574 port expander.
  */
-void HydroMonitorWaterLevelSensor::begin(HydroMonitorMySQL *l, PCF857x *pcf) {
+void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, PCF857x *pcf) {
 
   // Set the parameters.
   pcf8574 = pcf;
@@ -39,7 +39,7 @@ void HydroMonitorWaterLevelSensor::begin(HydroMonitorMySQL *l, PCF857x *pcf) {
 /*
  * Ultrasound sensor, trig pin connected directly.
  */
-void HydroMonitorWaterLevelSensor::begin(HydroMonitorMySQL *l) {
+void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l) {
 
   // Set the parameters.
   pinMode(TRIG_PIN, OUTPUT);
@@ -54,7 +54,7 @@ void HydroMonitorWaterLevelSensor::begin(HydroMonitorMySQL *l) {
 /*
  * MS5837 pressure sensor.
  */
-void HydroMonitorWaterLevelSensor::begin(HydroMonitorMySQL *l, MS5837 *ms) {
+void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, MS5837 *ms) {
 
   // Set the parameters.
   ms5837 = ms;
@@ -73,7 +73,6 @@ void HydroMonitorWaterLevelSensor::begin(HydroMonitorMySQL *l, MS5837 *ms) {
   }
   return;
 }
-#endif
 
 #ifdef USE_HCSR04
 /*
@@ -86,7 +85,7 @@ void HydroMonitorWaterLevelSensor::begin(HydroMonitorMySQL *l, MS5837 *ms) {
  *
  * The sensor returns the level in fill % (where 100% is 2 cm below the sensor).
  */
-float HydroMonitorWaterLevelSensor::readSensor() {
+void HydroMonitorWaterLevelSensor::readSensor() {
 
   float reading = 0;
 
@@ -101,12 +100,12 @@ float HydroMonitorWaterLevelSensor::readSensor() {
   // The reservoir is considered 100% full at 2 cm below the sensor, which is the minimum distance for
   // it to measure - and a minimum safe distance between the water and the sensor.
   if (reading > 0 && reading < settings.reservoirHeight)
-    fill = 100.0 * (settings.reservoirHeight - reading) / (settings.reservoirHeight - 2);
+    sensorData->waterLevel = 100.0 * (settings.reservoirHeight - reading) / (settings.reservoirHeight - 2);
   else 
-    fill = -1;
+    sensorData->waterLevel = -1;
 
   warning();
-  return fill;
+  return;
 }
 
 /*
@@ -165,17 +164,17 @@ float HydroMonitorWaterLevelSensor::measureLevel() {
  * Requires the atmospheric pressure as compensation.
  */
 #ifdef USE_MS5837
-float HydroMonitorWaterLevelSensor::readSensor(float p) {
-  float fill = -1;
+void HydroMonitorWaterLevelSensor::readSensor() {
+  sensorData->waterLevel = -1;
   
   // Get the water level in cm.
   // The reservoir is considered "full" at 95% of the total level.
-  float reading = ms5837->readWaterLevel(p) + settings.zeroLevel;
+  float reading = ms5837->readWaterLevel(sensorData->pressure) + settings.zeroLevel;
   if (reading > 0 && reading < settings.reservoirHeight)
-    fill = 100.0 * reading / (0.95 * settings.reservoirHeight);
+    sensorData->waterLevel = 100.0 * reading / (0.95 * settings.reservoirHeight);
     
   warning();
-  return fill;
+  return;
 }
 
 
@@ -183,11 +182,11 @@ float HydroMonitorWaterLevelSensor::readSensor(float p) {
  * Use the current reading as zero water level (there's always a small difference between
  * the two sensors), and store the difference in EEPROM.
  */
-void HydroMonitorWaterLevelSensor::setZero(float p) {
+void HydroMonitorWaterLevelSensor::setZero() {
 
   // Get the water level in cm.
-  float reading = ms5837->readWaterLevel(p);
-  settings.zeroLevel = p - reading;
+  float reading = ms5837->readWaterLevel(sensorData->pressure);
+  settings.zeroLevel = reading;
   EEPROM.put(WATERLEVEL_SENSOR_EEPROM, settings);
   EEPROM.commit();
   return;
@@ -197,10 +196,10 @@ void HydroMonitorWaterLevelSensor::setZero(float p) {
 void HydroMonitorWaterLevelSensor::warning() {
 
    // Send warning if it's been long enough ago & fill is <20%.
-  if (millis() - lastWarned > WARNING_INTERVAL && fill >= 0 && fill < 20) {
+  if (millis() - lastWarned > WARNING_INTERVAL && sensorData->waterLevel >= 0 && sensorData->waterLevel < 20) {
     char message[110] = "The reservoir is almost empty, and is in urgent need of a refill.\nCurrent reservoir fill level: ";
     char buf[5];
-    snprintf(buf, 5, "%f", fill);
+    snprintf(buf, 5, "%f", sensorData->waterLevel);
     strcat(message, buf);
     strcat(message, "%.");
     logging->sendWarning(message);
@@ -235,10 +234,10 @@ String HydroMonitorWaterLevelSensor::dataHtml() {
   String html = F("<tr>\n\
     <td>Reservoir water level</td>\n\
     <td>");
-  if (fill < 0) html += F("Sensor not connected.</td>\n\
+  if (sensorData->waterLevel < 0) html += F("Sensor not connected.</td>\n\
   </tr>");
   else {
-    html += String(fill);
+    html += String(sensorData->waterLevel);
     html += F(" % full.</td>\n\
   </tr>");
   }
@@ -261,4 +260,5 @@ void HydroMonitorWaterLevelSensor::updateSettings(String keys[], String values[]
   EEPROM.commit();
   return;
 }
+#endif
 

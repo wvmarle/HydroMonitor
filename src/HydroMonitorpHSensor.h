@@ -16,21 +16,20 @@ class HydroMonitorpHSensor {
     
     HydroMonitorpHSensor(void);
 #ifdef PH_SENSOR_PIN
-    void begin(HydroMonitorMySQL *logging);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL *logging);
 #elif defined(PH_SENSOR_ADS_PIN)
-    void begin(HydroMonitorMySQL *log, Adafruit_ADS1115*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL *log, Adafruit_ADS1115*);
 #endif
-    float readSensor(float);
+    void readSensor(void);
     String dataHtml(void);            // Provides html code with the sensor data.
     String settingsHtml(void); 
     String getCalibrationHtml(void);
     String getCalibrationData(void);
     void updateSettings(String[], String[], uint8_t);
-    void doCalibration(ESP8266WebServer*, float);
-    void setTargetpH(float);
+    void doCalibration(ESP8266WebServer*);
     
   private:
-    uint32_t takeReading(float);
+    uint32_t takeReading(void);
 #ifdef PH_SENSOR_ADS_PIN
     Adafruit_ADS1115 *ads1115;
 #endif
@@ -43,10 +42,9 @@ class HydroMonitorpHSensor {
     float value[DATAPOINTS];
     uint32_t reading[DATAPOINTS];
     bool enabled[DATAPOINTS];
-    float pH;
-    float targetpH;
     uint32_t lastWarned;
     HydroMonitorCore core;
+    HydroMonitorCore::SensorData *sensorData;
     HydroMonitorMySQL *logging;
 };
 

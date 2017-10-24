@@ -18,8 +18,9 @@ HydroMonitorMySQL::HydroMonitorMySQL() {
 /*
  * Start the network services.
  */
-void HydroMonitorMySQL::begin() {
+void HydroMonitorMySQL::begin(HydroMonitorCore::SensorData *sd) {
 
+  sensorData = sd;
   if (MYSQL_EEPROM > 0)
     EEPROM.get(MYSQL_EEPROM, settings);
   
@@ -42,7 +43,7 @@ void HydroMonitorMySQL::begin() {
 /**
  * Send the latest sensor data to the database.
  */
-void HydroMonitorMySQL::sendData(HydroMonitorCore::SensorData sensorData) {
+void HydroMonitorMySQL::sendData() {
 
   if (loginValid == false)
     return;
@@ -67,58 +68,58 @@ void HydroMonitorMySQL::sendData(HydroMonitorCore::SensorData sensorData) {
   
 #ifdef USE_EC_SENSOR
     strcat(fields, "EC, ");
-    strcat(values, dtostrf(sensorData.EC, 4, 2, val));
+    strcat(values, dtostrf(sensorData->EC, 4, 2, val));
     strcat(values, (", "));
 #endif
 #ifdef USE_BRIGHTNESS_SENSOR
     strcat(fields, "brightness, ");
-    sprintf(val, "%d", sensorData.brightness);
+    sprintf(val, "%d", sensorData->brightness);
     strcat(values, val);
     strcat(values, ", ");
 #endif
 #ifdef USE_WATERTEMPERATURE_SENSOR
     strcat(fields, "watertemp, ");
-    strcat(values, dtostrf(sensorData.waterTemp, 4, 2, val));
+    strcat(values, dtostrf(sensorData->waterTemp, 4, 2, val));
     strcat(values, ", ");
 #endif
 #ifdef USE_WATERLEVEL_SENSOR
     strcat(fields, "waterlevel, ");
-    strcat(values, dtostrf(sensorData.waterLevel, 4, 2, val));
+    strcat(values, dtostrf(sensorData->waterLevel, 4, 2, val));
     strcat(values, ", ");
 #endif
 #ifdef USE_PRESSURE_SENSOR
     strcat(fields, "pressure, ");
-    strcat(values, dtostrf(sensorData.pressure, 4, 2, val));
+    strcat(values, dtostrf(sensorData->pressure, 4, 2, val));
     strcat(values, ", ");
 #endif
 #ifdef USE_TEMPERATURE_SENSOR
     strcat(fields, "airtemp, ");
-    strcat(values, dtostrf(sensorData.temperature, 4, 2, val));
+    strcat(values, dtostrf(sensorData->temperature, 4, 2, val));
     strcat(values, ", ");
 #endif
 #ifdef USE_HUMIDITY_SENSOR
     strcat(fields, "humidity, ");
-    strcat(values, dtostrf(sensorData.humidity, 4, 2, val));
+    strcat(values, dtostrf(sensorData->humidity, 4, 2, val));
     strcat(values, ", ");
 #endif
 #ifdef USE_PH_SENSOR
     strcat(fields, "ph, ");
-    strcat(values, dtostrf(sensorData.pH, 4, 2, val));
+    strcat(values, dtostrf(sensorData->pH, 4, 2, val));
     strcat(values, ", ");
 #endif
 #ifdef USE_DO_SENSOR
     strcat(fields, "DO, ");
-    strcat(values, dtostrf(sensorData.DO, 4, 2, val));
+    strcat(values, dtostrf(sensorData->DO, 4, 2, val));
     strcat(values, ", ");
 #endif
 #ifdef USE_ORP_SENSOR
     strcat(fields, "ORP, ");
-    strcat(values, dtostrf(sensorData.ORP, 4, 2, val));
+    strcat(values, dtostrf(sensorData->ORP, 4, 2, val));
     strcat(values, ", ");
 #endif
 #ifdef USE_GROWLIGHT
     strcat(fields, "growlight, ");
-    if (sensorData.growlight) strcat(values, "1, ");
+    if (sensorData->growlight) strcat(values, "1, ");
     else strcat(values, "0, ");
 #endif
   
@@ -209,7 +210,7 @@ void HydroMonitorMySQL::writeInfo(char *msg) {
 }
 
 void HydroMonitorMySQL::sendWarning(char *msg) {
-  
+  //TODO implement this: send e-mail to the user.
 
 }
 

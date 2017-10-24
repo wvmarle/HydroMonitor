@@ -35,18 +35,17 @@ class HydroMonitorGrowlight
     
     // General functions for this module.
 #ifdef GROWLIGHT_PIN
-    void begin(HydroMonitorMySQL*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*);
 #elif defined(GROWLIGHT_PCF_PIN)
-    void begin(HydroMonitorMySQL*, PCF857x*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*, PCF857x*);
 #elif defined(GROWLIGHT_MCP_PIN)
-    void begin(HydroMonitorMySQL*, Adafruit_MCP23008*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*, Adafruit_MCP23008*);
 #endif    
-    bool checkGrowlight(int32_t);   // Switches the growlight on/off based on given lux value, 
+    void checkGrowlight();          // Switches the growlight on/off based on given lux value, 
                                     // taking time delay and on/off hours into account.
     void on(void);                  // Switches the growlight on, regardless of lux level or time of day. Disables automatic control.
     void off(void);                 // Switches the growlight off, regardless of lux level or time of day.  Disables automatic control.
     void automatic(void);           // Set grow light to automatic control.
-    bool getStatus(void);           // Gets the status of the light. Returns true if on, false if off.
     String dataHtml(void);          // Provides html code with the sensor data.
     String settingsHtml(void);
     void updateSettings(String[], String[], uint8_t);
@@ -59,7 +58,6 @@ class HydroMonitorGrowlight
 #elif defined(GROWLIGHT_MCP_PIN)
     Adafruit_MCP23008 *mcp23008;
 #endif
-    bool status;                    // Keeps track of the status of the light: true if on, false if off.
     
     // Timing related variables.
     uint32_t lowlux;                // The time (in millis()) since the brightness fell below switchBrightness.
@@ -71,6 +69,7 @@ class HydroMonitorGrowlight
     void switchLightOff(void);
     HydroMonitorCore core;
     Settings settings;
+    HydroMonitorCore::SensorData *sensorData;
     HydroMonitorMySQL *logging;
 };
 

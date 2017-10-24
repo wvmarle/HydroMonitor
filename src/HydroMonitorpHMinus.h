@@ -16,19 +16,16 @@ class HydroMonitorpHMinus {
     
     HydroMonitorpHMinus(void);
 #ifdef PHMINUS_PIN
-    void begin(HydroMonitorMySQL*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*);
 #elif defined(PHMINUS_PCF_PIN)
-    void begin(HydroMonitorMySQL*, PCF857x*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*, PCF857x*);
 #elif defined(PHMINUS_MCP_PIN)
-    void begin(HydroMonitorMySQL*, Adafruit_MCP23008*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*, Adafruit_MCP23008*);
 #endif
-    void dopH(float);         // Handle the pH dosing.
+    void dopH(void);          // Handle the pH dosing.
     String settingsHtml(void);
     void measurePump(void);
     void updateSettings(String[], String[], uint8_t);
-    void setSolutionVolume(uint16_t);
-    void setTargetpH(float);
-    void setpHMinusConcentration(float);
     
   private:
     Settings settings;
@@ -47,10 +44,8 @@ class HydroMonitorpHMinus {
     bool measuring;           // Flag that a flow measurement is going on.
     void switchPumpOn(void);  // Switch the pump on.
     void switchPumpOff(void); // Switch the pump off.
-    uint16_t solutionVolume;
-    float targetpH;
-    float concentration;
     HydroMonitorCore core;
+    HydroMonitorCore::SensorData *sensorData;
     HydroMonitorMySQL *logging;
 };
 

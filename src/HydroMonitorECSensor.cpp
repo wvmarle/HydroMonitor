@@ -10,17 +10,13 @@ static volatile uint32_t endCycle; // Used in the interrupt handler: stores the 
 HydroMonitorECSensor::HydroMonitorECSensor () { 
   calibratedSlope = 1;
   calibratedIntercept = 0;
-  EC = -1;
-  solutionVolume = 0;
-  concentration = 0;
-  targetEC = 0;
   lastWarned = millis() - WARNING_INTERVAL;
 }
 
 /*
  * Set up the sensor.
  */
-void HydroMonitorECSensor::begin (HydroMonitorMySQL *l) {
+void HydroMonitorECSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l) {
   logging = l;
   logging->writeTesting("HydroMonitorECSensor: configured EC sensor.");
   if (EC_SENSOR_EEPROM > 0)
@@ -56,29 +52,29 @@ void HydroMonitorECSensor::readCalibration() {
 /*
  * Take a measurement from the sensor.
  */
-float HydroMonitorECSensor::readSensor(float waterTemp) {
-  float ECValue;
+void HydroMonitorECSensor::readSensor() {
   uint32_t reading = takeReading();
   if (reading > 0) {
-    temperatureCorrection(&reading, waterTemp);
-    EC = calibratedSlope / (reading - calibratedIntercept);
+    temperatureCorrection(&reading);
+    sensorData->EC = calibratedSlope / (reading - calibratedIntercept);
 
     // Send warning if it's been long enough ago & EC is >30% below target.
-    if (millis() - lastWarned > WARNING_INTERVAL && EC < 0.7 * targetEC) {
+    if (millis() - lastWarned > WARNING_INTERVAL && sensorData->EC < 0.7 * sensorData->targetEC) {
       lastWarned = millis();
       char message[115] = "EC level is too low; additional fertiliser is urgently needed.\nTarget set: ";
       char buf[5];
-      snprintf(buf, 5, "%f", targetEC);
+      snprintf(buf, 5, "%f", sensorData->targetEC);
       strcat(message, buf);
       strcat(message, " mS/cm, current EC: ");
-      snprintf(buf, 5, "%f", EC);
+      snprintf(buf, 5, "%f", sensorData->EC);
       strcat(message, buf);
       strcat(message, " mS/cm.");
       logging->sendWarning(message);
     }
-    return EC;
   }
-  return -1;
+  else {
+    sensorData->EC = -1;
+  }
 }
 
 /**
@@ -91,10 +87,10 @@ float HydroMonitorECSensor::readSensor(float waterTemp) {
  * Experimenally found for this system: 3.1%/degC gives the most straight line, so this is used for temperature
  * compensation.
  */
-void HydroMonitorECSensor::temperatureCorrection(uint32_t *reading, float waterTemp) {
+void HydroMonitorECSensor::temperatureCorrection(uint32_t *reading) {
   const float ALPHA = 0.031;
-  if (waterTemp > 0) {
-    *reading = (double)*reading / (1 + ALPHA * (waterTemp - 25)); // temperature correction.
+  if (sensorData->waterTemp > 0) {
+    *reading = (double)*reading / (1 + ALPHA * (sensorData->waterTemp - 25)); // temperature correction.
   }
   return;
 }
@@ -247,18 +243,6 @@ void ICACHE_RAM_ATTR HydroMonitorECSensor::capDischarged() {
   endCycle = ESP.getCycleCount();
 }
 
-void HydroMonitorECSensor::setSolutionVolume(uint16_t v) {
-  solutionVolume = v;
-}
-
-void HydroMonitorECSensor::setFertiliserConcentration(uint16_t c) {
-  concentration = c;
-}
-
-void HydroMonitorECSensor::setTargetEC(float t) {
-  targetEC = t;
-}
-
 /*
  * The sensor settings as html.
  */
@@ -281,7 +265,7 @@ String HydroMonitorECSensor::dataHtml() {
   String html= F("<tr>\n\
     <td>Water conductivity</td>\n\
     <td>");
-  if (EC < 0) {
+  if (sensorData->EC < 0) {
     html += F("Sensor not connected.</td>\n\
   </tr>");
   }
@@ -289,26 +273,26 @@ String HydroMonitorECSensor::dataHtml() {
     String extraLine = "";
     
     // 40% off target - red.
-    if (EC > 1.4 * targetEC || EC < 0.6 * targetEC) {
+    if (sensorData->EC > 1.4 * sensorData->targetEC || sensorData->EC < 0.6 * sensorData->targetEC) {
       html += F("<span style=\"color:red\">");
-      if (EC < targetEC && concentration > 0) {
+      if (sensorData->EC < sensorData->targetEC && sensorData->fertiliserConcentration > 0) {
         extraLine = "\n\
   <tr>\n\
     <td>Amount of fertiliser to be added:</td><td>";
-        extraLine += String((int)((targetEC - EC) * 1000 * solutionVolume/concentration));
+        extraLine += String((int)((sensorData->targetEC - sensorData->EC) * 1000 * sensorData->solutionVolume/sensorData->fertiliserConcentration));
         extraLine += "ml of each A and B.</td>\n\
   </tr>";
       }
     }
     
     // 20% off target - yellow.
-    else if (EC > 1.2 * targetEC || EC < 0.8 * targetEC) {
+    else if (sensorData->EC > 1.2 * sensorData->targetEC || sensorData->EC < 0.8 * sensorData->targetEC) {
       html += F("<span style=\"color:yellow\">");
-      if (EC < targetEC && concentration > 0) {
+      if (sensorData->EC < sensorData->targetEC && sensorData->fertiliserConcentration > 0) {
         extraLine = "\n\
   <tr>\n\
     <td>Amount of fertiliser to be added:</td><td>";
-        extraLine += String((int)((targetEC - EC) * 1000 * solutionVolume/concentration));
+        extraLine += String((int)((sensorData->targetEC - sensorData->EC) * 1000 * sensorData->solutionVolume/sensorData->fertiliserConcentration));
         extraLine += "ml of each A and B.</td>\n\
   </tr>";
       }
@@ -318,7 +302,7 @@ String HydroMonitorECSensor::dataHtml() {
     else {
       html += F("<span style=\"color:green\">");
     }
-    html += String(EC);
+    html += String(sensorData->EC);
     html += F("</span> mS/cm.</td>\n\
   </tr>");
     html += extraLine;
@@ -363,7 +347,7 @@ void HydroMonitorECSensor::doCalibration(ESP8266WebServer *server, float waterTe
         if (core.isNumeric(argVal)) {
           float val = argVal.toFloat();
           uint32_t res = takeReading();  // Take the raw sensor reading.
-          temperatureCorrection (&res, waterTemp);
+          temperatureCorrection (&res);
           
           // Find the first available data point where the value can be stored.
           for (uint8_t i=0; i<DATAPOINTS; i++) {

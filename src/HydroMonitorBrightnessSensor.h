@@ -30,8 +30,8 @@ class HydroMonitorBrightnessSensor
     };
 
     HydroMonitorBrightnessSensor(void);
-    void begin(HydroMonitorMySQL*);
-    int32_t readSensor(void);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*);
+    void readSensor(void);
     String dataHtml(void);            // Provides html code with the sensor data.
     String settingsHtml(void);
     void updateSettings(String[], String[], uint8_t);
@@ -44,9 +44,9 @@ class HydroMonitorBrightnessSensor
 #elif defined(USE_TSL2591)
     TSL2591 tsl;
 #endif
-    int32_t brightness;
     bool brightnessSensorPresent;
     HydroMonitorMySQL *logging;
+    HydroMonitorCore::SensorData *sensorData;
 };
 
 #endif

@@ -1,5 +1,6 @@
 #include <HydroMonitorGrowlight.h>
 
+#ifdef USE_GROWLIGHT
 /**
  * Manages the growing light switch.
  */
@@ -9,9 +10,8 @@ HydroMonitorGrowlight::HydroMonitorGrowlight (void) {
 /*
  * Set up the module - growing light connected to the PCF8574 port expander.
  */
-#ifdef USE_GROWLIGHT
 #ifdef GROWLIGHT_PCF_PIN        
-void HydroMonitorGrowlight::begin(HydroMonitorMySQL *l, PCF857x *pcf) {
+void HydroMonitorGrowlight::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, PCF857x *pcf) {
   pcf8574 = pcf;
   l->writeTesting("HydroMonitorGrowlight: set up growing light on PCF port expander.");
 
@@ -19,7 +19,7 @@ void HydroMonitorGrowlight::begin(HydroMonitorMySQL *l, PCF857x *pcf) {
  * Set up the module - growing light connected to the MCP23008 port expander.
  */
 #elif defined(GROWLIGHT_MCP_PIN)
-void HydroMonitorGrowlight::begin(HydroMonitorMySQL *l, Adafruit_MCP23008 *mcp) {
+void HydroMonitorGrowlight::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, Adafruit_MCP23008 *mcp) {
   mcp23008 = mcp;
   mcp23008->pinMode(GROWLIGHT_MCP_PIN, OUTPUT);
   l->writeTesting("HydroMonitorGrowlight: set up growing light on MCP port expander.");
@@ -28,11 +28,12 @@ void HydroMonitorGrowlight::begin(HydroMonitorMySQL *l, Adafruit_MCP23008 *mcp) 
  * Set up the module - growing light connected to a GPIO pin.
  */
 #elif defined(GROWLIGHT_PIN)
-void HydroMonitorGrowlight::begin(HydroMonitorMySQL *l) {
+void HydroMonitorGrowlight::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l) {
   pinMode(GROWLIGHT_PIN, OUTPUT);
   l->writeTesting("HydroMonitorGrowlight: set up growing light.");
 #endif
 
+  sensorData = sd;
   logging = l;
   switchLightOff();
   if (GROWLIGHT_EEPROM > 0)
@@ -55,20 +56,19 @@ void HydroMonitorGrowlight::begin(HydroMonitorMySQL *l) {
   highlux = 0;
   return;
 }
-#endif
 
 /*
  * Handles the status of the growlight.
  * Check whether we may be on; if so check whether brightness is above or below the
  * theshold and if long enough switch the growlight off or on as needed.
  */
-bool HydroMonitorGrowlight::checkGrowlight(int32_t brightness) {
+void HydroMonitorGrowlight::checkGrowlight() {
 
   // Don't do anything to the growlight if in manual control mode.
-  if (manualMode) return status;
+  if (manualMode) return;
   
   // Don't bother doing anything if the brightness sensor isn't working.
-  if (brightness < 1) return status;
+  if (sensorData->brightness < 1) return;
 
   bool allowOn = false; // Will be set to true if at the current time the light is allowed on.
 
@@ -89,16 +89,17 @@ bool HydroMonitorGrowlight::checkGrowlight(int32_t brightness) {
       else allowOn = true;
     }
   }
-  
+
+#ifdef USE_BRIGHTNESS_SENSOR
   // Make sure that the light is off when it's not allowed on, and we're done.
   if (!allowOn) {
     switchLightOff();
-    return status;
+    return;
   }
 
   // Check whether the brightness is higher or lower than the threshold for longer
   // than the set delay time, and switch the light off or on accordingly.
-  if (brightness < settings.switchBrightness) {
+  if (sensorData->brightness < settings.switchBrightness) {
     highlux = 0; // Low light situation.
     
     // If it's been lowlux long enough, switch it on. Otherwise set the starting
@@ -118,7 +119,16 @@ bool HydroMonitorGrowlight::checkGrowlight(int32_t brightness) {
     }
     else highlux = now();
   }
-  return status;
+#else
+  // If no brightness sensor connected, use the time to switch the light on and off.
+  if (allowOn) {
+    switchLightOn();
+  }
+  else {
+    switchLightOff();
+  }
+#endif
+  return;
 }
 
 /*
@@ -152,50 +162,43 @@ void HydroMonitorGrowlight::automatic(void) {
  */
 #ifdef GROWLIGHT_PIN
 void HydroMonitorGrowlight::switchLightOn() {
-  status = true;
+  sensorData->growlight = true;
   digitalWrite(GROWLIGHT_PIN, HIGH);
   return;
 }
 
 void HydroMonitorGrowlight::switchLightOff() {
-  status = false;
+  sensorData->growlight = false;
   digitalWrite(GROWLIGHT_PIN, LOW);
   return;
 }
 #endif
 #ifdef GROWLIGHT_PCF_PIN
 void HydroMonitorGrowlight::switchLightOn() {
-  status = true;
+  sensorData->growlight = true;
   pcf8574->write(GROWLIGHT_PCF_PIN, LOW);
   return;
 }
 
 void HydroMonitorGrowlight::switchLightOff() {
-  status = false;
+  sensorData->growlight = false;
   pcf8574->write(GROWLIGHT_PCF_PIN, HIGH);
   return;
 }
 #endif
 #ifdef GROWLIGHT_MCP_PIN
 void HydroMonitorGrowlight::switchLightOn() {
-  status = true;
+  sensorData->growlight = true;
   mcp23008->digitalWrite(GROWLIGHT_MCP_PIN, HIGH);
   return;
 }
 
 void HydroMonitorGrowlight::switchLightOff() {
-  status = false;
+  sensorData->growlight = false;
   mcp23008->digitalWrite(GROWLIGHT_MCP_PIN, LOW);
   return;
 }
 #endif
-
-/*
- * Gets the current power on (true) or off (false) status of the growlight.
- */
-bool HydroMonitorGrowlight::getStatus() {
-  return status;
-}
 
 /*
  * The sensor settings as html.
@@ -261,7 +264,7 @@ String HydroMonitorGrowlight::settingsHtml(void) {
             Current growlight status: ");
   if (manualMode) html += F("manual, ");
   else html += F("automatic, ");
-  if (getStatus()) html += F("on.");
+  if (sensorData->growlight) html += F("on.");
   else html += F("off.");
   html += F("\n\
           </td><td>\n\
@@ -280,7 +283,7 @@ String HydroMonitorGrowlight::dataHtml(void) {
   String html = F("<tr>\n\
     <td>Growing light</td>\n\
     <td>");
-  if (status) html += F("On.</td>\n\
+  if (sensorData->growlight) html += F("On.</td>\n\
   </tr>");
   else html += F("Off</td>\n\
   </tr>");
@@ -348,3 +351,5 @@ void HydroMonitorGrowlight::updateSettings(String keys[], String values[], uint8
   EEPROM.commit();
   return;
 }
+#endif
+

@@ -20,22 +20,19 @@ class HydroMonitorFertiliser {
 
     // The various functions to set up and control this module.
 #ifdef FERTILISER_A_PIN
-    void begin(HydroMonitorMySQL*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*);
 #endif
 #ifdef FERTILISER_A_PCF_PIN
-    void begin(HydroMonitorMySQL*, PCF857x*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*, PCF857x*);
 #endif
 #ifdef FERTILISER_A_MCP_PIN
-    void begin(HydroMonitorMySQL*, Adafruit_MCP23008*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*, Adafruit_MCP23008*);
 #endif
-    void doFertiliser(float);
+    void doFertiliser(void);
     String settingsHtml(void);    
     void measurePumpA(void);
     void measurePumpB(void);
     void updateSettings(String[], String[], uint8_t);
-    void setTargetEC(float);
-    void setSolutionVolume(uint16_t);
-    void setFertiliserConcentration(uint16_t);
     
   private:
   
@@ -49,12 +46,7 @@ class HydroMonitorFertiliser {
     Adafruit_MCP23008 *mcp23008;
 #endif
 
-    // Various parameters.
-    float targetEC;
-    uint16_t solutionVolume;
-    uint16_t concentration;
-    
-    // Timing related variabls.
+    // Timing related variables.
     uint32_t startTime;
     uint32_t runBTime;
     uint32_t runATime;
@@ -76,8 +68,8 @@ class HydroMonitorFertiliser {
 
     Settings settings;
     HydroMonitorCore core;
+    HydroMonitorCore::SensorData *sensorData;
     HydroMonitorMySQL *logging; 
-
 };
 
 #endif

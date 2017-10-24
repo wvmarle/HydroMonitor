@@ -11,7 +11,7 @@ HydroMonitorBrightnessSensor::HydroMonitorBrightnessSensor () {
 /*
  * Configure the sensor.
  */
-void HydroMonitorBrightnessSensor::begin(HydroMonitorMySQL *l) {
+void HydroMonitorBrightnessSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l) {
   
 #if defined(USE_TSL2561)
   tsl = TSL2561(TSL2561_ADDR_FLOAT, 12345);
@@ -22,6 +22,7 @@ void HydroMonitorBrightnessSensor::begin(HydroMonitorMySQL *l) {
 #endif
   
   logging = l;
+  sensorData = sd;
   if (BRIGHTNESS_SENSOR_EEPROM > 0)
     EEPROM.get(BRIGHTNESS_SENSOR_EEPROM, settings);
   return;
@@ -32,8 +33,7 @@ void HydroMonitorBrightnessSensor::begin(HydroMonitorMySQL *l) {
  *
  * Returns the current lux value, or -1 if sensor is not found.
  */
-int32_t HydroMonitorBrightnessSensor::readSensor() { 
-  brightness = -1;
+void HydroMonitorBrightnessSensor::readSensor() { 
   
   // Check whether the sensor is connected and initialised.
   if (!brightnessSensorPresent) {
@@ -54,16 +54,16 @@ int32_t HydroMonitorBrightnessSensor::readSensor() {
 #if defined(USE_TSL2561)
     sensors_event_t event; 
     tsl.getEvent(&event);       // Get sensor event.
-    brightness = event.light;   // Read the current value from the sensor.
-    if (brightness == 65536) {  // The sensor is either saturated or has been disconnected.
+    sensorData->brightness = event.light;   // Read the current value from the sensor.
+    if (sensorData->brightness == 65536) {  // The sensor is either saturated or has been disconnected.
       brightnessSensorPresent = tsl.begin(); // this should return false if not connected.
-      if (!brightnessSensorPresent) brightness = -1;
+      if (!brightnessSensorPresent) sensorData->brightness = -1;
     }
 #elif defined(USE_TSL2591)
-    brightness = tsl.readSensor();
+    sensorData->brightness = tsl.readSensor();
 #endif
   }
-  return brightness;
+  return;
 }
 
 /*
@@ -73,10 +73,10 @@ String HydroMonitorBrightnessSensor::settingsHtml() {
   String html = F("<tr>\n\
     <td>Brightness</td>\n\
     <td>");
-  if (brightness < 0) html += F("Sensor not connected.</td>\n\
+  if (sensorData->brightness < 0) html += F("Sensor not connected.</td>\n\
   </tr>");
   else {
-    html += String(brightness);
+    html += String(sensorData->brightness);
     html += F(" lux.</td>\n\
   </tr>");
   }
@@ -90,10 +90,10 @@ String HydroMonitorBrightnessSensor::dataHtml() {
   String html = F("<tr>\n\
     <td>Brightness</td>\n\
     <td>");
-  if (brightness < 0) html += F("Sensor not connected.</td>\n\
+  if (sensorData->brightness < 0) html += F("Sensor not connected.</td>\n\
   </tr>");
   else {
-    html += String(brightness);
+    html += String(sensorData->brightness);
     html += F(" lux.</td>\n\
   </tr>");
   }

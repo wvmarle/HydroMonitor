@@ -1,41 +1,40 @@
 #include <HydroMonitorPressureSensor.h>
 
+#ifdef USE_PRESSURE_SENSOR
 /*
  * Measure the atmospheric pressure.
  * The BMP180 sensor connects over I2C.
  */
  
 HydroMonitorPressureSensor::HydroMonitorPressureSensor () {
-  pressure = -1;
 }
 
-#ifdef USE_PRESSURE_SENSOR
 #ifdef USE_BMP180
-void HydroMonitorPressureSensor::begin(HydroMonitorMySQL *l, BMP180 *bmp) {
+void HydroMonitorPressureSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, BMP180 *bmp) {
   bmp180 = bmp;
   l->writeTesting("HydroMonitorPressureSensor: configured a BMP180 sensor.");
 
 #elif defined(USE_BMP280) || defined(USE_BME280)
-void HydroMonitorPressureSensor::begin(HydroMonitorMySQL *l, BME280 *bmp) {
+void HydroMonitorPressureSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, BME280 *bmp) {
   bmp280 = bmp;
   l->writeTesting("HydroMonitorPressureSensor: configured a BME280 sensor.");
 #endif
 
+  sensorData = sd;
   logging = l;
   if (PRESSURE_SENSOR_EEPROM > 0)
     EEPROM.get(PRESSURE_SENSOR_EEPROM, settings);
   return;
 }
-#endif
 
-float HydroMonitorPressureSensor::readSensor() {
+void HydroMonitorPressureSensor::readSensor() {
 #ifdef USE_BMP180
   float T = bmp180->readTemperature();
-  pressure = bmp180->readPressure(T);
+  sensorData->pressure = bmp180->readPressure(T);
 #elif defined(USE_BMP280) || defined(USE_BME280)
-  pressure = bmp280->readPressure();
+  sensorData->pressure = bmp280->readPressure();
 #endif
-  return pressure;
+  return;
 }
 
 /*
@@ -61,10 +60,10 @@ String HydroMonitorPressureSensor::dataHtml() {
   String html = F("<tr>\n\
     <td>Atmospheric pressure</td>\n\
     <td>");
-  if (pressure < 0) html += F("Sensor not connected.</td>\n\
+  if (sensorData->pressure < 0) html += F("Sensor not connected.</td>\n\
   </tr>");
   else {
-    html += String(pressure);
+    html += String(sensorData->pressure);
     html += F(" mbar.</td>\n\
   </tr>");
   }
@@ -87,3 +86,5 @@ void HydroMonitorPressureSensor::updateSettings(String keys[], String values[], 
   EEPROM.commit();
   return;
 }
+#endif
+

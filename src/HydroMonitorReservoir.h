@@ -25,17 +25,13 @@ class HydroMonitorReservoir {
     
     HydroMonitorReservoir(void);     // The constructor.
 #ifdef RESERVOIR_MCP_PIN
-    void begin(HydroMonitorMySQL*, Adafruit_MCP23008*, HydroMonitorWaterLevelSensor*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*, Adafruit_MCP23008*, HydroMonitorWaterLevelSensor*);
 #elif defined(RESERVOIR_PCF_PIN)
-    void begin(HydroMonitorMySQL*, PCF857x*, HydroMonitorWaterLevelSensor*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*, PCF857x*, HydroMonitorWaterLevelSensor*);
 #elif defined(RESERVOIR_PIN)
-    void begin(HydroMonitorMySQL*, HydroMonitorWaterLevelSensor*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*, HydroMonitorWaterLevelSensor*);
 #endif
-#ifdef USE_MS5837
-    void doReservoir(float, float);
-#elif defined(USE_HCSR04)
-    void doReservoir(float);
-#endif
+    void doReservoir(void);
     String settingsHtml(void);
     void updateSettings(String[], String[], uint8_t);
     
@@ -55,6 +51,7 @@ class HydroMonitorReservoir {
 
     Settings settings;
     HydroMonitorCore core;
+    HydroMonitorCore::SensorData *sensorData;
     HydroMonitorMySQL *logging;
 };
 #endif

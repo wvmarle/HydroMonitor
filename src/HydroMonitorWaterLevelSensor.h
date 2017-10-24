@@ -37,22 +37,21 @@ class HydroMonitorWaterLevelSensor
 
     HydroMonitorWaterLevelSensor(void);
 #ifdef USE_HCSR04
-    float readSensor(void);
 #ifdef TRIG_PIN
-    void begin(HydroMonitorMySQL*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*);
 #elif defined(TRIG_MCP_PIN)
-    void begin(HydroMonitorMySQL*, Adafruit_MCP23008*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*, Adafruit_MCP23008*);
 #elif defined(TRIG_PCF_PIN)
-    void begin(HydroMonitorMySQL*, PCF857x*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*, PCF857x*);
 #endif
 #endif
 
 #ifdef USE_MS5837
-    void begin(HydroMonitorMySQL*, MS5837*);
-    float readSensor(float);
-    void setZero(float);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*, MS5837*);
+    void setZero(void);
 #endif
 
+    void readSensor(void);
     String dataHtml(void);            // Provides html code with the sensor data.
     String settingsHtml(void);
     void updateSettings(String[], String[], uint8_t);
@@ -70,10 +69,10 @@ class HydroMonitorWaterLevelSensor
 #elif defined(TRIG_MCP_PIN)
     Adafruit_MCP23008 *mcp23008;
 #endif
-    float fill;
     uint32_t lastWarned;
     HydroMonitorCore core;
     Settings settings;
+    HydroMonitorCore::SensorData *sensorData;
     HydroMonitorMySQL *logging;
     void warning(void);
 };

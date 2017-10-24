@@ -25,9 +25,9 @@ class HydroMonitorMySQL
     };
 
     HydroMonitorMySQL();
-    void begin();
+    void begin(HydroMonitorCore::SensorData*);
 
-    void sendData(HydroMonitorCore::SensorData);
+    void sendData(void);
     String settingsHtml(void);
     void updateSettings(String[], String[], uint8_t);
     void checkCredentials(void);
@@ -46,6 +46,7 @@ class HydroMonitorMySQL
 	  void doQuery(char*);
     
     Settings settings;
+    HydroMonitorCore::SensorData *sensorData;
     HydroMonitorCore core;
 };
 #endif

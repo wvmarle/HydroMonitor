@@ -29,11 +29,11 @@ class HydroMonitorPressureSensor
 
     HydroMonitorPressureSensor(void);
 #ifdef USE_BMP180
-    void begin(HydroMonitorMySQL*, BMP180*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*, BMP180*);
 #elif defined(USE_BMP280) || defined(USE_BME280)
-    void begin(HydroMonitorMySQL*, BME280*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*, BME280*);
 #endif
-    float readSensor(void);
+    void readSensor(void);
     String dataHtml(void);            // Provides html code with the sensor data.
     String settingsHtml(void);
     void updateSettings(String[], String[], uint8_t);
@@ -45,9 +45,9 @@ class HydroMonitorPressureSensor
 #elif defined(USE_BMP280) || defined(USE_BME280)
     BME280 *bmp280;
 #endif
-    float pressure;
     Settings settings;
     HydroMonitorCore core;
+    HydroMonitorCore::SensorData *sensorData;
     HydroMonitorMySQL *logging;
 };
 
