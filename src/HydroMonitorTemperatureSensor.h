@@ -10,6 +10,8 @@
 
 #include <HydroMonitorCore.h>
 #include <HydroMonitorMySQL.h>
+#include <HydroMonitorSensorBase.h>
+
 #ifdef DHT22_PIN
 #include <DHT22.h>
 #endif
@@ -19,7 +21,7 @@
 #include <BME280.h>
 #endif
 
-class HydroMonitorTemperatureSensor
+class HydroMonitorTemperatureSensor: public HydroMonitorSensorBase
 {
   public:
 

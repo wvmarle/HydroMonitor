@@ -14,6 +14,7 @@
 #include <HydroMonitorCore.h>
 #include <HydroMonitorBoardDefinitions.h>
 #include <HydroMonitorMySQL.h>
+#include <HydroMonitorSensorBase.h>
 
 #if defined(TRIG_PCF_PIN)
 #include <pcf8574_esp.h>    // Needed for the optional port extender on TrigPin.
@@ -26,7 +27,7 @@
 
 #define HCSR04SAMPLES 5 // Oversampling rate - power of 2 (5 = 32x, 6=64x).
 
-class HydroMonitorWaterLevelSensor
+class HydroMonitorWaterLevelSensor: public HydroMonitorSensorBase
 {
   public:
   

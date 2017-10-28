@@ -6,9 +6,10 @@
 #include <HydroMonitorCore.h>
 #include <ESP8266WebServer.h>
 #include <HydroMonitorMySQL.h>
+#include <HydroMonitorSensorBase.h>
 
-class HydroMonitorpHSensor {
-
+class HydroMonitorpHSensor: public HydroMonitorSensorBase 
+{
   public:
   
     struct Settings {

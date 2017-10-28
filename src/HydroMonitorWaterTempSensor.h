@@ -14,6 +14,7 @@
 #include <HydroMonitorCore.h>
 #include <HydroMonitorMySQL.h>
 #include <Arduino.h>
+#include <HydroMonitorSensorBase.h>
 
 #ifdef NTC_ADS_PIN
 #include <Adafruit_ADS1015.h>
@@ -27,7 +28,7 @@
 #define NTCSAMPLES 4
 #endif
 
-class HydroMonitorWaterTempSensor
+class HydroMonitorWaterTempSensor: public HydroMonitorSensorBase
 {
   public:
 

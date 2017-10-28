@@ -62,6 +62,7 @@ void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData *sd, Hydro
 #endif
 
   logging = l;
+  sensorData = sd;
   if (WATERLEVEL_SENSOR_EEPROM > 0)
     EEPROM.get(WATERLEVEL_SENSOR_EEPROM, settings);
     
@@ -169,7 +170,7 @@ void HydroMonitorWaterLevelSensor::readSensor() {
   
   // Get the water level in cm.
   // The reservoir is considered "full" at 95% of the total level.
-  float reading = ms5837->readWaterLevel(sensorData->pressure) + settings.zeroLevel;
+  float reading = ms5837->readWaterLevel(sensorData->pressure) - settings.zeroLevel;
   if (reading > 0 && reading < settings.reservoirHeight)
     sensorData->waterLevel = 100.0 * reading / (0.95 * settings.reservoirHeight);
     

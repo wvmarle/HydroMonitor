@@ -12,6 +12,7 @@
 #include <HydroMonitorBoardDefinitions.h>
 #include <HydroMonitorCore.h>
 #include <HydroMonitorMySQL.h>
+#include <HydroMonitorSensorBase.h>
 
 #include <EEPROM.h>
 #include <Arduino.h>
@@ -22,7 +23,8 @@
 #include <TSL2591.h>
 #endif
 
-class HydroMonitorBrightnessSensor
+class HydroMonitorBrightnessSensor: public HydroMonitorSensorBase
+
 {
   public:
     

@@ -16,18 +16,13 @@ HydroMonitorNetwork::HydroMonitorNetwork() {
 /*
  * Start the network services.
  */
-void HydroMonitorNetwork::begin(HydroMonitorMySQL *l, ESP8266WebServer *srv) {
+void HydroMonitorNetwork::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, ESP8266WebServer *srv) {
+  sensorData = sd;
   logging = l;
   logging->writeTesting("HydroMonitorNetwork: configured networking services.");  
   if (NETWORK_EEPROM > 0)
     EEPROM.get(NETWORK_EEPROM, settings);
     
-  // Default settings, to be applied if no sensible value for timezone is
-  // found in the EEPROM data.
-  if (settings.timezone < -12 || settings.timezone > 14) {
-    logging->writeTesting("HydroMonitorNetwork: applying default settings.");  
-    settings.timezone = 0;
-  }
   server = srv;
   return;
 }
@@ -93,7 +88,7 @@ bool HydroMonitorNetwork::ntpCheck() {
   // Check whether a response has been received.
   if (doNtpUpdateCheck()) {
     udp.stop();
-    setTime(epoch + settings.timezone * 60 * 60);
+    setTime(epoch + sensorData->timezone * 60 * 60);
     logging->writeTesting("HydroMonitorNetwork: successfully received time over NTP.");
     return false;
   }
@@ -181,7 +176,9 @@ String HydroMonitorNetwork::createHtmlPage(String body, bool refresh) {
   html += F("   <title>City Hydroponics - grow your own, in the city! - HydroMonitor output</title>\n\
 </head>\n\
 <body>\n\
-  <img src=\"https://www.cityhydroponics.hk/tmp/logo_banner.jpg\" alt=\"City Hydroponics\">\n\
+  <a href=\"/\">\n\
+    <img src=\"https://www.cityhydroponics.hk/tmp/logo_banner.jpg\" alt=\"City Hydroponics\">\n\
+  </a>\n\
   <h1>HydroMonitor - monitor your hydroponic system data</h1>\n\
   <p></p>\n");
   html += body;
@@ -193,32 +190,12 @@ String HydroMonitorNetwork::createHtmlPage(String body, bool refresh) {
  * The settings as HTML.
  */
 String HydroMonitorNetwork::settingsHtml() {
-  String html;
-  html = F("\
-      <tr>\n\
-        <th colspan=\"2\">Networking settings.</th>\n\
-      </tr><tr>\n\
-        <td>Time zone:</td>\n\
-        <td><input type=\"text\" name=\"network_timezone\" value=\"");
-  html += String(settings.timezone);
-  html += F("\"></td>\n\
-      </tr>");
-  return html;
+  return "";
 }
 
 /*
  * Update the settings.
  */
 void HydroMonitorNetwork::updateSettings(String keys[], String values[], uint8_t nArgs) {
-  for (uint8_t i=0; i<nArgs; i++) {
-    if (keys[i] == F("network_timezone")) {
-      if (core.isNumeric(values[i])) {
-        int8_t val = values[i].toInt();
-        if (val >= -12 && val <= 14) settings.timezone = val;
-      }
-    }
-  }
-  EEPROM.put(NETWORK_EEPROM, settings);
-  EEPROM.commit();
   return;
 }

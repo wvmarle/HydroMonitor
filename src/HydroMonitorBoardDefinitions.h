@@ -36,7 +36,7 @@
 #define MYSQL_PASSWORD "board_126_password"    // MySQL password. It's a string, so needs the quote marks.
 
 // How to do the logging.
-#define LOG_SERIAL  // Send log info to the Serial console.
+//#define LOG_SERIAL  // Send log info to the Serial console.
 #define LOG_MYSQL   // Send log info to the MySQL database.
 
 // Set the log level.
@@ -113,7 +113,7 @@
 #define USE_GROWLIGHT
 #define GROWLIGHT_PIN 15          // 5V power switch for the growlight.
 
-#define USE_WATERTEMP_SENSOR
+#define USE_WATERTEMPERATURE_SENSOR
 #define USE_NTC
 #define NTC_PIN 0                 // The thermistor - analog 0.
 
@@ -131,7 +131,7 @@
  */
 #ifdef board_129
 
-#define USE_SERIAL
+//#define USE_SERIAL
 
 // Connecteded direct to the ESP8266.
 #define USE_WATERLEVEL_SENSOR

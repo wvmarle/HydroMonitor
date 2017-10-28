@@ -17,6 +17,7 @@ HydroMonitorTemperatureSensor::HydroMonitorTemperatureSensor () {
 void HydroMonitorTemperatureSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, DHT22 *dht) {
   dht22 = dht;
   logging = l;
+  sensorData = sd;
   logging->writeTesting("HydroMonitorTemperatureSensor: configured DHT22 sensor.");
   if (TEMPERATURE_SENSOR_EEPROM > 0)
     EEPROM.get(TEMPERATURE_SENSOR_EEPROM, settings);

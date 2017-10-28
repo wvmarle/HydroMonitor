@@ -34,7 +34,6 @@ class HydroMonitorNetwork
   public:
 
     struct Settings {
-      int8_t timezone;
     };
 
     struct Request {
@@ -44,7 +43,7 @@ class HydroMonitorNetwork
     };
 
     HydroMonitorNetwork(void);
-    void begin(HydroMonitorMySQL*, ESP8266WebServer*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*, ESP8266WebServer*);
 
     void ntpUpdateInit();
     bool ntpCheck();

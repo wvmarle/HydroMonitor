@@ -28,6 +28,7 @@ void HydroMonitorWaterTempSensor::begin(HydroMonitorCore::SensorData *sd, HydroM
   ms5837 = ms;
   l->writeTesting("HydroMonitorWaterTempSensor: configured MS5837 sensor.");
 #endif
+  sensorData = sd;
   logging = l;
   if (WATERTEMPERATURE_SENSOR_EEPROM > 0)
     EEPROM.get(WATERTEMPERATURE_SENSOR_EEPROM, settings);
@@ -56,7 +57,7 @@ void HydroMonitorWaterTempSensor::readSensor() {
     return;
   }
 
-  for (uint8_t i = 0; (1 << NTCSAMPLES) - 1; i++) {
+  for (uint8_t i = 0; i < (1 << NTCSAMPLES) - 1; i++) {
 #ifdef NTC_ADS_PIN
     reading += ads1115->readADC_SingleEnded(NTC_ADS_PIN);
 #elif defined(NTC_PIN)
@@ -65,6 +66,7 @@ void HydroMonitorWaterTempSensor::readSensor() {
     delay(10);
     yield();
   }
+  
   //Calculate temperature using the Beta Factor equation
   sensorData->waterTemp = 1.0 / (log (NTCSERIESRESISTOR / ((ADCMAX / (reading >> NTCSAMPLES) - 1) * THERMISTORNOMINAL)) / BCOEFFICIENT + 1.0 / (TEMPERATURENOMINAL + 273.15)) - 273.15;
 #elif defined(USE_MS5837)

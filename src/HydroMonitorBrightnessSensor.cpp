@@ -70,17 +70,7 @@ void HydroMonitorBrightnessSensor::readSensor() {
  * The html code for the sensor specific settings.
  */
 String HydroMonitorBrightnessSensor::settingsHtml() {
-  String html = F("<tr>\n\
-    <td>Brightness</td>\n\
-    <td>");
-  if (sensorData->brightness < 0) html += F("Sensor not connected.</td>\n\
-  </tr>");
-  else {
-    html += String(sensorData->brightness);
-    html += F(" lux.</td>\n\
-  </tr>");
-  }
-  return html;
+  return "";
 }
 
 /*

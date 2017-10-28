@@ -20,10 +20,11 @@
 #include <ESP8266WebServer.h>
 #include <Time.h>
 #include <HydroMonitorMySQL.h>
+#include <HydroMonitorSensorBase.h>
 
 #define ECSAMPLES 6                   // Take 2^ECSAMPLES = 64 samples to produce a single reading.
 
-class HydroMonitorECSensor
+class HydroMonitorECSensor: public HydroMonitorSensorBase
 {
   public:
     struct Settings {

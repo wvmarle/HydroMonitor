@@ -15,6 +15,7 @@ class HydroMonitorGrowingParameters {
       float targetEC;
       float pHMinusConcentration;
       float targetpH;
+      float timezone;
     };
 
     // Constructor.    

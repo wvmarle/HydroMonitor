@@ -11,6 +11,7 @@
 
 #include <HydroMonitorCore.h>
 #include <HydroMonitorMySQL.h>
+#include <HydroMonitorSensorBase.h>
 
 #ifdef USE_BMP180
 #include <BMP180.h>
@@ -19,7 +20,7 @@
 #endif
 
 // library interface description
-class HydroMonitorPressureSensor
+class HydroMonitorPressureSensor: public HydroMonitorSensorBase
 {
   public:
 

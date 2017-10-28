@@ -83,10 +83,9 @@ struct Datapoint {
 #define PHMINUS_EEPROM 96             // 4 bytes
 #define RESERVOIR_EEPROM 126          // 2 bytes
 #define MYSQL_EEPROM 144              // 164 bytes
-#define NETWORK_EEPROM 408            // 17 bytes
+#define NETWORK_EEPROM 408            // 0 bytes
 #define OTA_PASSWORD_EEPROM 555       // 32 bytes
-#define GROWING_PARAMETERS_EEPROM 587 // 80 bytes
-// Next set of settings: 683.
+#define GROWING_PARAMETERS_EEPROM 587 // 84 bytes
     
 // Calibration data is stored in the top part of the EEPROM.
 #define EC_SENSOR_CALIBRATION_EEPROM EEPROM_SIZE - 1 * ((sizeof(Datapoint) + 2) * DATAPOINTS)   // Calibration data of EC sensor.
@@ -146,6 +145,7 @@ class HydroMonitorCore
       uint16_t solutionVolume;
 #endif
       char systemName[64];
+      float timezone;
     };
     
     // Various utility functions used by other modules.

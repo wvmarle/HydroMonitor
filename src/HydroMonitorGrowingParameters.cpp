@@ -1,8 +1,6 @@
 #include <HydroMonitorGrowingParameters.h>
 
 /*
- * Add fertiliser to the system as needed, based on the current EC value.
- *
  * Constructor.
  */
 HydroMonitorGrowingParameters::HydroMonitorGrowingParameters() {
@@ -29,6 +27,7 @@ void HydroMonitorGrowingParameters::begin(HydroMonitorCore::SensorData *sd, Hydr
     EEPROM.put(FERTILISER_EEPROM, settings);
     EEPROM.commit();
   }
+  updateSensorData();
   logging->writeInfo("HydroMonitorGrowingParameters: set up all the growing parameters.");
   return;
 }
@@ -56,7 +55,9 @@ String HydroMonitorGrowingParameters::settingsHtml() {
         <td><input type=\"number\" step=\"0.1\" name=\"parameter_targetec\" value=\"");
   html += String(settings.targetEC);
   html += F("\"> mS/cm</td>\n\
-      </tr><tr>\n\
+      </tr>");
+#ifdef USE_PH_SENSOR
+  html += F("<tr>\n\
         <td>pH minus concentration factor:</td>\n\
         <td><input type=\"number\" step=\"0.001\" name=\"parameter_phminus_concentration\" value=\"");
   html += String(settings.pHMinusConcentration);
@@ -66,12 +67,19 @@ String HydroMonitorGrowingParameters::settingsHtml() {
         <td><input type=\"number\" step=\"0.1\" name=\"parameter_targetph\" value=\"");
   html += String(settings.targetpH);
   html += F("\"></td>\n\
-      </tr><tr>\n\
+      </tr>");
+#endif
+  html += F("<tr>\n\
         <td>Name of this system:</td>\n\
         <td><input type=\"text\" name=\"parameter_systemname\" value=\"");
   html += String(settings.systemName);
   html += F("\"></td>\n\
-      </tr>\n");
+      </tr><tr>\n\
+        <td>Time zone:</td>\n\
+        <td><input type=\"text\" name=\"parameter_timezone\" value=\"");
+  html += String(settings.timezone);
+  html += F("\"></td>\n\
+      </tr>");
   logging->writeDebug("HydroMonitorGrowingParameters: created settings html.");
   
   return html;
@@ -119,14 +127,23 @@ void HydroMonitorGrowingParameters::updateSettings(String keys[], String values[
         strcpy(settings.systemName, buf);
       }
     }
-    
+    else if (keys[i] == F("parameter_timezone")) {
+      if (core.isNumeric(values[i])) {
+        float val = values[i].toFloat();
+        if (val >= 0 && val <= 25) settings.timezone = val;
+      }
+    }
   }
   EEPROM.put(FERTILISER_EEPROM, settings);
   EEPROM.commit();
+  updateSensorData();
   logging->writeTrace("HydroMonitorGrowingParameters: updated settings.");
   return;
 }
 
+/*
+  Copy all the parameters into the sensorData struct, so it can be shared by other modules.
+ */
 void HydroMonitorGrowingParameters::updateSensorData() {
 
 #ifdef USE_EC_SENSOR
@@ -140,6 +157,7 @@ void HydroMonitorGrowingParameters::updateSensorData() {
 #if defined(USE_EC_SENSOR) || defined(USE_PH_SENSOR)
   sensorData->solutionVolume = settings.solutionVolume;
 #endif
-  strcpy(settings.systemName, "HydroMonitor");
+  strcpy(sensorData->systemName, settings.systemName);
+  sensorData->timezone = settings.timezone;
 }
 

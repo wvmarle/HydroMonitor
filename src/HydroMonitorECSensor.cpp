@@ -19,6 +19,7 @@ HydroMonitorECSensor::HydroMonitorECSensor () {
 void HydroMonitorECSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l) {
   logging = l;
   logging->writeTesting("HydroMonitorECSensor: configured EC sensor.");
+  sensorData = sd;
   if (EC_SENSOR_EEPROM > 0)
     EEPROM.get(EC_SENSOR_EEPROM, settings);
   
@@ -285,9 +286,9 @@ String HydroMonitorECSensor::dataHtml() {
       }
     }
     
-    // 20% off target - yellow.
+    // 20% off target - orange.
     else if (sensorData->EC > 1.2 * sensorData->targetEC || sensorData->EC < 0.8 * sensorData->targetEC) {
-      html += F("<span style=\"color:yellow\">");
+      html += F("<span style=\"color:orange\">");
       if (sensorData->EC < sensorData->targetEC && sensorData->fertiliserConcentration > 0) {
         extraLine = "\n\
   <tr>\n\
