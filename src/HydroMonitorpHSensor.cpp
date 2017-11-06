@@ -15,7 +15,11 @@ HydroMonitorpHSensor::HydroMonitorpHSensor() {
  * This function is for when the connector is connected to an external ADS1115 ADC.
  */
 #ifdef PH_SENSOR_ADS_PIN
+#ifdef PH_POS_MCP_PIN
+void HydroMonitorpHSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, Adafruit_ADS1115 *ads, Adafruit_MCP23008 *mcp) {
+#else
 void HydroMonitorpHSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, Adafruit_ADS1115 *ads) {
+#endif
   ads1115 = ads;
   l->writeTesting("HydroMonitorpHSensor: configured pH sensor on ADS port expander.");
 
@@ -24,11 +28,39 @@ void HydroMonitorpHSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorM
  * This function is for when the connector is connected to the internal ADC.
  */
 #elif defined(PH_SENSOR_PIN)
+#ifdef PH_POS_MCP_PIN
+void HydroMonitorpHSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, Adafruit_MCP23008 *mcp) {
+#else
 void HydroMonitorpHSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l) {
+#endif
   l->writeTesting("HydroMonitorpHSensor: configured pH sensor.");
 #endif
   sensorData = sd;
   logging = l;
+  
+/*
+  // Set the power supply pins (if we use them) to INPUT to switch off the sensor.
+#ifdef PH_POS_MCP_PIN
+  mcp23008 = mcp;
+  mcp23008->pinMode(PH_POS_MCP_PIN, INPUT);
+  mcp23008->pinMode(PH_GND_MCP_PIN, INPUT);
+#elif defined (PH_POS_PIN)
+  pinMode(PH_POS_PIN, INPUT);
+  pinMode(PH_GND_PIN, INPUT);
+#endif
+*/
+#ifdef PH_POS_MCP_PIN
+  mcp23008 = mcp;
+  mcp23008->pinMode(PH_POS_MCP_PIN, OUTPUT);
+  mcp23008->pinMode(PH_GND_MCP_PIN, OUTPUT);
+  mcp23008->digitalWrite(PH_POS_MCP_PIN, HIGH);
+  mcp23008->digitalWrite(PH_GND_MCP_PIN, LOW);
+#elif defined (PH_POS_PIN)
+  pinMode(PH_POS_PIN, OUTPUT);
+  pinMode(PH_GND_PIN, OUTPUT);
+  digitalWrite(PH_POS_PIN, HIGH);
+  digitalWrite(PH_GND_PIN, LOW);
+#endif
   if (PH_SENSOR_EEPROM > 0)
     EEPROM.get(PH_SENSOR_EEPROM, settings);
   
@@ -47,11 +79,16 @@ void HydroMonitorpHSensor::readCalibration() {
   
   // Make sure only enabled datapoints are considered when calculating slope and intercept.
   uint32_t enabledReading[DATAPOINTS];
+  float enabledValue[DATAPOINTS];
+  uint8_t nPoints = 0;
   for (int i=0; i<DATAPOINTS; i++) {
-    if (enabled[i]) enabledReading[i] = reading[i];
-    else enabledReading[i] = 0;
+    if (enabled[i]) {
+      enabledReading[i] = reading[i];
+      enabledValue[i] = value[i];
+      nPoints++;
+    }
   }
-  core.leastSquares(value, enabledReading, DATAPOINTS, &calibratedSlope, &calibratedIntercept);
+  core.leastSquares(enabledValue, enabledReading, nPoints, &calibratedSlope, &calibratedIntercept);
   return;
 }
 
@@ -85,17 +122,42 @@ void HydroMonitorpHSensor::readSensor() {
 uint32_t HydroMonitorpHSensor::takeReading() {
   uint32_t reading;
   //TODO detect whether a sensor is present based on reading.
-  
+
+  // If we have power pins defined: switch on the sensor by activating
+  // these pins.
+#ifdef PH_POS_MCP_PIN
+  mcp23008->pinMode(PH_POS_MCP_PIN, OUTPUT);
+  mcp23008->pinMode(PH_GND_MCP_PIN, OUTPUT);
+  mcp23008->digitalWrite(PH_POS_MCP_PIN, HIGH);
+  mcp23008->digitalWrite(PH_GND_MCP_PIN, LOW);
+  delay(200);
+#elif defined (PH_POS_PIN)
+  pinMode(PH_POS_PIN, OUTPUT);
+  pinMode(PH_GND_PIN, OUTPUT);
+  digitalWrite(PH_POS_PIN, HIGH);
+  digitalWrite(PH_GND_PIN, LOW);
+  delay(1000);
+#endif
+ 
 #ifdef PH_SENSOR_PIN
-  
   // The analogRead of the built-in ADC is multipled by 32 to end up with a greater range,
   // and to have a higher precision after the temperature correction.
   reading = 32 * analogRead(PH_SENSOR_PIN);
-
 #elif defined(PH_SENSOR_ADS_PIN)
   reading = ads1115->readADC_SingleEnded(PH_SENSOR_ADS_PIN);
 #endif
 
+/*
+  // If we have power pins defined: disconnect the sensor by setting the
+  // pins to INPUT mode.
+#ifdef PH_POS_MCP_PIN
+  mcp23008->pinMode(PH_POS_MCP_PIN, INPUT);
+  mcp23008->pinMode(PH_GND_MCP_PIN, INPUT);
+#elif defined (PH_POS_PIN)
+  pinMode(PH_POS_PIN, INPUT);
+  pinMode(PH_GND_PIN, INPUT);
+#endif
+*/
   //TODO temperature correction.
   return reading;
 }

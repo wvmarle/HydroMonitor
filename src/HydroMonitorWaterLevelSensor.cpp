@@ -71,6 +71,8 @@ void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData *sd, Hydro
     l->writeTesting("HydroMonitorWaterLevelSensor: applying default settings.");
     settings.reservoirHeight = 30;
     settings.zeroLevel = 0;
+    EEPROM.put(WATERLEVEL_SENSOR_EEPROM, settings);
+    EEPROM.commit();
   }
   return;
 }

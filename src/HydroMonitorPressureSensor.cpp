@@ -24,6 +24,12 @@ void HydroMonitorPressureSensor::begin(HydroMonitorCore::SensorData *sd, HydroMo
   logging = l;
   if (PRESSURE_SENSOR_EEPROM > 0)
     EEPROM.get(PRESSURE_SENSOR_EEPROM, settings);
+    
+  if (settings.altitude < -200 || settings.altitude > 100000) {
+    settings.altitude = 0;
+    EEPROM.put(PRESSURE_SENSOR_EEPROM, settings);
+    EEPROM.commit();
+  }
   return;
 }
 

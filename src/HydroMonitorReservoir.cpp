@@ -43,6 +43,8 @@ void HydroMonitorReservoir::begin(HydroMonitorCore::SensorData *sd, HydroMonitor
     logging->writeTesting("HydroMonitorReservoir: applying default settings.");
     settings.maxFill = 90;
     settings.minFill = 70;
+    EEPROM.put(RESERVOIR_EEPROM, settings);
+    EEPROM.commit();
   }
   return;
 }

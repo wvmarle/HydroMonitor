@@ -4,6 +4,8 @@
 float CYCLETIME = 12.5;  // The time (in nanoseconds) of each processor cycle - 12.5 ns at 80 MHz.
 static volatile uint32_t endCycle; // Used in the interrupt handler: stores the cycle number when the sampling is complete.
 
+const float ALPHA = 0.031;
+
 /*
  * Measure the EC value.
  */
@@ -40,13 +42,18 @@ void HydroMonitorECSensor::readCalibration() {
   
   // The discharge time is linear with 1/EC, so we have to take the reciprocals.
   float oneOverECValue[DATAPOINTS];
+  uint32_t usedReadings[DATAPOINTS];
+  uint8_t nPoints = 0;
   for (int i=0; i<DATAPOINTS; i++) {
-    if (ECValue[i] > 0 && enabled[i]) oneOverECValue[i] = 1.0/ECValue[i];
-    else oneOverECValue[i] = 0;
+    if (ECValue[i] > 0 && enabled[i]) {
+      oneOverECValue[nPoints] = 1.0/ECValue[i];
+      usedReadings[nPoints] = reading[i];
+      nPoints++;
+    }      
   }
 
   // Calculate the slope.
-  core.leastSquares(oneOverECValue, reading, DATAPOINTS, &calibratedSlope, &calibratedIntercept);
+  core.leastSquares(oneOverECValue, usedReadings, nPoints, &calibratedSlope, &calibratedIntercept);
   return;
 }
 
@@ -89,7 +96,6 @@ void HydroMonitorECSensor::readSensor() {
  * compensation.
  */
 void HydroMonitorECSensor::temperatureCorrection(uint32_t *reading) {
-  const float ALPHA = 0.031;
   if (sensorData->waterTemp > 0) {
     *reading = (double)*reading / (1 + ALPHA * (sensorData->waterTemp - 25)); // temperature correction.
   }
@@ -260,7 +266,7 @@ String HydroMonitorECSensor::settingsHtml() {
 }
 
 /*
- * The sensor settings as html.
+ * The sensor data as html.
  */
 String HydroMonitorECSensor::dataHtml() {  
   String html= F("<tr>\n\

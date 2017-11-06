@@ -11,7 +11,7 @@
 #include <Arduino.h>
 #include <EEPROM.h>
 #include <Time.h>
-#include <HydroMonitorBoardDefinitions.h> // Needed for the definitiosn to be available.
+#include <HydroMonitorBoardDefinitions.h> // Needed for the definitions to be available.
 
 // The log functionality: various log levels.
 #define LOG_TRACE 4               // everything - very noisy. 
@@ -44,7 +44,7 @@
 
 // EEPROM settings.
 #define EEPROM_SIZE 4096          // Maximum size allowed on the ESP8266: one Flash sector.
-#define EEPROM_SETTINGS 0         // Store the settings at byte 0.
+//#define EEPROM_SETTINGS 0         // Store the settings at byte 0.
 
 // Maximum datapoints for calibration.
 #define DATAPOINTS (uint8_t)10
@@ -73,6 +73,7 @@ struct Datapoint {
 #define PH_SENSOR_EEPROM 0
 #define DO_SENSOR_EEPROM 0
 #define ORP_SENSOR_EEPROM 0
+#define NETWORK_EEPROM 0
 
 // Byte 0 is simply skipped; starting at byte 1.
 // Every sensor gets 16 bytes for future use; MySQL 100 bytes extra; network 50 bytes extra.
@@ -83,9 +84,8 @@ struct Datapoint {
 #define PHMINUS_EEPROM 96             // 4 bytes
 #define RESERVOIR_EEPROM 126          // 2 bytes
 #define MYSQL_EEPROM 144              // 164 bytes
-#define NETWORK_EEPROM 408            // 0 bytes
-#define OTA_PASSWORD_EEPROM 555       // 32 bytes
-#define GROWING_PARAMETERS_EEPROM 587 // 84 bytes
+#define OTA_PASSWORD_EEPROM 408       // 32 bytes
+#define GROWING_PARAMETERS_EEPROM 456 // 84 bytes
     
 // Calibration data is stored in the top part of the EEPROM.
 #define EC_SENSOR_CALIBRATION_EEPROM EEPROM_SIZE - 1 * ((sizeof(Datapoint) + 2) * DATAPOINTS)   // Calibration data of EC sensor.

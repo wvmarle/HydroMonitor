@@ -39,22 +39,15 @@ bool HydroMonitorCore::isNumeric(String str) {
  */
 void HydroMonitorCore::leastSquares(float *x, uint32_t *y, uint8_t n, float *slope, float *intercept) {
   double xsum = 0, x2sum = 0, ysum = 0, xysum = 0;  // Variables for sums/sigma of xi, yi, xi^2, xiyi.
-  uint8_t npoints = 0; // The number of actual datapoints found.
+  if (n < 2) return;          // At least two points needed for a line.
   for (uint8_t i=0; i<n; i++) {
-    
-    // Ignore datapoints with zero values for the reading, as those are unset points.
-    // y values are always a positive integers (such as a time for the EC, or an ADC reading).
-    if (y[i] > 0) {
-      xsum=xsum+x[i];           // Calculate sigma(xi).
-      ysum=ysum+y[i];           // Calculate sigma(yi).
-      x2sum=x2sum+pow(x[i],2);  // Calculate sigma(x^2i).
-      xysum=xysum+x[i]*y[i];    // Calculate sigma(xi*yi).
-      npoints++;                // Valid datapoint.
-    }
+    xsum=xsum+x[i];           // Calculate sigma(xi).
+    ysum=ysum+y[i];           // Calculate sigma(yi).
+    x2sum=x2sum+x[i]*x[i];    // Calculate sigma(xi^2).
+    xysum=xysum+x[i]*y[i];    // Calculate sigma(xi*yi).
   }
-  if (npoints < 2) return;      // At least two points needed for a line.
-  *slope = (npoints * xysum - xsum * ysum) / (npoints * x2sum - xsum * xsum);   //calculate slope
-  *intercept = (x2sum * ysum - xsum * xysum) / (x2sum * npoints - xsum * xsum); //calculate intercept
+  *slope = (n * xysum - xsum * ysum) / (n * x2sum - xsum * xsum);     //calculate slope
+  *intercept = (x2sum * ysum - xsum * xysum) / (x2sum * n - xsum * xsum); //calculate intercept
 }
 
 /*

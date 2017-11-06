@@ -13,7 +13,7 @@ void HydroMonitorGrowingParameters::begin(HydroMonitorCore::SensorData *sd, Hydr
   sensorData = sd;
   logging = l;
   if (GROWING_PARAMETERS_EEPROM > 0)
-    EEPROM.get(FERTILISER_EEPROM, settings);
+    EEPROM.get(GROWING_PARAMETERS_EEPROM, settings);
 
   // Check whether any settings have been set, if not apply defaults.
   if (settings.fertiliserConcentration > 500) {
@@ -24,7 +24,8 @@ void HydroMonitorGrowingParameters::begin(HydroMonitorCore::SensorData *sd, Hydr
     settings.pHMinusConcentration = 0.05;  // ml of pH-minus per litre of solution for a 1 pH point change.
     settings.targetpH = 0;
     strcpy(settings.systemName, "HydroMonitor");
-    EEPROM.put(FERTILISER_EEPROM, settings);
+    settings.timezone = 0;
+    EEPROM.put(GROWING_PARAMETERS_EEPROM, settings);
     EEPROM.commit();
   }
   updateSensorData();
@@ -52,7 +53,7 @@ String HydroMonitorGrowingParameters::settingsHtml() {
   html += F("\"></td>\n\
       </tr><tr>\n\
         <td>Target EC of the solution:</td>\n\
-        <td><input type=\"number\" step=\"0.1\" name=\"parameter_targetec\" value=\"");
+        <td><input type=\"number\" step=\"0.01\" name=\"parameter_targetec\" value=\"");
   html += String(settings.targetEC);
   html += F("\"> mS/cm</td>\n\
       </tr>");
@@ -64,7 +65,7 @@ String HydroMonitorGrowingParameters::settingsHtml() {
   html += F("\"> ml/litre for 1 pH point change</td>\n\
       </tr><tr>\n\
         <td>Target pH of the solution:</td>\n\
-        <td><input type=\"number\" step=\"0.1\" name=\"parameter_targetph\" value=\"");
+        <td><input type=\"number\" step=\"0.01\" name=\"parameter_targetph\" value=\"");
   html += String(settings.targetpH);
   html += F("\"></td>\n\
       </tr>");
@@ -99,7 +100,7 @@ void HydroMonitorGrowingParameters::updateSettings(String keys[], String values[
     else if (keys[i] == F("parameter_fertiliser_concentration")) {
       if (core.isNumeric(values[i])) {
         uint16_t val = values[i].toInt();
-        if (val >= 0 && val < 500) settings.fertiliserConcentration = val;
+        if (val >= 0 && val <= 500) settings.fertiliserConcentration = val;
       }
     }
     else if (keys[i] == F("parameter_targetec")) {
@@ -110,7 +111,7 @@ void HydroMonitorGrowingParameters::updateSettings(String keys[], String values[
     }
     else if (keys[i] == F("parameter_phminus_concentration")) {
       if (core.isNumeric(values[i])) {
-        uint16_t val = values[i].toInt();
+        float val = values[i].toFloat();
         if (val >= 0 && val <= 10) settings.pHMinusConcentration = val;
       }
     }
@@ -134,7 +135,7 @@ void HydroMonitorGrowingParameters::updateSettings(String keys[], String values[
       }
     }
   }
-  EEPROM.put(FERTILISER_EEPROM, settings);
+  EEPROM.put(GROWING_PARAMETERS_EEPROM, settings);
   EEPROM.commit();
   updateSensorData();
   logging->writeTrace("HydroMonitorGrowingParameters: updated settings.");

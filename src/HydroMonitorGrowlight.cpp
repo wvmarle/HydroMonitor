@@ -50,6 +50,8 @@ void HydroMonitorGrowlight::begin(HydroMonitorCore::SensorData *sd, HydroMonitor
     settings.offHour = 18;               // Hour and 
     settings.offMinute = 00;             // minute of the day after which the growlight must be switched off.
     settings.daylightAutomatic = false;  // Whether to attempt to follow daylight automatically.
+    EEPROM.put(GROWLIGHT_EEPROM, settings);
+    EEPROM.commit();
   }
 
   lowlux = -settings.switchDelay; // Pretend it's been dark all along.

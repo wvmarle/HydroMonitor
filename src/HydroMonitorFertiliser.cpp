@@ -55,12 +55,16 @@ void HydroMonitorFertiliser::begin(HydroMonitorCore::SensorData *sd, HydroMonito
   if (FERTILISER_EEPROM > 0)
     EEPROM.get(FERTILISER_EEPROM, settings);
 
+/*
   // Check whether any settings have been set, if not apply defaults.
   if (settings.pumpASpeed < 1 || settings.pumpASpeed > 500) {
     logging->writeDebug("HydroMonitorFertiliser: applying default settings.");
     settings.pumpASpeed = 200;
     settings.pumpBSpeed = 200;
+    EEPROM.put(FERTILISER_EEPROM, settings);
+    EEPROM.commit();
   }
+*/
   logging->writeInfo("HydroMonitorFertiliser: set up fertiliser pumps.");
   return;
 }
@@ -334,12 +338,14 @@ void HydroMonitorFertiliser::updateSettings(String keys[], String values[], uint
         float val = values[i].toFloat();
         if (val > 0 && val < 2001) settings.pumpASpeed = val;
       }
+      else settings.pumpASpeed = 11;
     }
     if (keys[i] == F("fertiliser_pumpbspeed")) {
       if (core.isNumeric(values[i])) {
         float val = values[i].toFloat();
         if (val > 0 && val < 2001) settings.pumpBSpeed = val;
       }
+      else settings.pumpBSpeed = 22;
     }
   }
   EEPROM.put(FERTILISER_EEPROM, settings);

@@ -72,7 +72,8 @@
 #define OUT_5V_1_PIN 4
 #define USE_WIFILED
 #define WIFILED_MCP_PIN 5
-#define CARD_DETECT_MCP_PIN 7
+#define PH_POS_MCP_PIN 6
+#define PH_GND_MCP_PIN 7
 
 // Other hardware.
 #define USE_PRESSURE_SENSOR
@@ -165,10 +166,10 @@
 #define USE_FERTILISER
 #define FERTILISER_B_PCF_PIN 4    // peristaltic pump for fertiliser.
 #define FERTILISER_A_PCF_PIN 5    // peristaltic pump for fertiliser.
-#define USE_PHMINUS
-#define PHMINUS_PCF_PIN 6        // peristaltic pump for pH-minus.
-#define USE_GROWLIGHT
-#define GROWLIGHT_PCF_PIN 7       // Growing light.
+//#define USE_PHMINUS
+//#define PHMINUS_PCF_PIN 6        // peristaltic pump for pH-minus.
+//#define USE_GROWLIGHT
+//#define GROWLIGHT_PCF_PIN 7       // Growing light.
 
 // Connected to the ADS1115.
 #define USE_ADS1115
@@ -179,7 +180,7 @@
 //#define USE_DO_SENSOR
 //#define DO_SENSOR_ADS_PIN 2   // Dissolved oxygen sensor.
 
-// pH sensor causes crash?!
+// pH sensor
 #define USE_PH_SENSOR
 #define PH_SENSOR_ADS_PIN 3   // pH sensor
 

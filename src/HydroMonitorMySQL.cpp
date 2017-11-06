@@ -30,6 +30,8 @@ void HydroMonitorMySQL::begin(HydroMonitorCore::SensorData *sd) {
     strlcpy(settings.mySQLHostname, MYSQL_HOSTNAME, 100);
     strlcpy(settings.mySQLUsername, MYSQL_USERNAME, 32);
     strlcpy(settings.mySQLPassword, MYSQL_PASSWORD, 32);
+    EEPROM.put(MYSQL_EEPROM, settings);
+    EEPROM.commit();
   }
   checkCredentials();
   writeTesting("HydroMonitorMySQL: configured MySQL connection.");
@@ -47,13 +49,6 @@ void HydroMonitorMySQL::sendData() {
 
   if (loginValid == false)
     return;
-    
-//  WiFiClient client;
-//  MySQL_Connection conn((Client *)&client);
-//  IPAddress server_ip;
-//  WiFi.hostByName(settings.mySQLHostname, server_ip);
-//  if (conn.connect(server_ip, 3306, settings.mySQLUsername, settings.mySQLPassword) == false) 
-//    return; // Don't try to continue if we can't connect to the server successfully.
     
   // Prepare the data string to be sent to the server.
   char query[290] = "";
@@ -131,13 +126,6 @@ void HydroMonitorMySQL::sendData() {
   writeDebug("HydroMonitorMySQL: Sending out data.");
   writeDebug(query);
   doQuery(query);
-  
-//  MySQL_Cursor *cur_mem = new MySQL_Cursor(&conn);  // This one works pefectly.
-//  cur_mem->execute(query);
-//  delete cur_mem; 
-
-//  conn.close();
-//  client.stop();
   return;
 }
 
@@ -271,13 +259,22 @@ void HydroMonitorMySQL::updateSettings(String keys[], String values[], uint8_t n
   char password[32];
   for (uint8_t i=0; i<nArgs; i++) {
     if (keys[i] == "network_mysql_hostname") {
-      if (keys[i].length() < 100) values[i].toCharArray(hostname, 100);
+      if (keys[i].length() <= 100) {
+        values[i].toCharArray(hostname, 100);
+        hostname[keys[i].length()] = '\0';
+      }
     }
     if (keys[i] == "network_mysql_username") {
-      if (keys[i].length() < 32) values[i].toCharArray(username, 32);
+      if (keys[i].length() <= 32) {
+        values[i].toCharArray(username, 32);
+        hostname[keys[i].length()] = '\0';
+      }
     }
     if (keys[i] == "network_mysql_password") {
-      if (keys[i].length() < 32) values[i].toCharArray(password, 32);
+      if (keys[i].length() <= 32) {
+        values[i].toCharArray(password, 32);
+        hostname[keys[i].length()] = '\0';
+      }
     }
   }
 
@@ -291,9 +288,9 @@ void HydroMonitorMySQL::updateSettings(String keys[], String values[], uint8_t n
   // credentials are correct.
   checkCredentials(hostname, username, password);
   if (loginValid) {
-    strlcpy(settings.mySQLHostname, hostname, 100);
-    strlcpy(settings.mySQLUsername, username, 32); 
-    strlcpy(settings.mySQLPassword, password, 32);
+    strlcpy(settings.mySQLHostname, hostname, sizeof(hostname));
+    strlcpy(settings.mySQLUsername, username, sizeof(username));
+    strlcpy(settings.mySQLPassword, password, sizeof(password));
   }
   EEPROM.put(MYSQL_EEPROM, settings);
   EEPROM.commit();

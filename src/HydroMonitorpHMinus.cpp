@@ -53,8 +53,10 @@ void HydroMonitorpHMinus::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMy
   
   // Check whether any settings have been set, if not apply defaults.
   if (settings.pumpSpeed < 0 || settings.pumpSpeed > 500) {
-      l->writeTesting("HydroMonitorpHMinus: applying default settings.");
-      settings.pumpSpeed = 100;      // ml per minute.
+    l->writeTesting("HydroMonitorpHMinus: applying default settings.");
+    settings.pumpSpeed = 100;      // ml per minute.
+    EEPROM.put(PHMINUS_EEPROM, settings);
+    EEPROM.commit();
   }
   return;
 }

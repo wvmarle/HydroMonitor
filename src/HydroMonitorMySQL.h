@@ -19,9 +19,9 @@ class HydroMonitorMySQL
   public:
 
     struct Settings {
-      char mySQLHostname[100];
-      char mySQLUsername[32];
-      char mySQLPassword[32];
+      char mySQLHostname[101];
+      char mySQLUsername[33];
+      char mySQLPassword[33];
     };
 
     HydroMonitorMySQL();
