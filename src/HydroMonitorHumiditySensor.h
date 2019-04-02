@@ -9,7 +9,7 @@
 #define HYDROMONITORHUMIDITYSENSOR_h
 
 #include <HydroMonitorCore.h>
-#include <HydroMonitorMySQL.h>
+#include <HydroMonitorLogging.h>
 #include <HydroMonitorSensorBase.h>
 
 #ifdef DHT22_PIN
@@ -31,10 +31,10 @@ class HydroMonitorHumiditySensor: public HydroMonitorSensorBase
     
     // The functions required for all sensors.    
 #ifdef DHT22_PIN
-    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL *logging, DHT22*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging *logging, DHT22*);
 #endif
 #ifdef USE_BME280
-    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL *logging, BME280*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging *logging, BME280*);
 #endif
     void readSensor(void);
     float calcDewpoint(float, float);
@@ -54,7 +54,7 @@ class HydroMonitorHumiditySensor: public HydroMonitorSensorBase
     HydroMonitorCore core;
     Settings settings;
     HydroMonitorCore::SensorData *sensorData;
-    HydroMonitorMySQL *logging;
+    HydroMonitorLogging *logging;
 };
 #endif
 

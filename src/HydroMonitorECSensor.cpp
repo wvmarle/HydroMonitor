@@ -4,7 +4,15 @@
 float CYCLETIME = 12.5;  // The time (in nanoseconds) of each processor cycle - 12.5 ns at 80 MHz.
 static volatile uint32_t endCycle; // Used in the interrupt handler: stores the cycle number when the sampling is complete.
 
-const float ALPHA = 0.031;
+/**
+ * As ion activity changes drastically with the temperature of the liquid, we have to correct for that. The 
+ * temperature correction is a simple "linear correction", typical value for this ALPHA factor is 2%/degC.
+ * 
+ * Source and more information:
+ * https://www.analyticexpert.com/2011/03/temperature-compensation-algorithms-for-conductivity/
+ */
+//const float ALPHA = 0.031;
+const float ALPHA = 0.02;
 
 /*
  * Measure the EC value.
@@ -18,13 +26,16 @@ HydroMonitorECSensor::HydroMonitorECSensor () {
 /*
  * Set up the sensor.
  */
-void HydroMonitorECSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l) {
+void HydroMonitorECSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l) {
   logging = l;
-  logging->writeTesting("HydroMonitorECSensor: configured EC sensor.");
+  logging->writeTrace(F("HydroMonitorECSensor: configured EC sensor."));
   sensorData = sd;
   if (EC_SENSOR_EEPROM > 0)
+#ifdef USE_24LC256_EEPROM
+    sensorData->EEPROM->get(EC_SENSOR_EEPROM, settings);
+#else
     EEPROM.get(EC_SENSOR_EEPROM, settings);
-  
+#endif
   // Get the calibration data.
   readCalibration();
   return;
@@ -38,16 +49,20 @@ void HydroMonitorECSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorM
 void HydroMonitorECSensor::readCalibration() {
 
   // Retrieve the calibration data, and calculate the slope and intercept.
-  core.readCalibration(EC_SENSOR_CALIBRATION_EEPROM, timestamp, ECValue, reading, enabled);
-  
+#ifdef USE_24LC256_EEPROM
+  sensorData->EEPROM->get(EC_SENSOR_CALIBRATION_EEPROM, calibrationData); // Read the data.
+#else
+  EEPROM.get(EC_SENSOR_CALIBRATION_EEPROM, calibrationData); // Read the data.
+#endif
+
   // The discharge time is linear with 1/EC, so we have to take the reciprocals.
   float oneOverECValue[DATAPOINTS];
   uint32_t usedReadings[DATAPOINTS];
   uint8_t nPoints = 0;
   for (int i=0; i<DATAPOINTS; i++) {
-    if (ECValue[i] > 0 && enabled[i]) {
-      oneOverECValue[nPoints] = 1.0/ECValue[i];
-      usedReadings[nPoints] = reading[i];
+    if (calibrationData[i].value > 0 && calibrationData[i].enabled) {
+      oneOverECValue[nPoints] = 1.0/calibrationData[i].value;
+      usedReadings[nPoints] = calibrationData[i].reading;
       nPoints++;
     }      
   }
@@ -61,56 +76,57 @@ void HydroMonitorECSensor::readCalibration() {
  * Take a measurement from the sensor.
  */
 void HydroMonitorECSensor::readSensor() {
+#ifdef USE_ISOLATED_SENSOR_BOARD
+  uint32_t reading = sensorData->ecReading;
+#else
   uint32_t reading = takeReading();
+#endif
   if (reading > 0) {
-    temperatureCorrection(&reading);
     sensorData->EC = calibratedSlope / (reading - calibratedIntercept);
+    if (sensorData->waterTemp > 0) {
+      sensorData->EC = (double)sensorData->EC / (1 + ALPHA * (sensorData->waterTemp - 25)); // temperature correction: measured to nominal.
+    }
 
     // Send warning if it's been long enough ago & EC is >30% below target.
     if (millis() - lastWarned > WARNING_INTERVAL && sensorData->EC < 0.7 * sensorData->targetEC) {
       lastWarned = millis();
-      char message[115] = "EC level is too low; additional fertiliser is urgently needed.\nTarget set: ";
-      char buf[5];
-      snprintf(buf, 5, "%f", sensorData->targetEC);
-      strcat(message, buf);
-      strcat(message, " mS/cm, current EC: ");
-      snprintf(buf, 5, "%f", sensorData->EC);
-      strcat(message, buf);
-      strcat(message, " mS/cm.");
-      logging->sendWarning(message);
+      char message[120];
+      sprintf_P(message, PSTR("HydroMonitorECSensor: EC level is too low; additional fertiliser is urgently needed.\n"
+                              "Target set: %2.2f mS/cm, current EC: %2.2f mS/cm."), 
+                              sensorData->targetEC, sensorData->EC);
+      logging->writeWarning(message);
+    }
+
+    // Send warning if EC is exceptionally high.
+    if (millis() - lastWarned > WARNING_INTERVAL && sensorData->EC > 5) {
+      lastWarned = millis();
+      char message[120];
+      sprintf_P(message, PSTR("HydroMonitorECSensor: EC level is exceptionally high: %2.2f mS/cm."), 
+                              sensorData->EC);
+      logging->writeWarning(message);
     }
   }
   else {
     sensorData->EC = -1;
+    if (millis() - lastWarned > WARNING_INTERVAL) {
+      lastWarned = millis();
+      char message[120];
+      sprintf_P(message, PSTR("HydroMonitorECSensor: EC sensor not detected."));
+      logging->writeWarning(message);
+    }
   }
 }
 
-/**
- * As ion activity changes drastically with the temperature of the liquid, we have to correct for that. The 
- * temperature correction is a simple "linear correction", typical value for this ALPHA factor is 2%/degC.
- * 
- * Source and more information:
- * https://www.analyticexpert.com/2011/03/temperature-compensation-algorithms-for-conductivity/
- *
- * Experimenally found for this system: 3.1%/degC gives the most straight line, so this is used for temperature
- * compensation.
- */
-void HydroMonitorECSensor::temperatureCorrection(uint32_t *reading) {
-  if (sensorData->waterTemp > 0) {
-    *reading = (double)*reading / (1 + ALPHA * (sensorData->waterTemp - 25)); // temperature correction.
-  }
-  return;
-}
 
 /**
  * capacitor based TDS measurement
- * pin CapPos ---------------------------+------------+
+ * pin CapPos ----- 330 ohm resistor ----+------------+
  *                                       |            |
  *                                10-47 nF cap     EC probe or
  *                                       |         resistor (for simulation)
- * pin CapNeg ----- 330 ohm resistor ----+            |
+ * pin CapNeg ---------------------------+            |
  *                                                    |
- * pin ECpin -----------------------------------------+
+ * pin ECpin ------ 330 ohm resistor -----------------+
  * 
  * So, what's going on here?
  * EC - electic conductivity - is the reciprocal of the resistance of the liquid.
@@ -158,18 +174,19 @@ void HydroMonitorECSensor::temperatureCorrection(uint32_t *reading) {
  * 
  */
 
+#ifndef USE_ISOLATED_SENSOR_BOARD
 uint32_t HydroMonitorECSensor::takeReading() {
 
-  uint32_t dischargeCycles = 0;             // The number of clock cycles it took for the capacitor to discharge.
-  uint32_t totalCycles = 0;                 // The cumulative number of clock cycles over all measurements.
-  uint32_t chargeDelay = 80;                // The time (in microseconds) given to the cap to fully charge/discharge - at least 5x RC.
-                                            // 330 Ohm x 47 nF = 15.5 microseconds RC constant.
-  uint32_t timeout = 2000;                  // discharge timeout in microseconds - if not triggered within this time, the EC probe 
-                                            // is probably not connected or not in the liquid.
-                                            // 2000 us makes for a 250 Hz signal; well below the minimum 1000 Hz needed for accurate readings.
-  uint32_t startCycle;                      // The clock cycle count at which the measurement starts.
-  uint32_t startTime;                       // The micros() count at which the measurement starts (for timeout).
-  for (uint16_t i=0; i< (1 << ECSAMPLES); i++) {  // take 2^ECSAMPLES measurements of the EC.
+  uint32_t dischargeCycles = 0;                             // The number of clock cycles it took for the capacitor to discharge.
+  uint32_t totalCycles = 0;                                 // The cumulative number of clock cycles over all measurements.
+  uint32_t chargeDelay = 80;                                // The time (in microseconds) given to the cap to fully charge/discharge - at least 5x RC.
+                                                            // 330 Ohm x 47 nF = 15.5 microseconds RC constant.
+  uint32_t timeout = 2000;                                  // discharge timeout in microseconds - if not triggered within this time, the EC probe 
+                                                            // is probably not connected or not in the liquid.
+                                                            // 2000 us makes for a 250 Hz signal; well below the minimum 1000 Hz needed for accurate readings.
+  uint32_t startCycle;                                      // The clock cycle count at which the measurement starts.
+  uint32_t startTime;                                       // The micros() count at which the measurement starts (for timeout).
+  for (uint16_t i=0; i< (1 << ECSAMPLES); i++) {            // take 2^ECSAMPLES measurements of the EC.
 
     // Stage 1: fully charge capacitor for positive cycle.
     // CapPos output high, CapNeg output low, ECpin input.
@@ -178,7 +195,7 @@ uint32_t HydroMonitorECSensor::takeReading() {
     pinMode (CAPNEG_PIN, OUTPUT);
     digitalWrite(CAPPOS_PIN, HIGH);
     digitalWrite(CAPNEG_PIN, LOW);
-    delayMicroseconds(chargeDelay);         // allow the cap to charge fully.
+    delayMicroseconds(chargeDelay);                         // allow the cap to charge fully.
 
     // Stage 2: positive side discharge; measure time it takes.
     // CapPos input, CapNeg output low, ECpin output low.
@@ -249,148 +266,191 @@ uint32_t HydroMonitorECSensor::takeReading() {
 void ICACHE_RAM_ATTR HydroMonitorECSensor::capDischarged() {
   endCycle = ESP.getCycleCount();
 }
+#endif
 
 /*
  * The sensor settings as html.
  */
-String HydroMonitorECSensor::settingsHtml() {
-  String html;
-  html = F("\
+void HydroMonitorECSensor::settingsHtml(ESP8266WebServer *server) {
+  server->sendContent_P(PSTR("\
       <tr>\n\
         <th colspan=\"2\">EC Sensor settings.</th>\n\
       </tr><tr>\n\
         <td></td>\n\
         <td><input type=\"submit\" formaction=\"/calibrate_ec\" formmethod=\"post\" name=\"calibrate\" value=\"Calibrate now\"></td>\n\
-      </tr>");
-  return html;
+      </tr>"));
+}
+
+/*
+ * The sensor settings as JSON.
+ */
+bool HydroMonitorECSensor::settingsJSON(ESP8266WebServer *server) {
+  return false; // None.
 }
 
 /*
  * The sensor data as html.
  */
-String HydroMonitorECSensor::dataHtml() {  
-  String html= F("<tr>\n\
+void HydroMonitorECSensor::dataHtml(ESP8266WebServer *server) {
+  char buff[10];
+  server->sendContent_P(PSTR("<tr>\n\
     <td>Water conductivity</td>\n\
-    <td>");
+    <td>"));
   if (sensorData->EC < 0) {
-    html += F("Sensor not connected.</td>\n\
-  </tr>");
+    server->sendContent_P(PSTR("Sensor not connected.</td>\n\
+  </tr>"));
   }
   else {
-    String extraLine = "";
-    
-    // 40% off target - red.
-    if (sensorData->EC > 1.4 * sensorData->targetEC || sensorData->EC < 0.6 * sensorData->targetEC) {
-      html += F("<span style=\"color:red\">");
-      if (sensorData->EC < sensorData->targetEC && sensorData->fertiliserConcentration > 0) {
-        extraLine = "\n\
-  <tr>\n\
-    <td>Amount of fertiliser to be added:</td><td>";
-        extraLine += String((int)((sensorData->targetEC - sensorData->EC) * 1000 * sensorData->solutionVolume/sensorData->fertiliserConcentration));
-        extraLine += "ml of each A and B.</td>\n\
-  </tr>";
+    if (sensorData->targetEC > 0) {                         // A target is set - colour accordingly.
+      if (sensorData->EC > 1.4 * sensorData->targetEC || sensorData->EC < 0.6 * sensorData->targetEC) {
+        server->sendContent_P(PSTR("<span style=\"color:red\">")); // 40% off target - red.
+      }
+      else if (sensorData->EC > 1.2 * sensorData->targetEC || sensorData->EC < 0.8 * sensorData->targetEC) {
+        server->sendContent_P(PSTR("<span style=\"color:orange\">")); // 20% off target - orange.
+      }
+      else {
+        server->sendContent_P(PSTR("<span style=\"color:green\">")); // Within 20% of target - green.
+
       }
     }
-    
-    // 20% off target - orange.
-    else if (sensorData->EC > 1.2 * sensorData->targetEC || sensorData->EC < 0.8 * sensorData->targetEC) {
-      html += F("<span style=\"color:orange\">");
+    sprintf_P(buff, PSTR("%.2f"), sensorData->EC);
+    server->sendContent(buff);
+    server->sendContent_P(PSTR("</span> mS/cm.</td>\n\
+  </tr>"));
+    if (sensorData->EC < 0.8 * sensorData->targetEC) {      // EC low: suggest user to add fertiliser solution.
       if (sensorData->EC < sensorData->targetEC && sensorData->fertiliserConcentration > 0) {
-        extraLine = "\n\
+        server->sendContent_P(PSTR("\n\
   <tr>\n\
-    <td>Amount of fertiliser to be added:</td><td>";
-        extraLine += String((int)((sensorData->targetEC - sensorData->EC) * 1000 * sensorData->solutionVolume/sensorData->fertiliserConcentration));
-        extraLine += "ml of each A and B.</td>\n\
-  </tr>";
+    <td>Amount of fertiliser to be added:</td><td>"));
+        server->sendContent(itoa((sensorData->targetEC - sensorData->EC) * 1000 * sensorData->solutionVolume/sensorData->fertiliserConcentration, buff, 10));
+        server->sendContent_P(PSTR("ml of each A and B.</td>\n\
+  </tr>"));
       }
     }
-    
-    // Within 20% of target - green.
-    else {
-      html += F("<span style=\"color:green\">");
-    }
-    html += String(sensorData->EC);
-    html += F("</span> mS/cm.</td>\n\
-  </tr>");
-    html += extraLine;
   }
-  return html;
 }
 
 /*
  * Get a list of past calibrations in html format.
  */
-String HydroMonitorECSensor::getCalibrationHtml() {
-  return core.calibrationHtml("EC Sensor", "/calibrate_ec_action", timestamp, ECValue, reading, enabled);
+void HydroMonitorECSensor::getCalibrationHtml(ESP8266WebServer *server) {
+  core.calibrationHtml(server, "EC Sensor", "/calibrate_ec_action", calibrationData);
 }
 
 /*
  * Get a list of past calibrations in json format.
  */ 
-String HydroMonitorECSensor::getCalibrationData() {
-  return core.calibrationData(timestamp, ECValue, reading, enabled);
+void HydroMonitorECSensor::getCalibration(ESP8266WebServer *server) {
+  core.calibrationData(server, calibrationData);
+}
+
+void HydroMonitorECSensor::doCalibrationAction(ESP8266WebServer *server) {
+ if (server->hasArg(F("calibrate"))) {
+   doCalibration(server);
+ }
+ else if (server->hasArg(F("delete"))) {
+   deleteCalibration(server);
+ }
+ else {
+   enableCalibration(server);
+ }
 }
 
 /*
  * Handle the calibration of the sensor.
  */
-void HydroMonitorECSensor::doCalibration(ESP8266WebServer *server, float waterTemp) {
-  if (server->hasArg("delete")) {           // User requests deletion of a data point.
-    String argVal = server->arg("delete");  // The value of the delete argument is the point we have to clear.
-    if (core.isNumeric(argVal)) {
-      uint8_t val = argVal.toInt();
-      if (val < DATAPOINTS) {               // Make sure it's a valid value.
-        timestamp[val] = 0;
-        ECValue[val] = 0;
-        reading[val] = 0;
-        enabled[val] = false;
-      }
-    }
-  }
-  else if (server->hasArg("calibrate")) {   // User requests to do a calibration.
-    if (server->hasArg("value")) {
-      String argVal = server->arg("value"); // The value for which we take the reading.
-      if (argVal != "") {                   // if there's a value given, use this to create a calibration point.
-        if (core.isNumeric(argVal)) {
-          float val = argVal.toFloat();
-          uint32_t res = takeReading();  // Take the raw sensor reading.
-          temperatureCorrection (&res);
-          
-          // Find the first available data point where the value can be stored.
-          for (uint8_t i=0; i<DATAPOINTS; i++) {
-            if (timestamp[i] == 0) {        // empty timestamp: data point is available.
-              timestamp[i] = now();
-              ECValue[i] = val;
-              reading[i] = res;
-              enabled[i] = true;
-              break;
-            }
+void HydroMonitorECSensor::doCalibration(ESP8266WebServer *server) {
+  if (server->hasArg("value")) {
+    String argVal = server->arg("value");                 // The value for which we take the reading.
+    if (argVal != "") {                                   // if there's a value given, use this to create a calibration point.
+      if (core.isNumeric(argVal)) {
+        float nominalValue = argVal.toFloat();
+        float EC;
+        if (sensorData->waterTemp > 0) {
+          EC = (double)nominalValue * (1 + ALPHA * (sensorData->waterTemp - 25)); // temperature correction: nominal to actual.
+        }
+        else {
+          EC = nominalValue;
+        }
+#ifdef USE_ISOLATED_SENSOR_BOARD
+        uint32_t res = sensorData->ecReading;
+#else
+        uint32_t res = takeReading();
+#endif
+      
+        // Find the first available data point where the value can be stored.
+        for (uint8_t i=0; i<DATAPOINTS; i++) {
+          if (calibrationData[i].timestamp == 0) {        // empty timestamp: data point is available.
+            calibrationData[i].timestamp = now();
+            calibrationData[i].value = EC;
+            calibrationData[i].nominalValue = nominalValue;
+            calibrationData[i].reading = res;
+            calibrationData[i].enabled = true;
+            break;
           }
         }
+        saveCalibrationData();
       }
     }
   }
-  else {  // No other commands, so one of the checkboxes was toggled. Set the enabled list accordingly.
-    for (uint8_t i=0; i<DATAPOINTS; i++) {
-      String key = "enable";
-      key += i;                             // Look for argument called enable0, enable1, etc.
-      if (server->hasArg(key)) enabled[i] = true;   // If the argument is present, the checkbox is ticked.
-      else enabled[i] = false;              // If not present, the checkbox is unticked.
+}
+
+/*
+ * Enable/disable calibration points.
+ */
+void HydroMonitorECSensor::enableCalibration(ESP8266WebServer *server) {
+
+  for (uint8_t i=0; i<DATAPOINTS; i++) {
+    String key = "enable";
+    key += i;                                             // Look for argument called enable0, enable1, etc.
+     calibrationData[i].enabled = (server->hasArg(key));  // If the argument is present, the checkbox is ticked and the datapoint is enabled.
+  }
+  saveCalibrationData();
+}
+
+/*
+ * Delete calibration points.
+ */
+void HydroMonitorECSensor::deleteCalibration(ESP8266WebServer *server) {
+  if (server->hasArg(F("delete"))) {                        // User requests deletion of a data point.
+    String argVal = server->arg(F("delete"));               // The value of the delete argument is the point we have to clear.
+    if (core.isNumeric(argVal)) {
+      uint8_t val = argVal.toInt();
+      if (val < DATAPOINTS) {                               // Make sure it's a valid value.
+        calibrationData[val].timestamp = 0;
+        calibrationData[val].value = 0;
+        calibrationData[val].reading = 0;
+        calibrationData[val].enabled = false;
+      }
+      saveCalibrationData();
     }
   }
-  
-  // No more arguments to test for. Store the calibration.
-  core.writeCalibration(EC_SENSOR_CALIBRATION_EEPROM, timestamp, ECValue, reading, enabled);
-              
+}
+
+/*
+ * Save the calibration in EEPROM.
+ */
+void HydroMonitorECSensor::saveCalibrationData() {
+#ifdef USE_24LC256_EEPROM
+  sensorData->EEPROM->put(EC_SENSOR_CALIBRATION_EEPROM, calibrationData);
+#else
+  EEPROM.put(EC_SENSOR_CALIBRATION_EEPROM, calibrationData);
+#endif              
+
   // Re-read the calibration values and update the EC probe parameters.
   readCalibration();
+  
+  // Take a new reading of the sensor value now we have new calibration values.
+  readSensor();
   return;
 }
+
+
 
 /*
  * Update the settings for this sensor, if any.
  */
-void HydroMonitorECSensor::updateSettings(String keys[], String values[], uint8_t nArgs) {
+void HydroMonitorECSensor::updateSettings(ESP8266WebServer* server) {
   return;
 }
 #endif

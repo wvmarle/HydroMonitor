@@ -1,0 +1,371 @@
+#include <HydroMonitorDrainage.h>
+
+#ifdef USE_DRAINAGE_PUMP
+
+/*
+ * The constructor.
+ */
+HydroMonitorDrainage::HydroMonitorDrainage() {
+}
+
+/*
+ * Set up the drainage pump.
+ */
+#ifdef DRAINAGE_MCP17_PIN         // Connected to MCP23017 port expander.
+void HydroMonitorDrainage::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, Adafruit_MCP23017* mcp23017, HydroMonitorWaterLevelSensor* sens) {
+  mcp = mcp23017;
+  mcp->pinMode(DRAINAGE_MCP17_PIN, OUTPUT);
+  l->writeTrace(F("HydroMonitorDrainage: configured drainage pump on MCP23017 port expander."));
+
+#elif defined(DRAINAGE_MCP_PIN)   // Connected to MCP23008 port expander.
+void HydroMonitorDrainage::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, Adafruit_MCP23008* mcp23008, HydroMonitorWaterLevelSensor* sens) {
+  mcp = mcp23008;
+  mcp->pinMode(DRAINAGE_MCP_PIN, OUTPUT);
+  l->writeTrace(F("HydroMonitorDrainage: configured drainage pump on MCP23008 port expander."));
+
+#elif defined(DRAINAGE_PIN)         // Connected to GPIO port.
+void HydroMonitorDrainage::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, HydroMonitorWaterLevelSensor* sens) {
+  pinMode(DRAINAGE_PIN, OUTPUT);
+  l->writeTrace(F("HydroMonitorDrainage: configured drainage pump."));
+#endif
+  sensorData = sd;
+  logging = l;
+  waterLevelSensor = sens;
+  if (DRAINAGE_EEPROM > 0) {
+#ifdef USE_24LC256_EEPROM
+    sensorData->EEPROM->get(DRAINAGE_EEPROM, settings);
+#else
+    EEPROM.get(DRAINAGE_EEPROM, settings);
+#endif
+  }
+  switchPumpOff();
+
+  if (settings.drainageInterval < 1 || settings.drainageInterval > 400) {
+    logging->writeTrace(F("HydroMonitorDrainage: applying default settings."));
+    settings.drainageInterval = 60;
+    if (timeStatus() != timeNotSet && now() > 1546300800) { // midnight, 1 Jan 2019.
+      settings.latestDrainage = now();
+    }
+    else {
+      settings.latestDrainage = 1546300800;
+    }
+#ifdef USE_24LC256_EEPROM
+    sensorData->EEPROM->put(DRAINAGE_EEPROM, settings);
+#else
+    EEPROM.put(DRAINAGE_EEPROM, settings);
+    EEPROM.commit();
+#endif    
+  }
+  return;
+}
+
+/*
+ * Handle the drainage.
+ */
+void HydroMonitorDrainage::doDrainage() {
+
+  if (bitRead(sensorData->systemStatus, STATUS_DRAINAGE_NEEDED)) { // Immediate drainage has been requested.
+    bitClear(sensorData->systemStatus, STATUS_DRAINAGE_NEEDED); 
+    settings.latestDrainage = now() - (uint32_t)settings.drainageInterval * 24 * 60 * 60;
+  }
+
+  if (now() > 1546300800) {                                 // If we have a sensible time already,
+    if (settings.latestDrainage > now()) {                  // but latestDrainage is in the future,
+      settings.latestDrainage = now();                      // set it to the current time.
+#ifdef USE_24LC256_EEPROM
+      sensorData->EEPROM->put(DRAINAGE_EEPROM, settings);
+#else 
+      EEPROM.put(DRAINAGE_EEPROM, settings);
+      EEPROM.commit();
+#endif
+    }
+  }
+
+  if (millis() - lastLevelCheck > 500 &&
+      (drainageState == DRAINAGE_AUTOMATIC_DRAINING_RUNNING || 
+       drainageState == DRAINAGE_MANUAL_DRAINING_RUNNING ||
+       drainageState == DRAINAGE_DRAIN_EXCESS_RUNNING)) {
+    lastLevelCheck += 500;
+    waterLevelSensor->readSensor();
+  }
+
+  if (sensorData->waterLevel < 95) {                        // If level >95% it's too high and we have to drain some water now. 
+    lastGoodFill = millis();
+  }
+
+  switch (drainageState) {
+    case DRAINAGE_IDLE:
+      if (now() > settings.latestDrainage + (uint32_t)settings.drainageInterval * 24 * 60 * 60) {
+        drainageState = DRAINAGE_AUTOMATIC_DRAINING_START;
+        logging->writeInfo(F("HydroMonitorDrainage: scheduled full drainage of the reservoir: solution maintenance."));
+      }
+      else if (millis() - lastGoodFill > (uint32_t)2 * 60 * 1000) { // Drain some water if fill level is >95% for >2 minutes.
+        drainageState = DRAINAGE_DRAIN_EXCESS;
+        logging->writeWarning(F("HydroMonitorDrainage: reservoir fill level too high for more than 2 minutes; draining the excess."));
+      }
+    break;
+    
+    // Some system states (currently watering, door open) stop automatic draining from commencing.
+    // This does not affect manual draining, nor will it interrupt a sequence in progress.
+    case DRAINAGE_AUTOMATIC_DRAINING_START:
+      if ((bitRead(sensorData->systemStatus, STATUS_WATERING) ||
+           bitRead(sensorData->systemStatus, STATUS_DOOR_OPEN)) == false) {
+        logging->writeTrace(F("Start automatic draining sequence."));
+        switchPumpOn();
+        drainageState = DRAINAGE_AUTOMATIC_DRAINING_RUNNING;
+        autoDrainageStart = millis();
+      }
+    break;
+    
+    case DRAINAGE_AUTOMATIC_DRAINING_RUNNING:
+      if (sensorData->waterLevel < 10) {
+        drainageCompletedTime = millis();
+        drainageState = DRAINAGE_AUTOMATIC_DRAINING_COMPLETE;
+        logging->writeTrace(F("Automatic draining sequence emptied reservoir; continue 60 seconds."));
+      }
+      if (millis() - autoDrainageStart > (uint32_t)20 * 60 * 1000) {
+        drainageCompletedTime = millis() - (uint32_t)60 * 1000 - 1; // Ensure we're going to be switched off right now!
+        drainageState = DRAINAGE_AUTOMATIC_DRAINING_COMPLETE;
+        logging->writeError(F("Automatic draining sequence not completed in 20 minutes; possible pump malfunction."));
+      }
+    break;
+    
+    case DRAINAGE_AUTOMATIC_DRAINING_COMPLETE:
+      if (millis() - drainageCompletedTime > (uint32_t)60 * 1000) { // Continue to pump for 60 seconds to make sure the reservoir is really empty. 
+        logging->writeTrace(F("Automatic draining sequence completed."));
+        switchPumpOff();
+        settings.latestDrainage = now();
+        lastDrainageRun = millis();
+#ifdef USE_24LC256_EEPROM
+        sensorData->EEPROM->put(DRAINAGE_EEPROM, settings);
+#else
+        EEPROM.put(DRAINAGE_EEPROM, settings);
+        EEPROM.commit();
+#endif
+        drainageState = DRAINAGE_IDLE;
+        bitClear(sensorData->systemStatus, STATUS_MAINTENANCE);
+      } 
+      else if (sensorData->waterLevel > 12) {                  // It was a false reading.
+        drainageState = DRAINAGE_AUTOMATIC_DRAINING_RUNNING;
+      }
+    break;
+    
+    case DRAINAGE_MANUAL_DRAINING_START:
+      switchPumpOn();
+      drainageState = DRAINAGE_MANUAL_DRAINING_RUNNING;
+      bitSet(sensorData->systemStatus, STATUS_MAINTENANCE);
+    break;
+    
+    case DRAINAGE_MANUAL_DRAINING_RUNNING:
+      if (sensorData->waterLevel < 10) {
+        drainageCompletedTime = millis();
+        drainageState = DRAINAGE_MANUAL_DRAINING_HOLD_EMPTY;
+        logging->writeTrace(F("Manual draining sequence emptied reservoir; continue 60 seconds."));
+      }
+    break;
+    
+    case DRAINAGE_MANUAL_DRAINING_HOLD_EMPTY:
+      if (millis() - drainageCompletedTime > (uint32_t)20 * 1000) { // Continue to pump for 20 seconds to make sure the reservoir is really empty. 
+        switchPumpOff();
+        logging->writeTrace(F("Manual draining sequence completed."));
+        drainageState = DRAINAGE_MANUAL_DRAINING_COMPLETE;
+        lastDrainageRun = millis();
+        settings.latestDrainage = now();
+#ifdef USE_24LC256_EEPROM
+        sensorData->EEPROM->put(DRAINAGE_EEPROM, settings);
+#else
+        EEPROM.put(DRAINAGE_EEPROM, settings);
+        EEPROM.commit();
+#endif
+      } 
+      if (sensorData->waterLevel > 12) {                  // It was a false reading.
+        drainageState = DRAINAGE_MANUAL_DRAINING_RUNNING;
+      }
+    break;
+    
+    case DRAINAGE_MANUAL_DRAINING_COMPLETE:
+    break;
+
+    case DRAINAGE_MAINTENANCE_RUN:
+      switchPumpOn();
+      lastDrainageRun = millis();
+      drainageState = DRAINAGE_MAINTENANCE_RUNNING;
+    break;
+
+    case DRAINAGE_MAINTENANCE_RUNNING:
+      if (millis() - lastDrainageRun > 3000) {           // Run the pump for 3 seconds, just to keep everything smooth.
+        switchPumpOff();
+        lastDrainageRun = millis();
+        drainageState = DRAINAGE_IDLE;
+        bitClear(sensorData->systemStatus, STATUS_MAINTENANCE);
+      }
+    break;
+
+    case DRAINAGE_DRAIN_EXCESS:
+      switchPumpOn();
+      drainageState = DRAINAGE_DRAIN_EXCESS_RUNNING;
+      break;
+
+    case DRAINAGE_DRAIN_EXCESS_RUNNING:
+      if (sensorData->waterLevel < 90) {
+        lastDrainageRun = millis();
+        drainageState = DRAINAGE_IDLE;
+        bitClear(sensorData->systemStatus, STATUS_MAINTENANCE);
+        switchPumpOff();
+        logging->writeTrace(F("HydroMonitorDrainage: reservoir drained to <90% fill level."));
+      }
+      break;
+  }
+  return;
+}
+
+/*
+ * The sensor settings as html.
+ */
+void HydroMonitorDrainage::settingsHtml(ESP8266WebServer* server) {
+  server->sendContent_P(PSTR("\
+      <tr>\n\
+        <th colspan=\"2\">Reservoir drainage settings.</th>\n\
+      </tr><tr>\n\
+        <td>Next scheduled reservoir refresh: </td>\n\
+        <td>"));
+  char timestamp[21];
+  core.datetime(timestamp, (time_t)(settings.latestDrainage + (uint32_t)settings.drainageInterval * 24 * 60 * 60));
+  server->sendContent(timestamp);
+  server->sendContent_P(PSTR("</td>\n\
+      </tr><tr>\n\
+        <td>Drainage interval:</td>\n\
+        <td><input type=\"number\" step=\"1\" name=\"drainage_interval\" value=\""));
+  server->sendContent(itoa(settings.drainageInterval, timestamp, 10));
+  server->sendContent_P(PSTR("\"> days.&nbsp;&nbsp;"));
+
+  switch (drainageState) {
+    case DRAINAGE_MANUAL_DRAINING_START:
+    case DRAINAGE_MANUAL_DRAINING_RUNNING:
+    case DRAINAGE_MANUAL_DRAINING_HOLD_EMPTY:
+    case DRAINAGE_MANUAL_DRAINING_COMPLETE:
+      server->sendContent_P(PSTR("<input type=\"submit\" formaction=\"/drain_stop\" formmethod=\"post\" name=\"drainage\" value=\"Set automatic\">"));
+    break;
+
+    default:
+      server->sendContent_P(PSTR("<input type=\"submit\" formaction=\"/drain_start\" formmethod=\"post\" name=\"drainage\" value=\"Drain now\">"));
+    break;
+    
+
+  }
+    
+  server->sendContent_P(PSTR("</td>\n\
+      </tr>\n"));
+  return;
+}
+
+/*
+ * The sensor settings as JSON.
+ */
+bool HydroMonitorDrainage::settingsJSON(ESP8266WebServer* server) {
+  server->sendContent_P(PSTR("  \"drainage\":\ {\n"
+                             "    \"next_refresh\":\""));
+  char buff[12];  
+  server->sendContent(itoa(settings.latestDrainage + (uint32_t)settings.drainageInterval * 24 * 60 * 60, buff, 10));
+  server->sendContent_P(PSTR("\",\n"
+                             "    \"drainage_interval\":\""));
+  server->sendContent(itoa(settings.drainageInterval, buff, 10));
+  server->sendContent_P(PSTR("\",\n"
+                             "    \"drainage_state\":\""));
+
+  switch (drainageState) {
+   
+    case DRAINAGE_MANUAL_DRAINING_START:
+    case DRAINAGE_MANUAL_DRAINING_RUNNING:
+    case DRAINAGE_MANUAL_DRAINING_HOLD_EMPTY:
+    case DRAINAGE_MANUAL_DRAINING_COMPLETE:
+      server->sendContent_P(PSTR("manual"));
+    break;
+    
+    case DRAINAGE_AUTOMATIC_DRAINING_START:
+    case DRAINAGE_AUTOMATIC_DRAINING_RUNNING:
+    case DRAINAGE_AUTOMATIC_DRAINING_COMPLETE:
+      server->sendContent_P(PSTR("auto"));
+    break;
+
+    default:
+      server->sendContent_P(PSTR("idle"));
+    break;
+
+  }
+  server->sendContent_P(PSTR("\"\n"
+                             "  }"));
+  return true;
+}
+
+void HydroMonitorDrainage::drainStart() {
+  logging->writeTrace(F("HydroMonitorDrainage::drainStart(): Starting manual drainage sequence - into maintenance mode."));
+  bitSet(sensorData->systemStatus, STATUS_MAINTENANCE);
+  drainageState = DRAINAGE_MANUAL_DRAINING_START;
+}
+
+void HydroMonitorDrainage::drainStop() {
+  logging->writeTrace(F("HydroMonitorDrainage::drainStop(): Stopping manual drainage sequence - back to normal."));
+  drainageState = DRAINAGE_IDLE;
+  bitClear(sensorData->systemStatus, STATUS_MAINTENANCE);
+  switchPumpOff();
+}
+
+/*
+ * Update the settings.
+ */
+void HydroMonitorDrainage::updateSettings(ESP8266WebServer *server) {
+  for (uint8_t i=0; i<server->args(); i++) {
+    if (server->argName(i) == F("drainage_interval")) {
+      if (core.isNumeric(server->arg(i))) {
+        uint32_t val = server->arg(i).toInt();
+        if (val > 0 && val < 400) {
+          settings.drainageInterval = val;
+        }
+      }
+      else settings.drainageInterval = 60;
+    }
+  }
+
+#ifdef USE_24LC256_EEPROM
+  sensorData->EEPROM->put(DRAINAGE_EEPROM, settings);
+#else
+  EEPROM.put(DRAINAGE_EEPROM, settings);
+  EEPROM.commit();
+#endif
+  logging->writeTrace(F("HydroMonitorDrainage: updated settings."));
+  return;
+}
+
+/*
+ * Swich pump on.
+ */
+void HydroMonitorDrainage::switchPumpOn() {
+  logging->writeTrace(F("HydroMonitorDrainage: switching on drainage pump."));
+#ifdef DRAINAGE_PIN
+  digitalWrite(DRAINAGE_PIN, HIGH);
+#elif defined(DRAINAGE_MCP_PIN) 
+  mcp->digitalWrite(DRAINAGE_MCP_PIN, HIGH);
+#elif defined(DRAINAGE_MCP17_PIN)
+  mcp->digitalWrite(DRAINAGE_MCP17_PIN, HIGH);
+#endif
+  bitSet(sensorData->systemStatus, STATUS_DRAINING_RESERVOIR);
+}  
+    
+/*
+ * Swich pump off.
+ */
+void HydroMonitorDrainage::switchPumpOff() {
+  logging->writeTrace(F("HydroMonitorDrainage: switching off drainage pump."));
+#ifdef DRAINAGE_PIN
+  digitalWrite(p, LOW);
+#elif defined(DRAINAGE_MCP_PIN) 
+  mcp->digitalWrite(DRAINAGE_MCP_PIN, LOW);
+#elif defined(DRAINAGE_MCP17_PIN)
+  mcp->digitalWrite(DRAINAGE_MCP17_PIN, LOW);
+#endif
+  bitClear(sensorData->systemStatus, STATUS_DRAINING_RESERVOIR);
+}  
+
+#endif
+

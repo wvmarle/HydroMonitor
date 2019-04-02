@@ -8,9 +8,9 @@
 
 #include <WiFiUdp.h>
 #include <ESP8266WebServer.h>
-#include <Time.h>
+#include <TimeLib.h>
 #include <HydroMonitorCore.h>
-#include <HydroMonitorMySQL.h>
+#include <HydroMonitorLogging.h>
 
 // WiFi server settings.
 #define CONNECT_TIMEOUT   30      // Seconds
@@ -26,7 +26,7 @@
 #define TIME_REQUEST 7            // ASCII bell character requests a time sync message
 #define NTPMAXTRIES 30
 #define LOCAL_NTP_PORT 2390       // local port to listen for UDP packets
-#define NTP_SERVER_NAME "time.nist.gov"
+#define NTP_SERVER_NAME "pool.ntp.org"
 #define NTP_PACKET_SIZE 48        // NTP time stamp is in the first 48 bytes of the message
 
 class HydroMonitorNetwork
@@ -43,15 +43,17 @@ class HydroMonitorNetwork
     };
 
     HydroMonitorNetwork(void);
-    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*, ESP8266WebServer*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, ESP8266WebServer*);
 
     void ntpUpdateInit();
     bool ntpCheck();
-    String createHtmlPage(String, bool);
-    void htmlResponse(String);
-    void plainResponse(String);
-    String settingsHtml(void);
-    void updateSettings(String[], String[], uint8_t);
+    void htmlPageHeader(ESP8266WebServer*, bool);
+    void htmlPageFooter(ESP8266WebServer*);
+    void htmlResponse(ESP8266WebServer*);
+    void plainResponse(ESP8266WebServer*);
+    void settingsHtml(ESP8266WebServer*);
+    bool settingsJSON(ESP8266WebServer*);
+    void updateSettings(ESP8266WebServer*);
 	
     
   private:
@@ -74,6 +76,6 @@ class HydroMonitorNetwork
     uint32_t updateTime;
     HydroMonitorCore core;
     HydroMonitorCore::SensorData *sensorData;
-    HydroMonitorMySQL *logging;
+    HydroMonitorLogging *logging;
 };
 #endif

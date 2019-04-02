@@ -1,15 +1,20 @@
 #ifndef HYDROMONITORFERTILISER_H
 #define HYDROMONITORFERTILISER_H
 
-#include <pcf8574_esp.h>
 #include <HydroMonitorCore.h>
+#include <HydroMonitorLogging.h>
+
+#ifdef FERTILISER_A_PCF_PIN
+#include <pcf8574_esp.h>
+#elif defined(FERTILISER_A_MCP_PIN)
 #include <Adafruit_MCP23008.h>
-#include <HydroMonitorMySQL.h>
+#elif defined(FERTILISER_A_MCP17_PIN)
+#include <Adafruit_MCP23017.h>
+#endif
 
 class HydroMonitorFertiliser {
 
   public:
-  
     struct Settings {
       float pumpASpeed;
       float pumpBSpeed;
@@ -20,19 +25,21 @@ class HydroMonitorFertiliser {
 
     // The various functions to set up and control this module.
 #ifdef FERTILISER_A_PIN
-    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*);
-#endif
-#ifdef FERTILISER_A_PCF_PIN
-    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*, PCF857x*);
-#endif
-#ifdef FERTILISER_A_MCP_PIN
-    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*, Adafruit_MCP23008*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*);
+#elif defined(FERTILISER_A_PCF_PIN)
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, PCF857x*);
+#elif defined(FERTILISER_A_MCP_PIN)
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, Adafruit_MCP23008*);
+#elif defined(FERTILISER_A_MCP17_PIN)
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, Adafruit_MCP23017*);
 #endif
     void doFertiliser(void);
-    String settingsHtml(void);    
+    void settingsHtml(ESP8266WebServer*);
+    bool settingsJSON(ESP8266WebServer*);
     void measurePumpA(void);
     void measurePumpB(void);
-    void updateSettings(String[], String[], uint8_t);
+    void updateSettings(ESP8266WebServer*);
+    void doDrainageNow();
     
   private:
   
@@ -41,9 +48,10 @@ class HydroMonitorFertiliser {
     uint8_t pumpB;
 #ifdef FERTILISER_A_PCF_PIN
     PCF857x *pcf8574;
-#endif
-#ifdef FERTILISER_A_MCP_PIN
-    Adafruit_MCP23008 *mcp23008;
+#elif defined(FERTILISER_A_MCP_PIN)
+    Adafruit_MCP23008 *mcp;
+#elif defined(FERTILISER_A_MCP17_PIN)
+  Adafruit_MCP23017 *mcp;
 #endif
 
     // Timing related variables.
@@ -54,6 +62,7 @@ class HydroMonitorFertiliser {
     uint32_t fertiliserDelay;
     uint32_t startATime;
     uint32_t lastGoodEC;
+    uint32_t lastWarned;
     
     // Various flags to keep track of what is going on.
     bool addA;
@@ -61,6 +70,7 @@ class HydroMonitorFertiliser {
     bool aRunning;
     bool bRunning;
     bool measuring;
+    float originalEC;
     
     // Utility functions.
     void switchPumpOn(uint8_t);
@@ -69,7 +79,6 @@ class HydroMonitorFertiliser {
     Settings settings;
     HydroMonitorCore core;
     HydroMonitorCore::SensorData *sensorData;
-    HydroMonitorMySQL *logging; 
+    HydroMonitorLogging *logging; 
 };
-
 #endif

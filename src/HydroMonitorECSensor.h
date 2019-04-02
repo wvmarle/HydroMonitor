@@ -19,7 +19,7 @@
 #include <Average.h>
 #include <ESP8266WebServer.h>
 #include <Time.h>
-#include <HydroMonitorMySQL.h>
+#include <HydroMonitorLogging.h>
 #include <HydroMonitorSensorBase.h>
 
 #define ECSAMPLES 6                   // Take 2^ECSAMPLES = 64 samples to produce a single reading.
@@ -33,16 +33,20 @@ class HydroMonitorECSensor: public HydroMonitorSensorBase
     HydroMonitorECSensor();           // The constructor.
     
     // The functions required for all sensors.
-    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*);
     void readSensor(void);            // Measures the EC value, takes the water temperature as input, returns the result.
-    String dataHtml(void);            // Provides html code with the sensor data.
-    String settingsHtml(void);        // Provides html code with the settings.
-    void updateSettings(String[], String[], uint8_t);
+    void dataHtml(ESP8266WebServer*);            // Provides html code with the sensor data.
+    void settingsHtml(ESP8266WebServer*);        // Provides html code with the settings.
+    bool settingsJSON(ESP8266WebServer*);        // Provides JSON code with the settings.
+    void updateSettings(ESP8266WebServer*);
     
     // Extra calibration-related functions for this sensor.
-    String getCalibrationHtml(void);
-    String getCalibrationData(void);
-    void doCalibration(ESP8266WebServer*, float);
+    void getCalibrationHtml(ESP8266WebServer*);
+    void getCalibration(ESP8266WebServer*);
+    void doCalibration(ESP8266WebServer*);
+    void deleteCalibration(ESP8266WebServer*);
+    void enableCalibration(ESP8266WebServer*);
+    void doCalibrationAction(ESP8266WebServer*);
 
   private:
   
@@ -54,19 +58,18 @@ class HydroMonitorECSensor: public HydroMonitorSensorBase
     uint32_t takeReading();           // Measures the EC value, takes the water temperature as input, returns the result.
     float calibratedSlope;            // The calculated slope of the calibration curve.
     float calibratedIntercept;        // The calculated intercept of the calibration curve.
-    uint32_t timestamp[DATAPOINTS];   // The timestamps of the data points.
-    float ECValue[DATAPOINTS];        // The EC value of the data points.
-    uint32_t reading[DATAPOINTS];     // The raw reading of the data points.
-    bool enabled[DATAPOINTS];         // Whether a data point is enabled.
-    void readCalibration(void);       // Read the current calibration parameters from EEPROM.
+    void readCalibration();           // Read the current calibration parameters from EEPROM.
     void temperatureCorrection(uint32_t*);
     uint32_t lastWarned;
+    void saveCalibrationData();
+    Datapoint calibrationData[DATAPOINTS];
+    float originalEC;
 
     // Other.
     HydroMonitorCore core;            // Provides some utility functions.
     Settings settings;                // The settings store.
     HydroMonitorCore::SensorData *sensorData;
-    HydroMonitorMySQL *logging; 
+    HydroMonitorLogging *logging;
 };
 
 #endif

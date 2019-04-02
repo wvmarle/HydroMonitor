@@ -11,26 +11,26 @@ HydroMonitorGrowlight::HydroMonitorGrowlight (void) {
  * Set up the module - growing light connected to the PCF8574 port expander.
  */
 #ifdef GROWLIGHT_PCF_PIN        
-void HydroMonitorGrowlight::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, PCF857x *pcf) {
+void HydroMonitorGrowlight::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, PCF857x *pcf) {
   pcf8574 = pcf;
-  l->writeTesting("HydroMonitorGrowlight: set up growing light on PCF port expander.");
+  l->writeTrace(F("HydroMonitorGrowlight: set up growing light on PCF port expander."));
 
 /*
  * Set up the module - growing light connected to the MCP23008 port expander.
  */
 #elif defined(GROWLIGHT_MCP_PIN)
-void HydroMonitorGrowlight::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, Adafruit_MCP23008 *mcp) {
+void HydroMonitorGrowlight::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, Adafruit_MCP23008 *mcp) {
   mcp23008 = mcp;
   mcp23008->pinMode(GROWLIGHT_MCP_PIN, OUTPUT);
-  l->writeTesting("HydroMonitorGrowlight: set up growing light on MCP port expander.");
+  l->writeTrace(F("HydroMonitorGrowlight: set up growing light on MCP port expander."));
 
 /*
  * Set up the module - growing light connected to a GPIO pin.
  */
 #elif defined(GROWLIGHT_PIN)
-void HydroMonitorGrowlight::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l) {
+void HydroMonitorGrowlight::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l) {
   pinMode(GROWLIGHT_PIN, OUTPUT);
-  l->writeTesting("HydroMonitorGrowlight: set up growing light.");
+  l->writeTrace(F("HydroMonitorGrowlight: set up growing light."));
 #endif
 
   sensorData = sd;
@@ -42,7 +42,7 @@ void HydroMonitorGrowlight::begin(HydroMonitorCore::SensorData *sd, HydroMonitor
   // Check whether we have a sensible value for switchBrightness; if not
   // set defaults for all settings.
   if (settings.switchBrightness == 0 || settings.switchBrightness == 65535) {
-    logging->writeDebug("HydroMonitorGrowlight: applying default settings.");
+    logging->writeTrace(F("HydroMonitorGrowlight: applying default settings."));
     settings.switchBrightness = 1000;    // Brightness below which the light may be switched on.
     settings.switchDelay = 5 * 60;       // The delay in seconds.
     settings.onHour = 6;                 // Hour and 

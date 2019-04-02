@@ -14,7 +14,7 @@
 #include <pcf8574_esp.h>
 #include <Adafruit_MCP23008.h>
 #include <Time.h>
-#include <HydroMonitorMySQL.h>
+#include <HydroMonitorLogging.h>
 
 class HydroMonitorGrowlight
 {
@@ -35,11 +35,11 @@ class HydroMonitorGrowlight
     
     // General functions for this module.
 #ifdef GROWLIGHT_PIN
-    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*);
 #elif defined(GROWLIGHT_PCF_PIN)
-    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*, PCF857x*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, PCF857x*);
 #elif defined(GROWLIGHT_MCP_PIN)
-    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*, Adafruit_MCP23008*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, Adafruit_MCP23008*);
 #endif    
     void checkGrowlight();          // Switches the growlight on/off based on given lux value, 
                                     // taking time delay and on/off hours into account.
@@ -70,7 +70,7 @@ class HydroMonitorGrowlight
     HydroMonitorCore core;
     Settings settings;
     HydroMonitorCore::SensorData *sensorData;
-    HydroMonitorMySQL *logging;
+    HydroMonitorLogging *logging;
 };
 
 #endif
