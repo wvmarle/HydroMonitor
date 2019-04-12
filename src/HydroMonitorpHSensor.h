@@ -1,9 +1,13 @@
 #ifndef HYDROMONITORPHSENSOR_H
 #define HYDROMONITORPHSENSOR_H
 
+#ifdef PH_SENSOR_ADS_PIN
 #include <Adafruit_ADS1015.h>
+#endif
+#ifdef PH_POS_MCP_PIN
 #include <Adafruit_MCP23008.h>
-#include <Arduino.h>              // Needed for the String type.
+#endif
+//#include <Arduino.h>              // Needed for the String type.
 #include <HydroMonitorCore.h>
 #include <ESP8266WebServer.h>
 #include <HydroMonitorLogging.h>

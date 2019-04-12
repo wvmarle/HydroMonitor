@@ -11,9 +11,12 @@
 
 //#include <Arduino.h> // Needed for the String type.
 #include <HydroMonitorCore.h>
+#ifdef GROWLIGHT_PCF_PIN
 #include <pcf8574_esp.h>
+#elif defined(GROWLIGHT_MCP_PIN)
 #include <Adafruit_MCP23008.h>
-#include <Time.h>
+#endif
+#include <TimeLib.h>
 #include <HydroMonitorLogging.h>
 
 class HydroMonitorGrowlight
