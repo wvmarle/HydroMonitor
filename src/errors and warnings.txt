@@ -1,0 +1,53 @@
+Warnings:
+WaterTempSensor 01: unusual temperature value measured: xx.x °C. Check water temperature sensor.
+
+The temperature measured by the water temperature sensor is outside the expected range.
+
+Possible causes of this warning:
+- water temperature sensor is not connected
+- water temperature sensor is malfunctioning.
+
+Severity: low.
+
+Maintenance required: make sure the sensor is plugged in, the wire is not damaged, and the sensor is in the water of the reservoir. If all looks good, replace sensor.
+
+
+WaterLevelSensor 01: the reservoir is almost empty, and is in urgent need of a refill.
+
+The water level sensor shows the reservoir water level is very low. At this stage, the water circulation to the crops is halted to prevent pumps from running dry.
+
+Possible causes:
+- the water inlet is malfunctioning, and no water is being added to the reservoir.
+- the water level sensor is malfunctioning, and it shows low level while there actually still is water in the reservoir.
+
+Severity: medium
+
+Maintenance required: check the actual water level in the reservoir. If low, check the water inlet system. If sufficient, check the water level sensor.
+
+
+pHSensor 01: unusual pH level measured: xx.xx. Check sensor.
+
+
+
+
+pHSensor 02: pH level is too high; correction with pH adjuster is urgently needed.
+
+
+
+pHMinus 01: pH did not go down as expected after running the pump. pH- bottle may be empty.
+Logging 01: can not transmit messages or data: database login invalid.
+Logging 02: can not transmit messages or data: connection failed.
+Fertiliser 01: fertiliser did not go up as expected after running the pumps. Fertiliser bottles may be empty.
+ECSensor 01: EC level is too low; additional fertiliser is urgently needed.
+ECSensor 02: EC level is exceptionally high: xx.xx mS/cm. Check sensor.
+ECSensor 03: EC sensor not detected.
+Drainage 01: reservoir fill level too high for more than 2 minutes; draining the excess.
+Drainage 02: Automatic draining sequence not completed in 20 minutes; possible pump malfunction.
+Drainage 03: drainage of the excess not completed within 20 minutes; possible malfunction.
+
+
+Errors:
+WaterTempSensor 10: no DS18B20 temperature sensor found.
+Reservoir 10: float switch triggered, reservoir water level is critically high.
+Reservoir 11: shortly after the reservoir was topped up, water level dropped below the minimum already.
+Reservoir 12: water level >5% over maxFill within 5 minutes of starting to fill the reservoir. Suspected problem with the filling system.

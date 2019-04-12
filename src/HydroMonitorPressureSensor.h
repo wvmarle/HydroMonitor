@@ -10,7 +10,7 @@
 #define PRESSURESENSOR_h
 
 #include <HydroMonitorCore.h>
-#include <HydroMonitorMySQL.h>
+#include <HydroMonitorLogging.h>
 #include <HydroMonitorSensorBase.h>
 
 #ifdef USE_BMP180
@@ -30,9 +30,9 @@ class HydroMonitorPressureSensor: public HydroMonitorSensorBase
 
     HydroMonitorPressureSensor(void);
 #ifdef USE_BMP180
-    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*, BMP180*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, BMP180*);
 #elif defined(USE_BMP280) || defined(USE_BME280)
-    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*, BME280*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, BME280*);
 #endif
     void readSensor(void);
     String dataHtml(void);            // Provides html code with the sensor data.
@@ -49,7 +49,7 @@ class HydroMonitorPressureSensor: public HydroMonitorSensorBase
     Settings settings;
     HydroMonitorCore core;
     HydroMonitorCore::SensorData *sensorData;
-    HydroMonitorMySQL *logging;
+    HydroMonitorLogging *logging;
 };
 
 #endif

@@ -22,16 +22,24 @@ void HydroMonitorMySQL::begin(HydroMonitorCore::SensorData *sd) {
 
   sensorData = sd;
   if (MYSQL_EEPROM > 0)
+#ifdef USE_24LC256_EEPROM
+    sensorData->EEPROM->get(MYSQL_EEPROM, settings);
+#else
     EEPROM.get(MYSQL_EEPROM, settings);
-  
+#endif
+
   // Default settings, to be applied if the first byte is 255, which indicates the EEPROM
   // has never been written.
   if ((int)settings.mySQLHostname[0] == 255) {
     strlcpy(settings.mySQLHostname, MYSQL_HOSTNAME, 100);
     strlcpy(settings.mySQLUsername, MYSQL_USERNAME, 32);
     strlcpy(settings.mySQLPassword, MYSQL_PASSWORD, 32);
+#ifdef USE_24LC256_EEPROM
+    sensorData->EEPROM->put(MYSQL_EEPROM, settings);
+#else
     EEPROM.put(MYSQL_EEPROM, settings);
     EEPROM.commit();
+#endif
   }
   checkCredentials();
   writeTesting("HydroMonitorMySQL: configured MySQL connection.");
@@ -183,12 +191,12 @@ void HydroMonitorMySQL::writeTrace(char *msg) {
 }
 
 void HydroMonitorMySQL::writeDebug(char *msg) {
-  if (LOGLEVEL >= LOG_DEBUG)
+  if (LOGLEVEL >= LOG_TRACE)
     writeLog(msg);
 }
 
 void HydroMonitorMySQL::writeTesting(char *msg) {
-  if (LOGLEVEL >= LOG_TESTING)
+  if (LOGLEVEL >= LOG_TRACE)
     writeLog(msg);
 }
 
@@ -292,7 +300,11 @@ void HydroMonitorMySQL::updateSettings(String keys[], String values[], uint8_t n
     strlcpy(settings.mySQLUsername, username, sizeof(username));
     strlcpy(settings.mySQLPassword, password, sizeof(password));
   }
+#ifdef USE_24LC256_EEPROM
+  sensorData->EEPROM->put(MYSQL_EEPROM, settings);
+#else
   EEPROM.put(MYSQL_EEPROM, settings);
   EEPROM.commit();
+#endif  
   return;
 }

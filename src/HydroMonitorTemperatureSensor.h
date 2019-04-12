@@ -9,7 +9,7 @@
 #define TEMPERATURESENSOR_h
 
 #include <HydroMonitorCore.h>
-#include <HydroMonitorMySQL.h>
+#include <HydroMonitorLogging.h>
 #include <HydroMonitorSensorBase.h>
 
 #ifdef DHT22_PIN
@@ -33,12 +33,12 @@ class HydroMonitorTemperatureSensor: public HydroMonitorSensorBase
     
     // The functions required for all sensors.
 #ifdef DHT22_PIN
-    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL *logging, DHT22*);   // Use the DHT22 sensor.
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging *logging, DHT22*);   // Use the DHT22 sensor.
 #endif
 #ifdef USE_BMP180
-    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL *logging, BMP180*);  // Use the BMP180 sensor.
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging *logging, BMP180*);  // Use the BMP180 sensor.
 #elif defined(USE_BMP280) || defined(USE_BME280)
-    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL *logging, BME280*);  // Use the BMP280 or BME280 sensor.
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging *logging, BME280*);  // Use the BMP280 or BME280 sensor.
 #endif
     void readSensor(void);
     String dataHtml(void);            // Provides html code with the sensor data.
@@ -57,7 +57,8 @@ class HydroMonitorTemperatureSensor: public HydroMonitorSensorBase
 #endif
     HydroMonitorCore core;
     HydroMonitorCore::SensorData *sensorData;
-    HydroMonitorMySQL *logging;
+    HydroMonitorLogging *logging;
+    uint32_t lastWarned;
 };
 #endif
 

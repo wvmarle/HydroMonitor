@@ -1,8 +1,8 @@
 
-CREATE USER 'board_132'@'%' IDENTIFIED BY 'board_132_password';
-CREATE DATABASE ch_board_132;
-CREATE TABLE ch_board_132.data LIKE CityHydroponics.DEFAULT_DATA;
-CREATE TABLE ch_board_132.messages LIKE CityHydroponics.DEFAULT_MESSAGES;
-GRANT SELECT, INSERT ON ch_board_132.* TO board_132;
+CREATE USER 'fridge_a'@'%' IDENTIFIED BY 'fridge_a_password';
+CREATE DATABASE ch_fridge_a;
+CREATE TABLE ch_fridge_a.data LIKE CityHydroponics.DEFAULT_DATA;
+CREATE TABLE ch_fridge_a.messages LIKE CityHydroponics.DEFAULT_MESSAGES;
+GRANT SELECT, INSERT ON ch_fridge_a.* TO fridge_a;
 
 

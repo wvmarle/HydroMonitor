@@ -9,9 +9,8 @@
 #ifndef BRIGHTNESS_h
 #define BRIGHTNESS_h
 
-#include <HydroMonitorBoardDefinitions.h>
 #include <HydroMonitorCore.h>
-#include <HydroMonitorMySQL.h>
+#include <HydroMonitorLogging.h>
 #include <HydroMonitorSensorBase.h>
 
 #include <EEPROM.h>
@@ -32,10 +31,10 @@ class HydroMonitorBrightnessSensor: public HydroMonitorSensorBase
     };
 
     HydroMonitorBrightnessSensor(void);
-    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*);
     void readSensor(void);
-    String dataHtml(void);            // Provides html code with the sensor data.
-    String settingsHtml(void);
+    void dataHtml(ESP8266WebServer*);            // Provides html code with the sensor data.
+    void settingsHtml(ESP8266WebServer*);
     void updateSettings(String[], String[], uint8_t);
     
   private:
@@ -47,7 +46,7 @@ class HydroMonitorBrightnessSensor: public HydroMonitorSensorBase
     TSL2591 tsl;
 #endif
     bool brightnessSensorPresent;
-    HydroMonitorMySQL *logging;
+    HydroMonitorLogging *logging;
     HydroMonitorCore::SensorData *sensorData;
 };
 

@@ -14,18 +14,18 @@ HydroMonitorHumiditySensor::HydroMonitorHumiditySensor () {
  * Configure the sensor as DHT22.
  */
 #ifdef DHT22_PIN
-void HydroMonitorHumiditySensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, DHT22 *dht) {
+void HydroMonitorHumiditySensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, DHT22 *dht) {
   dht22 = dht;
-  l->writeInfo("HydroMonitorHumiditySensor: configured DHT22 sensor.");
+  l->writeInfo(F("HydroMonitorHumiditySensor: configured DHT22 sensor."));
 #endif
 
 /*
  * Configure the sensor as BME280.
  */
 #ifdef USE_BME280
-void HydroMonitorHumiditySensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, BME280 *bme) {
+void HydroMonitorHumiditySensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, BME280 *bme) {
   bme280 = bme;
-  l->writeInfo("HydroMonitorHumiditySensor: configured BME280 sensor.");
+  l->writeInfo(F("HydroMonitorHumiditySensor: configured BME280 sensor."));
 #endif
   sensorData = sd;
   logging = l;

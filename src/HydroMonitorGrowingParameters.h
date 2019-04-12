@@ -2,14 +2,14 @@
 #define HYDROMONITORGROWINGPARAMETERS_H
 
 #include <HydroMonitorCore.h>
-#include <HydroMonitorMySQL.h>
+#include <HydroMonitorLogging.h>
 
 class HydroMonitorGrowingParameters {
 
   public:
   
     struct Settings {
-      char systemName[64];
+      char systemName[65];
       uint16_t solutionVolume;
       uint16_t fertiliserConcentration;
       float targetEC;
@@ -22,9 +22,10 @@ class HydroMonitorGrowingParameters {
     HydroMonitorGrowingParameters(void);
 
     // The various functions to set up and control this module.
-    void begin(HydroMonitorCore::SensorData*, HydroMonitorMySQL*);
-    String settingsHtml(void);    
-    void updateSettings(String[], String[], uint8_t);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*);
+    void settingsHtml(ESP8266WebServer*);    
+    void settingsJSON(ESP8266WebServer*);    
+    void updateSettings(ESP8266WebServer*);
     
     // The getters. Variables are set in updateSettings.
     uint16_t getSolutionVolume(void);
@@ -38,7 +39,7 @@ class HydroMonitorGrowingParameters {
     Settings settings;
     HydroMonitorCore core;
     HydroMonitorCore::SensorData *sensorData;
-    HydroMonitorMySQL *logging;
+    HydroMonitorLogging *logging;
 };
 
 #endif

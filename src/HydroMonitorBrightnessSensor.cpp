@@ -11,14 +11,14 @@ HydroMonitorBrightnessSensor::HydroMonitorBrightnessSensor () {
 /*
  * Configure the sensor.
  */
-void HydroMonitorBrightnessSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l) {
+void HydroMonitorBrightnessSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l) {
   
 #if defined(USE_TSL2561)
   tsl = TSL2561(TSL2561_ADDR_FLOAT, 12345);
-  l->writeTesting("HydroMonitorBrightnessSensor: configured TSL2561 sensor.");
+  l->writeTrace(F("HydroMonitorBrightnessSensor: configured TSL2561 sensor."));
 #elif defined(USE_TSL2591)
   tsl = TSL2591();
-  l->writeTesting("HydroMonitorBrightnessSensor: configured TSL2591 sensor.");
+  l->writeTrace(F("HydroMonitorBrightnessSensor: configured TSL2591 sensor."));
 #endif
   
   logging = l;
@@ -69,27 +69,27 @@ void HydroMonitorBrightnessSensor::readSensor() {
 /*
  * The html code for the sensor specific settings.
  */
-String HydroMonitorBrightnessSensor::settingsHtml() {
-  return "";
+void HydroMonitorBrightnessSensor::settingsHtml(ESP8266WebServer *server) {
+  return;
 }
 
 /*
  * The html code for the sensor data.
  */
-String HydroMonitorBrightnessSensor::dataHtml() {
-  String html = F("<tr>\n\
+void HydroMonitorBrightnessSensor::dataHtml(ESP8266WebServer *server) {
+  server.sendContent_P(F("<tr>\n\
     <td>Brightness</td>\n\
-    <td>");
-  if (sensorData->brightness < 0) html += F("Sensor not connected.</td>\n\
-  </tr>");
+    <td>"));
+  if (sensorData->brightness < 0) {
+    server.sendContent_P(F("Sensor not connected.</td>\n\
+  </tr>"));
   else {
-    html += String(sensorData->brightness);
-    html += F(" lux.</td>\n\
-  </tr>");
+    server.sendContent(sensorData->brightness);
+    server.sendContent_P(F(" lux.</td>\n\
+  </tr>"));
   }
   return html;
 }
-
 
 /*
  * Update the settings for this sensor, if any.

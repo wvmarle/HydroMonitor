@@ -1,8 +1,5 @@
 #include <HydroMonitorNetwork.h>
 
-// For whatever reason this has to be included here again, or the defines are not recognised later!
-#include <HydroMonitorBoardDefinitions.h>
-
 /*
  * Take care of network connections and building up html pages.
  */
@@ -16,13 +13,17 @@ HydroMonitorNetwork::HydroMonitorNetwork() {
 /*
  * Start the network services.
  */
-void HydroMonitorNetwork::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, ESP8266WebServer *srv) {
+void HydroMonitorNetwork::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, ESP8266WebServer *srv) {
   sensorData = sd;
   logging = l;
-  logging->writeTesting("HydroMonitorNetwork: configured networking services.");  
-  if (NETWORK_EEPROM > 0)
+  logging->writeTrace(F("HydroMonitorNetwork: configured networking services."));
+  if (NETWORK_EEPROM > 0) {
+#ifdef USE_24LC256_EEPROM
+    sensorData->EEPROM->get(NETWORK_EEPROM, settings);
+#else
     EEPROM.get(NETWORK_EEPROM, settings);
-    
+#endif
+  }
   server = srv;
   return;
 }
@@ -30,16 +31,22 @@ void HydroMonitorNetwork::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMy
 /*
  * Send html response.
  */
-void HydroMonitorNetwork::htmlResponse(String response) {
-  server->send(200, "text/html", response);
+void HydroMonitorNetwork::htmlResponse(ESP8266WebServer *server) {
+
+  server->sendHeader(F("Cache-Control"), F("no-cache, no-store, must-revalidate"));
+  server->sendHeader(F("Pragma"), F("no-cache"));
+  server->sendHeader(F("Expires"), F("-1"));
+  server->setContentLength(CONTENT_LENGTH_UNKNOWN);
+  // here begin chunked transfer
+  server->send(200, F("text/html"), F(""));
   return;
 }
 
 /*
  * send plain response.
  */
-void HydroMonitorNetwork::plainResponse(String response) {
-  server->send(200, "text/plain", response);
+void HydroMonitorNetwork::plainResponse(ESP8266WebServer *server) {
+  server->send_P(200, PSTR("text/plain"), "");
   yield();
   return;
 }
@@ -51,7 +58,7 @@ void HydroMonitorNetwork::ntpUpdateInit() {
   udp.begin(LOCAL_NTP_PORT);
   updateTime = millis();
   startTime = millis();
-  if ( WiFi.hostByName(NTP_SERVER_NAME, timeServerIP) ) { //get a random server from the pool
+  if (WiFi.hostByName(NTP_SERVER_NAME, timeServerIP) ) { //get a random server from the pool
     sendNTPpacket(timeServerIP); // send an NTP packet to a time server
   }
   else udp.stop();
@@ -70,13 +77,13 @@ bool HydroMonitorNetwork::ntpCheck() {
 
   // Timeout after 30 seconds.
   if (millis() - startTime > 30 * 1000) { 
-    logging->writeTesting("HydroMonitorNetwork: NTP timeout.");
+    logging->writeTrace(F("HydroMonitorNetwork: NTP timeout."));
     return false;
   }
 
   // Re-request every 5 seconds.
   if (millis() - updateTime > 5 * 1000) {
-    logging->writeTrace("HydroMonitorNetwork: Re-requesting the time from NTP server.");
+    logging->writeTrace(F("HydroMonitorNetwork: Re-requesting the time from NTP server."));
     udp.stop();
     yield();
     udp.begin(LOCAL_NTP_PORT);
@@ -88,8 +95,8 @@ bool HydroMonitorNetwork::ntpCheck() {
   // Check whether a response has been received.
   if (doNtpUpdateCheck()) {
     udp.stop();
-    setTime(epoch + sensorData->timezone * 60 * 60);
-    logging->writeTesting("HydroMonitorNetwork: successfully received time over NTP.");
+    setTime(epoch);                                         // We use UTC internally, easier overall.
+    logging->writeTrace(F("HydroMonitorNetwork: successfully received time over NTP."));
     return false;
   }
 
@@ -124,7 +131,7 @@ uint32_t HydroMonitorNetwork::sendNTPpacket(IPAddress & address) {
   udp.write(packetBuffer, NTP_PACKET_SIZE);
   udp.endPacket();
   yield();
-  logging->writeTrace("HydroMonitorNetwork: NTP packet sent.");
+  logging->writeTrace(F("HydroMonitorNetwork: NTP packet sent."));
 }
 
 /**
@@ -161,41 +168,62 @@ bool HydroMonitorNetwork::doNtpUpdateCheck() {
 }
 
 /*
- * Create an html page from the provided body; add html headers and page content headers.
+ * Create the header part of the main html page.
  */
-String HydroMonitorNetwork::createHtmlPage(String body, bool refresh) {
+void HydroMonitorNetwork::htmlPageHeader(ESP8266WebServer *server, bool refresh) {
 
-  String html = F("<!DOCTYPE html>\n\
-  <html><head>\n");
+  char buffer[10];
+  server->sendContent_P(PSTR("\
+<!DOCTYPE html>\n\
+<html><head>\n"));
   if (refresh) {
-    html += F("   <meta http-equiv=\"refresh\" content=\"");
-    html += String(REFRESH);
-    html += F("\">\n");
+    server->sendContent_P(PSTR("\
+    <meta http-equiv=\"refresh\" content=\""));
+    server->sendContent(itoa(REFRESH, buffer, 10));
+    server->sendContent_P(PSTR("\">\n"));
   }
-  html += F("   <meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\" />\n");
-  html += F("   <title>City Hydroponics - grow your own, in the city! - HydroMonitor output</title>\n\
+  server->sendContent_P(PSTR("\
+    <meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\" />\n\
+    <title>City Hydroponics - grow your own, in the city! - HydroMonitor output</title>\n\
 </head>\n\
 <body>\n\
   <a href=\"/\">\n\
     <img src=\"https://www.cityhydroponics.hk/tmp/logo_banner.jpg\" alt=\"City Hydroponics\">\n\
   </a>\n\
   <h1>HydroMonitor - monitor your hydroponic system data</h1>\n\
-  <p></p>\n");
-  html += body;
-  html += F("</body></html>");
-  return html;
+  <h2>"));
+  if (strlen(sensorData->systemName) > 0) {
+    server->sendContent(sensorData->systemName);
+  }
+  server->sendContent_P(PSTR("</h2>\n\
+  <p></p>\n"));
+}
+
+void HydroMonitorNetwork::htmlPageFooter(ESP8266WebServer *server) {
+  server->sendContent_P(PSTR("\
+</body></html>"));
+  server->sendContent(F("")); // this tells web client that transfer is done
+  server->client().stop();
 }
 
 /*
  * The settings as HTML.
  */
-String HydroMonitorNetwork::settingsHtml() {
-  return "";
+void HydroMonitorNetwork::settingsHtml(ESP8266WebServer *server) {
+  return;
+}
+
+
+/*
+ * The settings as JSON.
+ */
+bool HydroMonitorNetwork::settingsJSON(ESP8266WebServer* server) {
+  return false; // None.
 }
 
 /*
  * Update the settings.
  */
-void HydroMonitorNetwork::updateSettings(String keys[], String values[], uint8_t nArgs) {
+void HydroMonitorNetwork::updateSettings(ESP8266WebServer* server) {
   return;
 }

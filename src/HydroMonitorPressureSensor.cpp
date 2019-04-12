@@ -10,14 +10,14 @@ HydroMonitorPressureSensor::HydroMonitorPressureSensor () {
 }
 
 #ifdef USE_BMP180
-void HydroMonitorPressureSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, BMP180 *bmp) {
+void HydroMonitorPressureSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, BMP180 *bmp) {
   bmp180 = bmp;
-  l->writeTesting("HydroMonitorPressureSensor: configured a BMP180 sensor.");
+  l->writeTrace(F("HydroMonitorPressureSensor: configured a BMP180 sensor."));
 
 #elif defined(USE_BMP280) || defined(USE_BME280)
-void HydroMonitorPressureSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorMySQL *l, BME280 *bmp) {
+void HydroMonitorPressureSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, BME280 *bmp) {
   bmp280 = bmp;
-  l->writeTesting("HydroMonitorPressureSensor: configured a BME280 sensor.");
+  l->writeTrace(F("HydroMonitorPressureSensor: configured a BME280 sensor."));
 #endif
 
   sensorData = sd;

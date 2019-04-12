@@ -1,0 +1,194 @@
+HydroMonitorCore.cpp:  server->sendContent_P(PSTR("\
+HydroMonitorCore.cpp:  server->sendContent(title);
+HydroMonitorCore.cpp:  server->sendContent_P(PSTR("</h1>\n\
+HydroMonitorCore.cpp:  server->sendContent(action);
+HydroMonitorCore.cpp:  server->sendContent_P(PSTR("\">\n\
+HydroMonitorCore.cpp:    server->sendContent_P(PSTR("<tr>\n\
+HydroMonitorCore.cpp:    server->sendContent(itoa(i, buffer, 10));
+HydroMonitorCore.cpp:    server->sendContent_P(PSTR("\""));
+HydroMonitorCore.cpp:      server->sendContent_P(PSTR(" checked"));
+HydroMonitorCore.cpp:    server->sendContent_P(PSTR("></td>\n\
+HydroMonitorCore.cpp:    server->sendContent(buffer);
+HydroMonitorCore.cpp:    server->sendContent_P(PSTR("</td>\n\
+HydroMonitorCore.cpp:    server->sendContent(buffer);
+HydroMonitorCore.cpp:    server->sendContent_P(PSTR("</td>\n\
+HydroMonitorCore.cpp:    server->sendContent(itoa(datapoint[i].reading, buffer, 10));
+HydroMonitorCore.cpp:    server->sendContent_P(PSTR("</td>\n\
+HydroMonitorCore.cpp:    server->sendContent(itoa(i, buffer, 10));
+HydroMonitorCore.cpp:    server->sendContent_P(PSTR("\">Delete</button></td>\n\
+HydroMonitorCore.cpp:  server->sendContent_P(PSTR("\n\
+HydroMonitorCore.cpp:  server->sendHeader(F("Cache-Control"), F("no-cache, no-store, must-revalidate"));
+HydroMonitorCore.cpp:  server->sendHeader(F("Pragma"), F("no-cache"));
+HydroMonitorCore.cpp:  server->sendHeader(F("Expires"), F("-1"));
+HydroMonitorCore.cpp:  server->setContentLength(CONTENT_LENGTH_UNKNOWN);
+HydroMonitorCore.cpp:  server->send(200, F("application/json"), F(""));
+HydroMonitorCore.cpp:  server->sendContent_P(PSTR("{\"calibration\":["));
+HydroMonitorCore.cpp:    server->sendContent(buffer);
+HydroMonitorCore.cpp:      server->sendContent_P(PSTR(","));  // Add a comma here for all but the last element.
+HydroMonitorCore.cpp:  server->sendContent_P(PSTR("]}"));
+HydroMonitorDrainage.cpp:  server->sendContent_P(PSTR("\
+HydroMonitorDrainage.cpp:  server->sendContent(timestamp);
+HydroMonitorDrainage.cpp:  server->sendContent_P(PSTR("</td>\n\
+HydroMonitorDrainage.cpp:  server->sendContent(itoa(settings.drainageInterval, timestamp, 10));
+HydroMonitorDrainage.cpp:  server->sendContent_P(PSTR("\"> days.&nbsp;&nbsp;"));
+HydroMonitorDrainage.cpp:      server->sendContent_P(PSTR("<input type=\"submit\" formaction=\"/drain_start\" formmethod=\"post\" name=\"drainage\" value=\"Drain now\">"));
+HydroMonitorDrainage.cpp:      server->sendContent_P(PSTR("<input type=\"submit\" formaction=\"/drain_stop\" formmethod=\"post\" name=\"drainage\" value=\"Set automatic\">"));
+HydroMonitorDrainage.cpp:  server->sendContent_P(PSTR("</td>\n\
+HydroMonitorDrainage.cpp:  server->sendContent_P(PSTR("  \"drainage\":\ {\n"
+HydroMonitorDrainage.cpp:  server->sendContent(itoa(settings.latestDrainage + (uint32_t)settings.drainageInterval * 24 * 60 * 60, buff, 10));
+HydroMonitorDrainage.cpp:  server->sendContent_P(PSTR("\",\n"
+HydroMonitorDrainage.cpp:  server->sendContent(itoa(settings.drainageInterval, buff, 10));
+HydroMonitorDrainage.cpp:  server->sendContent_P(PSTR("\",\n"
+HydroMonitorDrainage.cpp:      server->sendContent_P(PSTR("idle"));
+HydroMonitorDrainage.cpp:      server->sendContent_P(PSTR("draining"));
+HydroMonitorDrainage.cpp:  server->sendContent_P(PSTR("\"\n"
+HydroMonitorECSensor.cpp:  server->sendContent_P(PSTR("\
+HydroMonitorECSensor.cpp:  server->sendContent_P(PSTR("<tr>\n\
+HydroMonitorECSensor.cpp:    server->sendContent_P(PSTR("Sensor not connected.</td>\n\
+HydroMonitorECSensor.cpp:        server->sendContent_P(PSTR("<span style=\"color:red\">")); // 40% off target - red.
+HydroMonitorECSensor.cpp:        server->sendContent_P(PSTR("<span style=\"color:orange\">")); // 20% off target - orange.
+HydroMonitorECSensor.cpp:        server->sendContent_P(PSTR("<span style=\"color:green\">")); // Within 20% of target - green.
+HydroMonitorECSensor.cpp:    server->sendContent(buff);
+HydroMonitorECSensor.cpp:    server->sendContent_P(PSTR("</span> mS/cm.</td>\n\
+HydroMonitorECSensor.cpp:        server->sendContent_P(PSTR("\n\
+HydroMonitorECSensor.cpp:        server->sendContent(itoa((sensorData->targetEC - sensorData->EC) * 1000 * sensorData->solutionVolume/sensorData->fertiliserConcentration, buff, 10));
+HydroMonitorECSensor.cpp:        server->sendContent_P(PSTR("ml of each A and B.</td>\n\
+HydroMonitorECSensor.cpp: if (server->hasArg(F("calibrate"))) {
+HydroMonitorECSensor.cpp: else if (server->hasArg(F("delete"))) {
+HydroMonitorECSensor.cpp:  if (server->hasArg("value")) {
+HydroMonitorECSensor.cpp:    String argVal = server->arg("value");                 // The value for which we take the reading.
+HydroMonitorECSensor.cpp:     calibrationData[i].enabled = (server->hasArg(key));  // If the argument is present, the checkbox is ticked and the datapoint is enabled.
+HydroMonitorECSensor.cpp:  if (server->hasArg(F("delete"))) {                        // User requests deletion of a data point.
+HydroMonitorECSensor.cpp:    String argVal = server->arg(F("delete"));               // The value of the delete argument is the point we have to clear.
+HydroMonitorFertiliser.cpp:  server->sendContent_P(PSTR("\
+HydroMonitorFertiliser.cpp:  server->sendContent(buff);
+HydroMonitorFertiliser.cpp:  server->sendContent_P(PSTR("\"> ml/minute.&nbsp;&nbsp;<input type=\"submit\" formaction=\"/measure_pump_a_speed\" formmethod=\"post\" name=\"pumpa\" value=\"Measure now\"></td>\n\
+HydroMonitorFertiliser.cpp:  server->sendContent(buff);
+HydroMonitorFertiliser.cpp:  server->sendContent_P(PSTR("\"> ml/minute.&nbsp;&nbsp;<input type=\"submit\" formaction=\"/measure_pump_b_speed\" formmethod=\"post\" name=\"pumpb\" value=\"Measure now\"></td>\n\
+HydroMonitorFertiliser.cpp:  server->sendContent_P(PSTR("  \"fertiliser\": {\n"
+HydroMonitorFertiliser.cpp:  server->sendContent(buff);
+HydroMonitorFertiliser.cpp:  server->sendContent_P(PSTR("\",\n"
+HydroMonitorFertiliser.cpp:  server->sendContent(buff);
+HydroMonitorFertiliser.cpp:  server->sendContent_P(PSTR("\"\n"
+HydroMonitorGrowingParameters.cpp:  server->sendContent_P(PSTR("\
+HydroMonitorGrowingParameters.cpp:  server->sendContent(itoa(settings.solutionVolume, buff, 10));
+HydroMonitorGrowingParameters.cpp:  server->sendContent_P(PSTR("\"> litres</td>\n\
+HydroMonitorGrowingParameters.cpp:  server->sendContent(itoa(settings.fertiliserConcentration, buff, 10));
+HydroMonitorGrowingParameters.cpp:  server->sendContent_P(PSTR("\"></td>\n\
+HydroMonitorGrowingParameters.cpp:  server->sendContent(buff);
+HydroMonitorGrowingParameters.cpp:  server->sendContent_P(PSTR("\"> mS/cm</td>\n\
+HydroMonitorGrowingParameters.cpp:  server->sendContent_P(PSTR("<tr>\n\
+HydroMonitorGrowingParameters.cpp:  server->sendContent(buff);
+HydroMonitorGrowingParameters.cpp:  server->sendContent_P(PSTR("\"> ml/litre for 1 pH point change</td>\n\
+HydroMonitorGrowingParameters.cpp:  server->sendContent(buff);
+HydroMonitorGrowingParameters.cpp:  server->sendContent_P(PSTR("\"></td>\n\
+HydroMonitorGrowingParameters.cpp:  server->sendContent_P(PSTR("<tr>\n\
+HydroMonitorGrowingParameters.cpp:  server->sendContent(settings.systemName);
+HydroMonitorGrowingParameters.cpp:  server->sendContent_P(PSTR("\"></td>\n\
+HydroMonitorGrowingParameters.cpp:  server->sendContent(buff);
+HydroMonitorGrowingParameters.cpp:  server->sendContent_P(PSTR("\"></td>\n\
+HydroMonitorGrowingParameters.cpp:  server->sendContent_P(PSTR("  \"parameters\": {\n"
+HydroMonitorGrowingParameters.cpp:  server->sendContent(itoa(settings.solutionVolume, buff, 10));
+HydroMonitorGrowingParameters.cpp:  server->sendContent_P(PSTR("\",\n"
+HydroMonitorGrowingParameters.cpp:  server->sendContent(itoa(settings.fertiliserConcentration, buff, 10));
+HydroMonitorGrowingParameters.cpp:  server->sendContent_P(PSTR("\",\n"
+HydroMonitorGrowingParameters.cpp:  server->sendContent(buff);
+HydroMonitorGrowingParameters.cpp:  server->sendContent_P(PSTR("\",\n"
+HydroMonitorGrowingParameters.cpp:  server->sendContent(buff);
+HydroMonitorGrowingParameters.cpp:  server->sendContent_P(PSTR("\",\n"
+HydroMonitorGrowingParameters.cpp:  server->sendContent(buff);
+HydroMonitorGrowingParameters.cpp:  server->sendContent_P(PSTR("\",\n"
+HydroMonitorGrowingParameters.cpp:  server->sendContent(settings.systemName);
+HydroMonitorGrowingParameters.cpp:  server->sendContent_P(PSTR("\",\n"
+HydroMonitorGrowingParameters.cpp:  server->sendContent(buff);
+HydroMonitorGrowingParameters.cpp:  server->sendContent_P(PSTR("\"\n"
+HydroMonitorLogging.cpp:  server->sendContent_P(PSTR("\
+HydroMonitorLogging.cpp:    server->sendContent_P(PSTR("style=\"color:green\" "));
+HydroMonitorLogging.cpp:    server->sendContent_P(PSTR("style=\"color:red\" "));
+HydroMonitorLogging.cpp:  server->sendContent_P(PSTR("value=\""));
+HydroMonitorLogging.cpp:    server->sendContent(settings.hostname);
+HydroMonitorLogging.cpp:  server->sendContent_P(PSTR("\"></td>\n\
+HydroMonitorLogging.cpp:    server->sendContent_P(PSTR("style=\"color:green\" "));
+HydroMonitorLogging.cpp:    server->sendContent_P(PSTR("style=\"color:red\" "));
+HydroMonitorLogging.cpp:  server->sendContent_P(PSTR("value=\""));
+HydroMonitorLogging.cpp:    server->sendContent(settings.hostpath);
+HydroMonitorLogging.cpp:  server->sendContent_P(PSTR("\"></td>\n\
+HydroMonitorLogging.cpp:    server->sendContent_P(PSTR("style=\"color:green\" "));
+HydroMonitorLogging.cpp:    server->sendContent_P(PSTR("style=\"color:red\" "));
+HydroMonitorLogging.cpp:  server->sendContent_P(PSTR("value=\""));
+HydroMonitorLogging.cpp:    server->sendContent(settings.username);
+HydroMonitorLogging.cpp:  server->sendContent_P(PSTR("\"></td>\n\
+HydroMonitorLogging.cpp:    server->sendContent_P(PSTR("style=\"color:green\" "));
+HydroMonitorLogging.cpp:    server->sendContent_P(PSTR("style=\"color:red\" "));
+HydroMonitorLogging.cpp:  server->sendContent_P(PSTR("value=\""));
+HydroMonitorLogging.cpp:    server->sendContent(settings.password);
+HydroMonitorLogging.cpp:  server->sendContent_P(PSTR("\"></td>\n\
+HydroMonitorLogging.cpp:  server->sendContent_P(PSTR("\
+HydroMonitorLogging.cpp:  server->sendContent_P(PSTR("  \"logging\": {\n"
+HydroMonitorLogging.cpp://  server->sendContent(settings.hostname);
+HydroMonitorLogging.cpp:  server->sendContent_P(PSTR("\",\n"
+HydroMonitorLogging.cpp://  server->sendContent(settings.hostpath);
+HydroMonitorLogging.cpp:  server->sendContent_P(PSTR("\",\n"
+HydroMonitorLogging.cpp://  server->sendContent(settings.username);
+HydroMonitorLogging.cpp:  server->sendContent_P(PSTR("\",\n"
+HydroMonitorLogging.cpp://  server->sendContent(settings.password);
+HydroMonitorLogging.cpp:  server->sendContent_P(PSTR("\"\n"
+HydroMonitorNetwork.cpp:  server->sendHeader(F("Cache-Control"), F("no-cache, no-store, must-revalidate"));
+HydroMonitorNetwork.cpp:  server->sendHeader(F("Pragma"), F("no-cache"));
+HydroMonitorNetwork.cpp:  server->sendHeader(F("Expires"), F("-1"));
+HydroMonitorNetwork.cpp:  server->setContentLength(CONTENT_LENGTH_UNKNOWN);
+HydroMonitorNetwork.cpp:  server->send(200, F("text/html"), F(""));
+HydroMonitorNetwork.cpp:  server->send_P(200, PSTR("text/plain"), "");
+HydroMonitorNetwork.cpp:  server->sendContent_P(PSTR("\
+HydroMonitorNetwork.cpp:    server->sendContent_P(PSTR("\
+HydroMonitorNetwork.cpp:    server->sendContent(itoa(REFRESH, buffer, 10));
+HydroMonitorNetwork.cpp:    server->sendContent_P(PSTR("\">\n"));
+HydroMonitorNetwork.cpp:  server->sendContent_P(PSTR("\
+HydroMonitorNetwork.cpp:  server->sendContent("");
+HydroMonitorNetwork.cpp:  server->sendContent_P(PSTR("</h2>\n\
+HydroMonitorNetwork.cpp:  server->sendContent_P(PSTR("\
+HydroMonitorNetwork.cpp:  server->sendContent(F("")); // this tells web client that transfer is done
+HydroMonitorNetwork.cpp:  server->client().stop();
+HydroMonitorpHMinus.cpp:  server->sendContent_P(PSTR("\
+HydroMonitorpHMinus.cpp:  server->sendContent(buff);  
+HydroMonitorpHMinus.cpp:  server->sendContent_P(PSTR("\"> ml/minute.&nbsp;&nbsp;<input type=\"submit\" formaction=\"/measure_pump_phminus_speed\" formmethod=\"post\" name=\"phpump\" value=\"Measure now\"></td>\n\
+HydroMonitorpHMinus.cpp:  server->sendContent_P(PSTR("  \"ph_minus\": {\n"
+HydroMonitorpHMinus.cpp:  server->sendContent(buff);  
+HydroMonitorpHMinus.cpp:  server->sendContent_P(PSTR("\"\n"
+HydroMonitorpHSensor.cpp:  server->sendContent_P(PSTR("\
+HydroMonitorpHSensor.cpp:  server->sendContent_P(PSTR("<tr>\n\
+HydroMonitorpHSensor.cpp:    server->sendContent_P(PSTR("Sensor not connected.</td>\n\
+HydroMonitorpHSensor.cpp:    server->sendContent(buff);
+HydroMonitorpHSensor.cpp:    server->sendContent_P(PSTR(".</td>\n\
+HydroMonitorpHSensor.cpp: if (server->hasArg(F("calibrate"))) {
+HydroMonitorpHSensor.cpp: else if (server->hasArg(F("delete"))) {
+HydroMonitorpHSensor.cpp:  if (server->hasArg("value")) {
+HydroMonitorpHSensor.cpp:    String argVal = server->arg("value");
+HydroMonitorpHSensor.cpp:    calibrationData[i].enabled = server->hasArg(key);
+HydroMonitorpHSensor.cpp:  if (server->hasArg("delete")) {
+HydroMonitorpHSensor.cpp:    String argVal = server->arg("delete");
+HydroMonitorWaterLevelSensor.cpp:  server->sendContent_P(PSTR("\
+HydroMonitorWaterLevelSensor.cpp:  server->sendContent_P(PSTR("\
+HydroMonitorWaterLevelSensor.cpp:  server->sendContent(buff);
+HydroMonitorWaterLevelSensor.cpp:  server->sendContent_P(PSTR("</td>\n"));
+HydroMonitorWaterLevelSensor.cpp:  server->sendContent_P(PSTR("\
+HydroMonitorWaterLevelSensor.cpp:  server->sendContent(buff);
+HydroMonitorWaterLevelSensor.cpp:  server->sendContent_P(PSTR("\"> cm.</td>\n"));
+HydroMonitorWaterLevelSensor.cpp:  server->sendContent_P(PSTR("\
+HydroMonitorWaterLevelSensor.cpp:  server->sendContent_P(PSTR("\
+HydroMonitorWaterLevelSensor.cpp:  server->sendContent(buff);
+HydroMonitorWaterLevelSensor.cpp:  server->sendContent_P(PSTR("</td>\n"));
+HydroMonitorWaterLevelSensor.cpp:  server->sendContent_P(PSTR("</tr>\n"));
+HydroMonitorWaterLevelSensor.cpp:  server->sendContent_P(PSTR("  \"waterlevel_sensor\": {\n"
+HydroMonitorWaterLevelSensor.cpp:  server->sendContent(buff);
+HydroMonitorWaterLevelSensor.cpp:  server->sendContent_P(PSTR("\",\n"
+HydroMonitorWaterLevelSensor.cpp:  server->sendContent(buff);
+HydroMonitorWaterLevelSensor.cpp:  server->sendContent_P(PSTR("\"\n"
+HydroMonitorWaterLevelSensor.cpp:  server->sendContent_P(PSTR("<tr>\n\
+HydroMonitorWaterLevelSensor.cpp:    server->sendContent_P(PSTR("Sensor not connected.</td>\n\
+HydroMonitorWaterLevelSensor.cpp:    server->sendContent(buff);
+HydroMonitorWaterLevelSensor.cpp:    server->sendContent_P(PSTR(" % full.</td>\n\
+HydroMonitorWaterTempSensor.cpp:  server->sendContent_P(PSTR("<tr>\n\
+HydroMonitorWaterTempSensor.cpp:    server->sendContent_P(PSTR("Sensor not connected.</td>\n\
+HydroMonitorWaterTempSensor.cpp:    server->sendContent(buff);
+HydroMonitorWaterTempSensor.cpp:    server->sendContent_P(PSTR(" &deg;C.</td>\n\
