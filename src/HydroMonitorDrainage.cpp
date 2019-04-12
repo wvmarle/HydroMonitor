@@ -146,7 +146,7 @@ void HydroMonitorDrainage::doDrainage() {
         drainageState = DRAINAGE_IDLE;
         bitClear(sensorData->systemStatus, STATUS_MAINTENANCE);
       } 
-      else if (sensorData->waterLevel > 2) {                  // It was a false reading.
+      else if (sensorData->waterLevel > 12) {                  // It was a false reading.
         drainageState = DRAINAGE_AUTOMATIC_DRAINING_RUNNING;
       }
     break;
@@ -158,7 +158,7 @@ void HydroMonitorDrainage::doDrainage() {
     break;
     
     case DRAINAGE_MANUAL_DRAINING_RUNNING:
-      if (sensorData->waterLevel < 2) {
+      if (sensorData->waterLevel < 10) {
         drainageCompletedTime = millis();
         drainageState = DRAINAGE_MANUAL_DRAINING_HOLD_EMPTY;
         logging->writeTrace(F("Manual draining sequence emptied reservoir; continue 60 seconds."));
@@ -179,7 +179,7 @@ void HydroMonitorDrainage::doDrainage() {
         EEPROM.commit();
 #endif
       } 
-      if (sensorData->waterLevel > 2) {                  // It was a false reading.
+      if (sensorData->waterLevel > 12) {                  // It was a false reading.
         drainageState = DRAINAGE_MANUAL_DRAINING_RUNNING;
       }
     break;
@@ -281,14 +281,12 @@ bool HydroMonitorDrainage::settingsJSON(ESP8266WebServer* server) {
   return true;
 }
 
-
 bool HydroMonitorDrainage::autoDrainageMode() {
   return (drainageState != DRAINAGE_MANUAL_DRAINING_START &&
           drainageState != DRAINAGE_MANUAL_DRAINING_RUNNING &&
           drainageState != DRAINAGE_MANUAL_DRAINING_HOLD_EMPTY &&
           drainageState != DRAINAGE_MANUAL_DRAINING_COMPLETE);
 }
-
 
 void HydroMonitorDrainage::drainStart() {
   logging->writeTrace(F("HydroMonitorDrainage::drainStart(): Starting manual drainage sequence - into maintenance mode."));

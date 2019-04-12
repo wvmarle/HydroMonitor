@@ -56,7 +56,7 @@ class HydroMonitorDrainage
     uint32_t autoDrainageStart;
     bool autoDrainageMode();
     uint32_t lastWarned;
-     
+
   enum DrainageStates {
     DRAINAGE_IDLE,
 

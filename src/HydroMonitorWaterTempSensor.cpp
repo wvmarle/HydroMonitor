@@ -36,7 +36,6 @@ void HydroMonitorWaterTempSensor::begin(HydroMonitorCore::SensorData *sd, HydroM
     oneWire->reset_search();
     oneWire->search(deviceAddress);
     ds18b20->setResolution(deviceAddress, 12);
-    
     l->writeTrace(F("WaterTempSensor: configured DS18B20 sensor."));
   }
   else {

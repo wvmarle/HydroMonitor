@@ -95,7 +95,7 @@ void HydroMonitorLogging::initMessageLogFile() {
   }
   else {                                                    // Data log exists already, figure out how far we were with transmission to the server->
     f = SPIFFS.open(messageLogFileName, "r");
-  
+
     // Search file for the latest sent message.
     uint32_t i = 0;                                         // The search index.
     if (f.size() > 0) {                                     // We have at least one message, otherwise the file size is zero.
@@ -175,13 +175,13 @@ void HydroMonitorLogging::logData() {
       uint32_t nBytes = fileRecordSize * 20;                // Copy the latest 20 entries from the old log file to the new one.
       File f1 = SPIFFS.open(dataLogFile1Name, "r");
       f1.seek(f1.size() - nBytes, SeekSet);
-//      char buff[nBytes];
-//      f1.readBytes(buff, nBytes);
       for (uint32_t i = 0; i < nBytes; i++) {
-//        f.write(buff[i]);
         f.write(f1.read());
       }
       f1.close();
+      for (uint8_t i = 0; i < 50; i++) {
+        latestMessageList[i] = 0;
+      }
     }
     f.close();
   }

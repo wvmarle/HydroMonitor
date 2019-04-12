@@ -233,6 +233,7 @@ void HydroMonitorWaterLevelSensor::readSensor() {
   else {
     sensorData->waterLevel = -1;
   }
+  bitWrite(sensorData->systemStatus, STATUS_RESERVOIR_LEVEL_LOW, sensorData->waterLevel < 40);  
   warning();
   return;
 }
@@ -273,7 +274,6 @@ void HydroMonitorWaterLevelSensor::readSensor() {
   }
   bitWrite(sensorData->systemStatus, STATUS_RESERVOIR_LEVEL_LOW, sensorData->waterLevel < 40);  
   warning();
-  return;
 }
 
 /*
@@ -287,6 +287,8 @@ void HydroMonitorWaterLevelSensor::readSensor() {
     waterLevel = -1;
   }
   sensorData->waterLevel = waterLevel;
+  bitWrite(sensorData->systemStatus, STATUS_RESERVOIR_LEVEL_LOW, sensorData->waterLevel < 40);  
+  warning();
 }
 
 /*

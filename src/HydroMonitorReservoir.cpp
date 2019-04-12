@@ -167,9 +167,9 @@ void HydroMonitorReservoir::doReservoir() {
         closeValve();
         logging->writeTrace(F("HydroMonitorReservoir: water level high enough, closing the valve."));
       }
-      if (millis() - startAddWater > 2 * 60 * 1000) {       // As extra safety measure: close the valve after 2 minutes, regardless of what the water level sensor says.
+      if (millis() - startAddWater > 3 * 60 * 1000) {       // As extra safety measure: close the valve after 3 minutes, regardless of what the water level sensor says.
         closeValve();
-        logging->writeWarning(F("HydroMonitorReservoir: added water for 2 minutes, high level not reached, timeout: closing the valve."));
+        logging->writeWarning(F("HydroMonitorReservoir: added water for 3 minutes, high level not reached, timeout: closing the valve."));
         lastGoodFill = millis() + 60 * 60 * 1000;           // Call it a good fill, and set the time an hour in the future: no trying to fill before that time.
       }
     }
