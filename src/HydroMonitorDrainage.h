@@ -24,6 +24,8 @@ class HydroMonitorDrainage
     HydroMonitorDrainage(void);
     
     // Functions as required for all sensors.
+    
+#ifdef USE_WATERLEVEL_SENSOR
 #ifdef DRAINAGE_PIN
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, HydroMonitorWaterLevelSensor*);
 #elif defined(DRAINAGE_MCP_PIN)
@@ -31,6 +33,15 @@ class HydroMonitorDrainage
 #elif defined(DRAINAGE_MCP17_PIN)
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, Adafruit_MCP23017*, HydroMonitorWaterLevelSensor*);
 #endif
+#else                                                       // Not using water level sensor.
+#ifdef DRAINAGE_PIN
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*);
+#elif defined(DRAINAGE_MCP_PIN)
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, Adafruit_MCP23008*);
+#elif defined(DRAINAGE_MCP17_PIN)
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, Adafruit_MCP23017*);
+#endif                                                      // endif pin definitions.
+#endif                                                      // endif USE_WATERLEVEL_SENSOR
     void doDrainage(void);
     void settingsHtml(ESP8266WebServer*); 
     bool settingsJSON(ESP8266WebServer*); 
@@ -72,14 +83,17 @@ class HydroMonitorDrainage
     DRAINAGE_MAINTENANCE_RUN,
     DRAINAGE_MAINTENANCE_RUNNING,
 
+#ifdef USE_WATERLEVEL_SENSOR
     DRAINAGE_DRAIN_EXCESS,
     DRAINAGE_DRAIN_EXCESS_RUNNING,
-
+#endif
   };
   DrainageStates drainageState;
   uint32_t drainageCompletedTime;
   HydroMonitorWaterLevelSensor *waterLevelSensor;
+#ifdef USE_WATERLEVEL_SENSOR
   uint32_t lastGoodFill;
+#endif
   uint32_t lastDrainageRun;
 };
 

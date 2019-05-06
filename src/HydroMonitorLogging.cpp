@@ -239,9 +239,15 @@ void HydroMonitorLogging::transmitData() {
   
   uint16_t size = 90 + strlen(settings.hostname) + strlen(settings.hostpath) + strlen(settings.username) + strlen(settings.password);
   char postData[size];
+#ifdef USE_WATERLEVEL_SENSOR
   sprintf_P(postData, PSTR("https://%s%s?username=%s&password=%s&ec=%4.2f&watertemp=%4.2f&waterlevel=%4.2f&ph=%4.2f"),
                             settings.hostname, settings.hostpath, settings.username, settings.password, 
                             dataEntry.EC, dataEntry.waterTemp, dataEntry.waterLevel, dataEntry.pH);
+#else
+  sprintf_P(postData, PSTR("https://%s%s?username=%s&password=%s&ec=%4.2f&watertemp=%4.2f&waterlevel=%4.2f&ph=%4.2f"),
+                            settings.hostname, settings.hostpath, settings.username, settings.password, 
+                            dataEntry.EC, dataEntry.waterTemp, 0, dataEntry.pH);
+#endif
 
   uint16_t httpCode = sendPostData(postData);
   if (httpCode == 200) {                                    // 200 = OK, transmissions successful.

@@ -75,7 +75,9 @@ const uint8_t STATUS_DOOR_OPEN              = 3;            // The device's door
 const uint8_t STATUS_RESERVOIR_LEVEL_LOW    = 4;            // Low level in reservoir - not enough for watering.
 const uint8_t STATUS_MAINTENANCE            = 5;            // Maintenance in progress - reservoir manually drained.
 const uint8_t STATUS_DRAINAGE_NEEDED        = 6;            // Request immediate automatic drainage sequence of the reservoir.
-//const uint8_t STATUS_
+#ifndef USE_WATERLEVEL_SENSOR
+const uint8_t STATUS_RESERVOIR_DRAINED      = 7;            // Reservoir is empty, needs to be filled. Use this flag if not using water level sensor.
+#endif
 //const uint8_t STATUS_
 //const uint8_t STATUS_
 

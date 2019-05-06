@@ -10,7 +10,6 @@
 #ifndef HYDROMONITORWATERLEVELSENSOR_h
 #define HYDROMONITORWATERLEVELSENSOR_h
 
-#include <Arduino.h>                                        // Needed for the String type.
 #include <HydroMonitorCore.h>
 #include <HydroMonitorLogging.h>
 #include <HydroMonitorSensorBase.h>

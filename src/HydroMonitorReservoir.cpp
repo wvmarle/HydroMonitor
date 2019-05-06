@@ -16,6 +16,7 @@ HydroMonitorReservoir::HydroMonitorReservoir() {
 /*
    Set up the solenoid, connected to a MCP23017 port expander.
 */
+#ifdef USE_WATERLEVEL_SENSOR
 #ifdef RESERVOIR_MCP17_PIN
 void HydroMonitorReservoir::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, Adafruit_MCP23017* mcp23017, HydroMonitorWaterLevelSensor* sens) {
   mcp = mcp23017;
@@ -48,9 +49,47 @@ void HydroMonitorReservoir::begin(HydroMonitorCore::SensorData * sd, HydroMonito
   pinMode(RESERVOIR_PIN, INPUT);
   l->writeTrace(F("HydroMonitorReservoir: configured reservoir refill."));
 #endif
+  waterLevelSensor = sens;
+  reservoirEmptyTime = millis();
+  initialFillingDone = false;
+  lastGoodFill = millis();
+#else                                                       // Not using a waterlevel sensor.
+#ifdef RESERVOIR_MCP17_PIN
+void HydroMonitorReservoir::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, Adafruit_MCP23017* mcp23017) {
+  mcp = mcp23017;
+  mcp->pinMode(RESERVOIR_MCP17_PIN, INPUT);
+  l->writeTrace(F("HydroMonitorReservoir: configured reservoir refill on MCP23017 port expander."));
+
+/*
+   Set up the solenoid, connected to a MCP23008 port expander.
+*/
+#elif defined(RESERVOIR_MCP_PIN)
+void HydroMonitorReservoir::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l, Adafruit_MCP23008 * mcp23008) {
+  mcp = mcp23008;
+  mcp->pinMode(RESERVOIR_MCP_PIN, INPUT);
+  l->writeTrace(F("HydroMonitorReservoir: configured reservoir refill on MCP23008 port expander."));
+
+  /*
+     Set up the solenoid, connected to a PCF8574 port expander.
+  */
+#elif defined(RESERVOIR_PCF_PIN)
+void HydroMonitorReservoir::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l, PCF857x * pcf) {
+  pcf8574 = pcf;
+  pcf8574->pinMode(RESERVOIR_PCF_PIN, INPUT);
+  l->writeTrace(F("HydroMonitorReservoir: configured reservoir refill on PCF8574 port expander."));
+
+  /*
+     Set up the solenoid, connected to a GPIO port.
+  */
+#elif defined(RESERVOIR_PIN)
+void HydroMonitorReservoir::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l) {
+  pinMode(RESERVOIR_PIN, INPUT);
+  l->writeTrace(F("HydroMonitorReservoir: configured reservoir refill."));
+#endif
+  bitSet(sensorData->systemStatus, STATUS_RESERVOIR_DRAINED); // We don't know the reservoir level: assume empty & start filling.
+#endif
   sensorData = sd;
   logging = l;
-  waterLevelSensor = sens;
   closeValve();  // Make sure it's closed.
   if (RESERVOIR_EEPROM > 0)
 #ifdef USE_24LC256_EEPROM
@@ -70,11 +109,6 @@ void HydroMonitorReservoir::begin(HydroMonitorCore::SensorData * sd, HydroMonito
     EEPROM.commit();
 #endif
   }
-  reservoirEmptyTime = millis();
-  initialFillingDone = false;
-  lastGoodFill = millis();
-  settings.maxFill = 90;
-  settings.minFill = 70;
 }
 
 /*
@@ -123,8 +157,6 @@ void HydroMonitorReservoir::doReservoir() {
   }
 #endif
 
-
-
   if (bitRead(sensorData->systemStatus, STATUS_DRAINING_RESERVOIR) ||
       bitRead(sensorData->systemStatus, STATUS_WATERING) || // System is doing something that prevents us from filling the reservoir,
       bitRead(sensorData->systemStatus, STATUS_DOOR_OPEN) ||
@@ -134,6 +166,8 @@ void HydroMonitorReservoir::doReservoir() {
       closeValve();
     }
   }
+
+#ifdef USE_WATERLEVEL_SENSOR                                // Water level based reservoir level management.
   else if (sensorData->waterLevel < 0                       // Water level sensor not connected, or out of range,
       && millis() - reservoirEmptyTime > 30 * 1000          // and we're empty for >half a minute,
       && initialFillingDone == false) {                     // and we didn't try adding some water yet:
@@ -207,7 +241,6 @@ void HydroMonitorReservoir::doReservoir() {
       millis() - startAddWater < 5 * 60 * 1000) {
     logging->writeError(F("Reservoir 12: water level >5% over maxFill within 5 minutes of starting to fill the reservoir. Suspected problem with the filling system."));
   }  
-
   if (sensorData->waterLevel > 100) {                       // Very full reservoir; should have been drained already.
     if (millis() - lastWarned > WARNING_INTERVAL) {
       lastWarned = millis();
@@ -216,6 +249,29 @@ void HydroMonitorReservoir::doReservoir() {
       logging->writeWarning(buff);
     }
   }
+#else
+  else if (bitRead(sensorData->systemStatus, STATUS_RESERVOIR_DRAINED)) { // Reservoir draining is completed, and no other flags blocking us from refilling.
+    openValve();
+    bitClear(sensorData->systemStatus, STATUS_RESERVOIR_DRAINED); // We're filling, so not drained any more. Clear the flag.
+    startAddWater = millis();
+    isWeeklyTopUp = false;
+    logging->writeTrace(F("HydroMonitorReservoir: Reservoir empty after draining; filling with water."));
+  }
+  else if (millis() - startAddWater > 7 * 24 * 60 * 60 * 1000) { // Every 7 days: do a reservoir top-up.
+    openValve();
+    bitClear(sensorData->systemStatus, STATUS_RESERVOIR_DRAINED); // We're filling, so not drained any more. Clear the flag.
+    startAddWater = millis();
+    isWeeklyTopUp = true;
+    logging->writeTrace(F("HydroMonitorReservoir: Doing weekly reservoir top-up."));
+  }
+  else if (bitRead(sensorData->systemStatus, STATUS_FILLING_RESERVOIR)) { // Reservoir is being filled.
+    if ((isWeeklyTopUp && millis() - startAddWater > 3 * 60 * 1000) || // Weekly top-up for 3 minutes, or
+        millis() - startAddWater > 20 * 60 * 1000) {        // 20 minutes for a complete fill.
+    closeValve();
+    logging->writeInfo(F("HydroMonitorReservoir: finished adding water, closing the valve."));
+    }
+  }
+#endif
 }
 
 /*
