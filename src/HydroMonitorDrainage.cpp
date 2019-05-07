@@ -85,8 +85,12 @@ void HydroMonitorDrainage::begin(HydroMonitorCore::SensorData *sd, HydroMonitorL
 void HydroMonitorDrainage::doDrainage() {
 
   if (bitRead(sensorData->systemStatus, STATUS_DRAINAGE_NEEDED)) { // Immediate drainage has been requested.
-    bitClear(sensorData->systemStatus, STATUS_DRAINAGE_NEEDED); 
-    settings.latestDrainage = now() - (uint32_t)settings.drainageInterval * 24 * 60 * 60;
+    bitClear(sensorData->systemStatus, STATUS_DRAINAGE_NEEDED);
+    if (drainageState == DRAINAGE_IDLE) {
+      drainageState = DRAINAGE_AUTOMATIC_DRAINING_START;
+      logging->writeInfo(F("HydroMonitorDrainage: immediate drainage requested."));
+      settings.latestDrainage = now();
+    }
   }
 
   if (now() > 1546300800) {                                 // If we have a sensible time already,
@@ -145,7 +149,7 @@ void HydroMonitorDrainage::doDrainage() {
 #ifdef USE_WATERLEVEL_SENSOR
       if (sensorData->waterLevel < 10) {
 #else
-      if (millis() - autoDrainageStart > (uint32_t)9 * 60 * 1000) { // 9 mins here + 1 minute to complete for 10 minutes total.
+      if (millis() - autoDrainageStart > (uint32_t)19 * 60 * 1000) { // 19 mins here + 1 minute to complete for 20 minutes total.
 #endif
         drainageCompletedTime = millis();
         drainageState = DRAINAGE_AUTOMATIC_DRAINING_COMPLETE;
