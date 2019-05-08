@@ -86,7 +86,7 @@ void HydroMonitorReservoir::begin(HydroMonitorCore::SensorData * sd, HydroMonito
   pinMode(RESERVOIR_PIN, INPUT);
   l->writeTrace(F("HydroMonitorReservoir: configured reservoir refill."));
 #endif
-  bitSet(sensorData->systemStatus, STATUS_RESERVOIR_DRAINED); // We don't know the reservoir level: assume empty & start filling.
+  bitSet(sd->systemStatus, STATUS_RESERVOIR_DRAINED); // We don't know the reservoir level: assume empty & start filling.
 #endif
   sensorData = sd;
   logging = l;
@@ -134,6 +134,9 @@ void HydroMonitorReservoir::doReservoir() {
   }
   
   if (floatswitchTriggered) {
+#ifndef USE_WATERLEVEL_SENSOR
+    bitSet(sensorData->systemStatus, STATUS_DRAINAGE_NEEDED); // Trigger drainage - if not using water level sensor, and retrigger until it's resolved.
+#endif
     if (millis() - lastBeep > BEEP_FREQUENCY) {
       lastBeep += BEEP_FREQUENCY;
     }
