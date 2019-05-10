@@ -64,7 +64,7 @@ class HydroMonitorDrainage
     void switchPumpOn(void);
     void switchPumpOff(void);
     uint32_t lastLevelCheck;
-    uint32_t autoDrainageStart;
+    uint32_t drainageStart;
     bool autoDrainageMode();
     uint32_t lastWarned;
 

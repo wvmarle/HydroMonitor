@@ -83,8 +83,6 @@ void HydroMonitorFertiliser::begin(HydroMonitorCore::SensorData *sd, HydroMonito
     EEPROM.commit();
 #endif
   }
-  logging->writeTrace(F("HydroMonitorFertiliser: set up fertiliser pumps."));
-  return;
 }
 
 /*

@@ -141,7 +141,7 @@ void HydroMonitorDrainage::doDrainage() {
         logging->writeTrace(F("Start automatic draining sequence."));
         switchPumpOn();
         drainageState = DRAINAGE_AUTOMATIC_DRAINING_RUNNING;
-        autoDrainageStart = millis();
+        drainageStart = millis();
       }
     break;
     
@@ -149,13 +149,13 @@ void HydroMonitorDrainage::doDrainage() {
 #ifdef USE_WATERLEVEL_SENSOR
       if (sensorData->waterLevel < 10) {
 #else
-      if (millis() - autoDrainageStart > (uint32_t)19 * 60 * 1000) { // 19 mins here + 1 minute to complete for 20 minutes total.
+      if (millis() - drainageStart > (uint32_t)7 * 60 * 1000) {  // 7 mins here + 1 minute to complete for 8 minutes total.
 #endif
         drainageCompletedTime = millis();
         drainageState = DRAINAGE_AUTOMATIC_DRAINING_COMPLETE;
         logging->writeTrace(F("Automatic draining sequence emptied reservoir; continue 60 seconds."));
       }
-      if (millis() - autoDrainageStart > (uint32_t)20 * 60 * 1000) {
+      if (millis() - drainageStart > (uint32_t)20 * 60 * 1000) {
         if (millis() - lastWarned > WARNING_INTERVAL) {
           logging->writeError(F("Drainage 02: Automatic draining sequence not completed in 20 minutes; possible pump malfunction."));
           lastWarned = millis();
@@ -192,13 +192,14 @@ void HydroMonitorDrainage::doDrainage() {
       switchPumpOn();
       drainageState = DRAINAGE_MANUAL_DRAINING_RUNNING;
       bitSet(sensorData->systemStatus, STATUS_MAINTENANCE);
+      drainageStart = millis();
     break;
     
     case DRAINAGE_MANUAL_DRAINING_RUNNING:
 #ifdef USE_WATERLEVEL_SENSOR
       if (sensorData->waterLevel < 10) {
 #else
-      if (millis() - autoDrainageStart > (uint32_t)9 * 60 * 1000) { // 9 mins here + 1 minute to complete for 10 minutes total.
+      if (millis() - drainageStart > (uint32_t)7 * 60 * 1000) { // 7 mins here + 1 minute to complete for 8 minutes total.
 #endif
         drainageCompletedTime = millis();
         drainageState = DRAINAGE_MANUAL_DRAINING_HOLD_EMPTY;
@@ -212,13 +213,15 @@ void HydroMonitorDrainage::doDrainage() {
         logging->writeTrace(F("Manual draining sequence completed."));
         drainageState = DRAINAGE_MANUAL_DRAINING_COMPLETE;
         lastDrainageRun = millis();
-        settings.latestDrainage = now();
+        if (now() > 1546300800) {                               // Only store time if it makes sense to do so.
+          settings.latestDrainage = now();
 #ifdef USE_24LC256_EEPROM
-        sensorData->EEPROM->put(DRAINAGE_EEPROM, settings);
+          sensorData->EEPROM->put(DRAINAGE_EEPROM, settings);
 #else
-        EEPROM.put(DRAINAGE_EEPROM, settings);
-        EEPROM.commit();
+          EEPROM.put(DRAINAGE_EEPROM, settings);
+          EEPROM.commit();
 #endif
+        }
 #ifndef USE_WATERLEVEL_SENSOR
         bitSet(sensorData->systemStatus, STATUS_RESERVOIR_DRAINED);
 #endif
@@ -262,7 +265,7 @@ void HydroMonitorDrainage::doDrainage() {
         switchPumpOff();
         logging->writeTrace(F("HydroMonitorDrainage: reservoir drained to <90% fill level."));
       }
-      if (millis() - autoDrainageStart > (uint32_t)20 * 60 * 1000) {
+      if (millis() - drainageStart > (uint32_t)20 * 60 * 1000) {
         if (millis() - lastWarned > WARNING_INTERVAL) {
           logging->writeError(F("Drainage 03: drainage of the excess not completed within 20 minutes; possible malfunction."));
           lastWarned = millis();
