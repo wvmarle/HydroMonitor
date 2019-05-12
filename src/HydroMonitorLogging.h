@@ -67,6 +67,7 @@ class HydroMonitorLogging
     void transmitMessages();
     
     void checkCredentials(void);
+	  void checkCredentials (char*, char*, char*, char*);
     uint8_t hostValid;
     uint8_t pathValid;
 	  uint8_t loginValid;
@@ -81,7 +82,6 @@ class HydroMonitorLogging
 	  void writeError(const __FlashStringHelper*);
 	  
   private:
-	  void checkCredentials (char*, char*, char*, char*);
 	  
 	  void writeLog(uint8_t);
 	  void bufferMsg_P(const char*);

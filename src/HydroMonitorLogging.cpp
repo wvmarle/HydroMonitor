@@ -38,6 +38,14 @@ void HydroMonitorLogging::begin(HydroMonitorCore::SensorData *sd) {
     EEPROM.commit();
 #endif
   }
+
+/*
+  strlcpy(settings.hostname, "www.cityhydroponics.hk", 100);
+  strlcpy(settings.hostpath, "/HydroMonitor/postData.py/postData", 150);
+  strlcpy(settings.username, "fridge_a", 32);
+  strlcpy(settings.password, "fridge_a_password", 32);
+*/  
+
   checkCredentials();
 
   // Set up the local storage (SPIFFS - store in flash).
@@ -237,16 +245,97 @@ void HydroMonitorLogging::transmitData() {
   f.readBytes(buff, fileRecordSize);
   memcpy(&dataEntry, buff + 1, dataRecordSize);             // Skip the record's byte 0, the status byte.
   
-  uint16_t size = 90 + strlen(settings.hostname) + strlen(settings.hostpath) + strlen(settings.username) + strlen(settings.password);
-  char postData[size];
+  // Calculate the buffer size we need, depending on which sensors are enabled.
+  uint16_t size = 20 + strlen(settings.hostname) + strlen(settings.hostpath) + strlen(settings.username) + strlen(settings.password);
+#ifdef USE_EC_SENSOR
+  size += 10;                                               // &ec=xx.xx
+#endif
+#ifdef USE_BRIGHTNESS_SENSOR
+  size += 19;                                               // &brightness=xxxxxx
+#endif
+#ifdef USE_WATERTEMPERATURE_SENSOR
+  size += 16;                                               // &watertemp=xx.x
+#endif
 #ifdef USE_WATERLEVEL_SENSOR
-  sprintf_P(postData, PSTR("https://%s%s?username=%s&password=%s&ec=%4.2f&watertemp=%4.2f&waterlevel=%4.2f&ph=%4.2f"),
-                            settings.hostname, settings.hostpath, settings.username, settings.password, 
-                            dataEntry.EC, dataEntry.waterTemp, dataEntry.waterLevel, dataEntry.pH);
-#else
-  sprintf_P(postData, PSTR("https://%s%s?username=%s&password=%s&ec=%4.2f&watertemp=%4.2f&waterlevel=%4.2f&ph=%4.2f"),
-                            settings.hostname, settings.hostpath, settings.username, settings.password, 
-                            dataEntry.EC, dataEntry.waterTemp, 0, dataEntry.pH);
+  size += 17;                                               // &waterlevel=xx.x
+#endif
+#ifdef USE_PRESSURE_SENSOR
+  size += 19;                                               // &pressure=xxxxx.xx
+#endif
+#ifdef USE_TEMPERATURE_SENSOR
+  size += 18;                                               // &temperature=xx.x
+#endif
+#ifdef USE_HUMIDITY_SENSOR
+  size += 15;                                               // &humidity=xx.x
+#endif
+#ifdef USE_PH_SENSOR
+  size += 10;                                               // &ph=xx.xx
+#endif
+#ifdef USE_DO_SENSOR
+  size += 10;                                               // &do=xx.xx
+#endif
+#ifdef USE_ORP_SENSOR
+  size += 11;                                               // &orp=xx.xx
+#endif
+#ifdef USE_GROWLIGHT
+  size += 13;                                               // &growlight=x
+#endif
+#ifdef USE_FLOW_SENSOR
+  size += 13;                                               // &flow=xxxx.x
+#endif
+
+  char postData[size];
+  char sensorBuff[20];
+  sprintf_P(postData, PSTR("https://%s%s?username=%s&password=%s"),
+                            settings.hostname, settings.hostpath, settings.username, settings.password);
+
+#ifdef USE_EC_SENSOR
+  sprintf_P(sensorBuff, PSTR("&ec=%4.2f"), dataEntry.EC);
+  strcat(postData, sensorBuff);
+#endif
+#ifdef USE_BRIGHTNESS_SENSOR
+  sprintf_P(sensorBuff, PSTR("&brightness=%u"), dataEntry.brightness);
+  strcat(postData, sensorBuff);
+#endif
+#ifdef USE_WATERTEMPERATURE_SENSOR
+  sprintf_P(sensorBuff, PSTR("&watertemp=%3.1f"), dataEntry.waterTemp);
+  strcat(postData, sensorBuff);
+#endif
+#ifdef USE_WATERLEVEL_SENSOR
+  sprintf_P(sensorBuff, PSTR("&waterlevel=%3.1f"), dataEntry.waterLevel);
+  strcat(postData, sensorBuff);
+#endif
+#ifdef USE_PRESSURE_SENSOR
+  sprintf_P(sensorBuff, PSTR("&pressure=%7.2f"), dataEntry.pressure);
+  strcat(postData, sensorBuff);
+#endif
+#ifdef USE_TEMPERATURE_SENSOR
+  sprintf_P(sensorBuff, PSTR("&temperature=%3.1f"), dataEntry.temperature);
+  strcat(postData, sensorBuff);
+#endif
+#ifdef USE_HUMIDITY_SENSOR
+  sprintf_P(sensorBuff, PSTR("&humidity=%3.1f"), dataEntry.humidity);
+  strcat(postData, sensorBuff);
+#endif
+#ifdef USE_PH_SENSOR
+  sprintf_P(sensorBuff, PSTR("&ph=%4.2f"), dataEntry.pH);
+  strcat(postData, sensorBuff);
+#endif
+#ifdef USE_DO_SENSOR
+  sprintf_P(sensorBuff, PSTR("&do=%4.2f"), dataEntry.DO);
+  strcat(postData, sensorBuff);
+#endif
+#ifdef USE_ORP_SENSOR
+  sprintf_P(sensorBuff, PSTR("&orp=%4.2fu"), dataEntry.ORP);
+  strcat(postData, sensorBuff);
+#endif
+#ifdef USE_GROWLIGHT
+  sprintf_P(sensorBuff, PSTR("&growlight=%i"), dataEntry.growlight);
+  strcat(postData, sensorBuff);
+#endif
+#ifdef USE_FLOW_SENSOR
+  sprintf_P(sensorBuff, PSTR("&flow=%5.1f"), dataEntry.flow);
+  strcat(postData, sensorBuff);
 #endif
 
   uint16_t httpCode = sendPostData(postData);
@@ -285,10 +374,17 @@ void HydroMonitorLogging::transmitMessages() {
     return;
   }
 
+  if (loginValid != VALID) {                                // We need a valid login to be set.
+    return;
+  }
+
   if (millis() - lastSent < 1000) {                         // Wait at least a second before sending another record for responsiveness.
     return;
   }
 
+  uint32_t startTime = millis();
+  Serial.print(millis());
+  Serial.println(F(" Starting message transmission."));
   connectionFailed = false;
   File f = SPIFFS.open(messageLogFileName, "r+");           // Open log file for read/write.
   f.seek(messageToTransmit, SeekSet);                       // Set seek pointer to start of the next message.
@@ -307,6 +403,9 @@ void HydroMonitorLogging::transmitMessages() {
   itoa(timestamp, aTimestamp, 10);
   sprintf_P(postData, PSTR("https://%s%s?username=%s&password=%s&loglevel=%s&message=%s&timestamp=%s"),
             settings.hostname, settings.hostpath, settings.username, settings.password, aLoglevel, encodedMessage.c_str(), aTimestamp);
+  Serial.print(millis());
+  Serial.print(" ");
+  Serial.println(postData);
   uint16_t httpCode = sendPostData(postData);               // Post the message to the database.
   if (httpCode == 200) {                                    // 200 = OK, transmissions successful.
     f.seek(messageToTransmit, SeekSet);                     // Set seek pointer back to the start of this message: the status byte.
@@ -315,6 +414,10 @@ void HydroMonitorLogging::transmitMessages() {
     if (f.size() == messageToTransmit) {                    // We reached the end of the file - transmission completed.
       messageTransmitComplete = true;
     }
+    Serial.print(millis());
+    Serial.print(" Message transmission successful. Time taken: ");
+    Serial.print(millis() - startTime);
+    Serial.println(" ms.");
   }
   else {                                                    // Connection failed: try again later.
     connectionFailed = true;
@@ -322,6 +425,8 @@ void HydroMonitorLogging::transmitMessages() {
   }
   f.close();
   lastSent = millis();
+  Serial.print(millis());
+  Serial.println(" transmitMessages() finished.");
 }  
 
 /********************************************************************************************************************
@@ -343,27 +448,41 @@ void HydroMonitorLogging::checkCredentials(char* host, char* path, char* un, cha
     return;
   }
 
-  uint16_t size = 35 + strlen(host) + strlen(path) + strlen(un) + strlen(pw);
+  uint16_t size = 50 + strlen(host) + strlen(path) + strlen(un) + strlen(pw);
   char postData[size];
   sprintf_P(postData, PSTR("https://%s%s?username=%s&password=%s&validate=1"),
                            host, path, un, pw);
-  
+  Serial.print("Size: ");
+  Serial.print(size);
+  Serial.print(", length: ");
+  Serial.println(strlen(postData));
+  uint32_t startTime = millis();
+  Serial.println("Checking credentials.");
   uint16_t responseCode = sendPostData(postData);
 
   if (responseCode == 404) {
     hostValid = VALID;
     pathValid = INVALID;
+    Serial.println("Host validated.");
   }  
   else if (responseCode == 403) { 
     hostValid = VALID;
     pathValid = VALID;
     loginValid = INVALID;
+    Serial.println("Host and path validated.");
   }
   else if (responseCode == 200) {
     hostValid = VALID;
     pathValid = VALID;
     loginValid = VALID;
+    Serial.print("All credentials validated.");
   }
+  else {
+    Serial.print("All credentials invalid.");
+  }
+    Serial.print(" Time taken: ");
+    Serial.print(millis() - startTime);
+    Serial.println(" ms.");
 }
 
 /********************************************************************************************************************
@@ -506,7 +625,7 @@ void HydroMonitorLogging::bufferMsg(const char *str) {
 void HydroMonitorLogging::settingsHtml(ESP8266WebServer *server) {
 
   // Check the validity of our locally stored credentials - this may differ from the global set if invalid & not stored to EEPROM.
-  checkCredentials(settings.hostname, settings.hostpath, settings.username, settings.password);
+//  checkCredentials(settings.hostname, settings.hostpath, settings.username, settings.password);
   server->sendContent_P(PSTR("\
       <tr>\n\
         <th colspan=\"2\">Remote logging settings.</th>\n\
@@ -653,6 +772,14 @@ void HydroMonitorLogging::updateSettings(ESP8266WebServer* server) {
   strcpy(settings.username, username);
   strcpy(settings.password, password);
 
+  
+  Serial.println();
+  Serial.println("Checking known-good credentials.");
+  checkCredentials("www.cityhydroponics.hk", "/HydroMonitor/postData.py/postData", "fridge_a", "fridge_a_password");
+  Serial.println();
+  Serial.println("Checking new credentials.");
+
+
   // If any settings changed, check whether the login is valid. Only store the settings
   // in EEPROM if the new credentials are correct.
   checkCredentials();
@@ -690,6 +817,42 @@ uint16_t HydroMonitorLogging::sendPostData(char* postData) {
   } 
   return responseCode;    
 }  
+
+/*
+uint16_t HydroMonitorLogging::sendPostData(char* postData) {
+
+  // Create an https client, and set it to ignore the certificate.
+  // This is insecure: it allows for a MITM attack.
+  std::unique_ptr<BearSSL::WiFiClientSecure>client(new BearSSL::WiFiClientSecure);
+  client->setInsecure();
+  HTTPClient https;
+  
+  // Open a connection to the host.
+  uint16_t responseCode;
+  Serial.print(millis());
+  Serial.println(" Opening connection.");
+  Serial.println(postData);
+  if (https.begin(*client, postData)) {                     // HTTPS connection.
+    Serial.print(millis());
+    Serial.println(" Getting response.");
+    responseCode = https.GET();                             // start connection and send HTTP header
+    Serial.print(millis());
+    Serial.println(" Got response.");
+    if (responseCode > 0) {                                 // httpCode will be negative on error
+      if (responseCode == HTTP_CODE_OK || responseCode == HTTP_CODE_MOVED_PERMANENTLY) { // File found at server
+        String payload = https.getString();
+      }
+    }
+    Serial.print(millis());
+    Serial.println(" Closing connection.");
+    https.end();
+  }
+//  Serial.print(millis());
+//  Serial.println(" Stopping client.");
+//  client->stop();
+  return responseCode;    
+}  
+*/
 
 /********************************************************************************************************************
  * When calling this function:

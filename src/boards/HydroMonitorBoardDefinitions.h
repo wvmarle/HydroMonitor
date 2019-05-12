@@ -20,6 +20,8 @@
 //#include <boards/Williams_fridge_V1.h>
 #include <boards/Williams_fridge_V2.h>
 
+//#include <boards/logging_tests.h>
+
 //#include <boards/test_everything_1.h>
 //#include <boards/test_everything_2.h>
 //#include <boards/test_everything_3.h>

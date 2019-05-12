@@ -60,6 +60,6 @@
 //#define FLOATSWITCH_MEDIUM_MCP17_PIN  7   // AUX2 connector.
 //#define FLOATSWITCH_LOW_PIN           14  // DS18B20 connector.
 
-#define USE_24LC256_EEPROM
+//#define USE_24LC256_EEPROM
 
 #endif
