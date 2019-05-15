@@ -128,7 +128,7 @@ void HydroMonitorReservoir::doReservoir() {
     }
   }
   else {
-    if (mcp->digitalRead(RESERVOIR_MCP17_PIN) == HIGH) {    // It should be pulled high, unless triggered.
+    if (mcp->digitalRead(RESERVOIR_MCP17_PIN) == HIGH) {    // It should be pulled low, unless triggered.
       floatswitchTriggered = true;
     }
   }
@@ -271,6 +271,7 @@ void HydroMonitorReservoir::doReservoir() {
     if ((isWeeklyTopUp && millis() - startAddWater > 3 * 60 * 1000) || // Weekly top-up for 3 minutes, or
         millis() - startAddWater > 20 * 60 * 1000) {        // 20 minutes for a complete fill.
     closeValve();
+    bitClear(sensorData->systemStatus, STATUS_RESERVOIR_LEVEL_LOW); // It's for sure filled up now.
     logging->writeInfo(F("HydroMonitorReservoir: finished adding water, closing the valve."));
     }
   }

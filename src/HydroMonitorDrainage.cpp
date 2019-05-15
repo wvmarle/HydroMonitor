@@ -142,6 +142,9 @@ void HydroMonitorDrainage::doDrainage() {
         switchPumpOn();
         drainageState = DRAINAGE_AUTOMATIC_DRAINING_RUNNING;
         drainageStart = millis();
+#ifndef USE_WATERLEVEL_SENSOR
+        bitSet(sensorData->systemStatus, STATUS_RESERVOIR_LEVEL_LOW); // We're completely draining the reservoir now.
+#endif
       }
     break;
     
