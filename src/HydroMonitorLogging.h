@@ -25,9 +25,8 @@
 
 #define CONNECTION_RETRY_DELAY            60*60*1000
 
-// Available: 256 kB of SPIFFS.
-// For logging: 200 kB; total four log files; 50,000 bytes each.
-#define MAX_LOGFILE_SIZE                  50000
+// Maximum file size to store messages and data.
+#define MAX_LOGFILE_SIZE                  20000
 #define MAX_FILE_SIZE                     20000
 
 #define RECORD_STORED                     0x01

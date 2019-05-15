@@ -120,6 +120,7 @@ void HydroMonitorLogging::initMessageLogFile() {
           SPIFFS.remove(messageLogFileName);
           nMessages = 0;
           messageToTransmit = 0;
+          writeTrace(F("Message log file corrupt; removed this."));
           break;
         }
       }
