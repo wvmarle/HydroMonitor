@@ -193,6 +193,9 @@ void HydroMonitorDrainage::doDrainage() {
       drainageState = DRAINAGE_MANUAL_DRAINING_RUNNING;
       bitSet(sensorData->systemStatus, STATUS_MAINTENANCE);
       drainageStart = millis();
+#ifndef USE_WATERLEVEL_SENSOR
+      bitSet(sensorData->systemStatus, STATUS_RESERVOIR_DRAINED); // Ensure refilling of the reservoir when we're done.
+#endif
     break;
     
     case DRAINAGE_MANUAL_DRAINING_RUNNING:
@@ -222,9 +225,6 @@ void HydroMonitorDrainage::doDrainage() {
           EEPROM.commit();
 #endif
         }
-#ifndef USE_WATERLEVEL_SENSOR
-        bitSet(sensorData->systemStatus, STATUS_RESERVOIR_DRAINED);
-#endif
       } 
 #ifdef USE_WATERLEVEL_SENSOR
       if (sensorData->waterLevel > 12) {                  // It was a false reading.
