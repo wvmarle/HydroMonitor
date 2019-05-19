@@ -213,23 +213,22 @@ void HydroMonitorFertiliser::doFertiliser() {
     // long the pumps have to run to add just that volume.
     // So if target EC = 1.00, it will start adding when the EC is <0.95 for >10 minutes, and top up the EC
     // to about 1.04 (not 1.05 as it was less than 0.95 to begin with).
-    float addVolume = 0.1 * 1000 * sensorData->solutionVolume / sensorData->fertiliserConcentration; // The amount of fertiliser in ml to be added.
-    char buff[70];
-    sprintf_P(buff, PSTR("HydroMonitorFertiliser: adding %3.1f ml of fertiliser solution."), addVolume);
-    logging->writeInfo(buff);
+    float addVolume = 0.1 * 1000 * sensorData->solutionVolume / sensorData->fertiliserConcentration; // The amount of fertiliser in ml to be added of 0.1 mS/cm worth of EC.
     
     // If the EC we measure is more than 0.1 mS/cm lower than the target volume, add a full shot of fertiliser.
     if (sensorData->EC > sensorData->targetEC - 0.1) {
     
-      // Don't add more than 0.5 mS/cm in one go.
-      if (sensorData->EC > sensorData->targetEC - 0.5) {
-        addVolume *= 0.5 * 10;
+      // Don't add more than 1 mS/cm worth of fertiliser in one go.
+      if (sensorData->EC > sensorData->targetEC - 1) {
+        addVolume *= 1 * 10;
       }
       else {
         addVolume *= (sensorData->targetEC - sensorData->EC) * 10;
       }
     }
-    
+    char buff[70];
+    sprintf_P(buff, PSTR("HydroMonitorFertiliser: adding %3.1f ml of fertiliser solution."), addVolume);
+    logging->writeInfo(buff);    
     runATime = addVolume / settings.pumpASpeed * 60 * 1000; // the time in milliseconds pump A has to run.
     runBTime = addVolume / settings.pumpBSpeed * 60 * 1000; // the time in milliseconds pump B has to run.
     logging->writeTrace(F("HydroMonitorFertiliser: 10 minutes of too low EC; have to start adding fertiliser."));
@@ -246,7 +245,7 @@ void HydroMonitorFertiliser::doFertiliser() {
 #endif
   
   if (millis() - lastTimeAdded < 30 * 60 * 1000) {          // Monitor EC for 30 minutes after last time added; it should be going up now.
-    if (sensorData->EC > originalEC + 0.05) {
+    if (sensorData->EC > originalEC + 0.07) {
       originalEC = 0;
     }
   }

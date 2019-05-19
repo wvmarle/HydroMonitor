@@ -2,12 +2,24 @@
  * HydroMonitorLogging
  *
 
+  All log entries have a 16-byte header to store metadata, followed by the log entry itself.
+
    Message file format:
     - byte 0: records whether that record has been sent already.
     - byte 1: message type (log level).
     - byte 2-5: timestamp (seconds since epoch)
-    - byte 6 - n+6: the message itself in ASCII format, null terminated.
-    Minimum record size: 6; maximum record size: 506.
+    - byte 6-15: reserved for future use.
+    - byte 16 - n+16: the message itself in ASCII format, null terminated.
+
+    Minimum record size: 17; maximum record size: 516.
+    
+    Data file format:
+      - byte 0: records whether that record has been sent already.
+      - byte 1-4: timestamp (seconds since epoch).
+      - byte 6-15: reserved for future use.
+      - byte 16 onwards: the sensor data.
+      
+    All data records have a fixed length of 16 + sizeOf(sensorData).
     
  */
  
@@ -118,6 +130,6 @@ class HydroMonitorLogging
     const char* messageLogFile1Name = "messagelog1";
     
     const uint8_t dataRecordSize = sizeof(HydroMonitorCore::SensorData);
-    const uint8_t fileRecordSize = dataRecordSize + 1;
+    const uint8_t fileRecordSize = dataRecordSize + 16;
 };
 #endif

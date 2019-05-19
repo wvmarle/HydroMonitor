@@ -115,6 +115,14 @@ void HydroMonitorECSensor::readSensor() {
       logging->writeWarning(message);
     }
   }
+  Serial.println();
+  Serial.print(F("ECSensor: got reading "));
+  Serial.print(reading);
+  Serial.print(F(" cycles and water temperature "));
+  Serial.print(sensorData->waterTemp);
+  Serial.print(F(", calculated EC: "));
+  Serial.print(sensorData->EC);
+  Serial.println(F(" mS/cm."));
 }
 
 

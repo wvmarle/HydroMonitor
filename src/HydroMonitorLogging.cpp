@@ -38,7 +38,6 @@ void HydroMonitorLogging::begin(HydroMonitorCore::SensorData *sd) {
     EEPROM.commit();
 #endif
   }
-  checkCredentials();
 
   // Set up the local storage (SPIFFS - store in flash).
   SPIFFS.begin();                                           // Initialse the SPIFFS storage.
@@ -48,9 +47,6 @@ void HydroMonitorLogging::begin(HydroMonitorCore::SensorData *sd) {
   
 //*******************************************************************************************************************
 // Initialise the data logging.
-// data file format:
-// byte 0: transmission status.
-// byte 1 ... sizeof(sensorData) + 1: the sensor data (binary).
 void HydroMonitorLogging::initDataLogFile() {
   File f;
   if (SPIFFS.exists(dataLogFileName) == false) {            // If the data log does not exist,
@@ -76,7 +72,11 @@ void HydroMonitorLogging::initDataLogFile() {
       }
     }
     connectionFailTime = -CONNECTION_RETRY_DELAY;           // We want to start transmitting right away!
+    sprintf_P(msg, PSTR("HydroMonitorLogging: data points in this file: %d."), nRecords);
+    writeTrace(msg);
   }
+  sprintf_P(msg, PSTR("HydroMonitorLogging: first unsent data point: %d."), dataRecordToTransmit);
+  writeTrace(msg);
   f.close();
 }
 
@@ -93,7 +93,7 @@ void HydroMonitorLogging::initMessageLogFile() {
     f.close();
     messageToTransmit = 0;                                  // Seek index: start of first message due to be transmitted.
   }
-  else {                                                    // Data log exists already, figure out how far we were with transmission to the server->
+  else {                                                    // Data log exists already, figure out how far we were with transmission to the server.
     f = SPIFFS.open(messageLogFileName, "r");
 
     // Search file for the latest sent message.
@@ -104,13 +104,13 @@ void HydroMonitorLogging::initMessageLogFile() {
       while (i < f.size()) {                                // Search the file until the end.
         f.seek(i, SeekSet);
         status = f.read();                                  // Read the message status byte.
-        f.seek(i + 6, SeekSet);                             // Set search pointer to start of the logged message - skipping the status bytes.
+        f.seek(i + 16, SeekSet);                            // Set search pointer to start of the logged message - skipping the header bytes.
         nBytes = f.readBytesUntil('\0', msg, MAX_MESSAGE_SIZE - 1); // Get total size of the stored message.        
         if ((status == RECORD_STORED || status == RECORD_TRANSMITTED) &&
             nBytes <= MAX_MESSAGE_SIZE) {                   // Record appears sound.
           nMessages++;                                      // Keep track of total number of messages we have stored.
           addMessageToList(i);                              // Keep track of the starting points of the last 50 messages.
-          i += nBytes + 7;                                  // Set index to start of the next message (which starts nBytes + 6 control + 1 null terminator further).
+          i += nBytes + 17;                                 // Set index to start of the next message (which starts nBytes + 16 header + 1 null terminator further).
           if (status == RECORD_TRANSMITTED) {               // This message has been transmitted already,
             messageToTransmit = i;                          // but maybe the next not yet. Set start index to that point.
           }
@@ -156,6 +156,14 @@ void HydroMonitorLogging::logData() {
     dataTransmitComplete = false;                           // We're adding a new record, so transmission is required.
     File f = SPIFFS.open(dataLogFileName, "a");             // Open the file, append mode.
     f.write(RECORD_STORED);                                 // First byte: status (it's merely stored at the moment).
+    uint32_t timestamp = now();
+    f.write(timestamp & 0xFF);                              // Bytes 1-4: the time stamp.
+    f.write(timestamp >> 8) & 0xFF;
+    f.write(timestamp >> 16) & 0xFF;
+    f.write(timestamp >> 24);
+    for (uint8_t i = 0; i < 11; i++) {
+      f.write('\0');                                        // Fill the rest of the header with zeros.
+    }
     uint8_t buff[dataRecordSize];                           // Create a copy of the sensorData in different type
     memcpy(buff, sensorData, dataRecordSize);               // for easier writing to the file.
     for (uint8_t i = 0; i < dataRecordSize; i++) {          // TODO: can this be done through cast? 
@@ -186,48 +194,49 @@ void HydroMonitorLogging::logData() {
     }
     f.close();
   }
-  transmitData();
-  transmitMessages();
+
+  // Transmit messages & data - if we can do this now.
+  static bool credentialsChecked = false;                   // We have to check credentials after WiFi is up.
+  if (bitRead(sensorData->systemStatus, STATUS_WATERING) == false && // Don't do this while watering.
+      WiFi.status() == WL_CONNECTED &&                      // We're connected to WiFi.
+      millis() - lastSent > 1000) {                         // Wait at least a second before sending another record for responsiveness.
+    if (credentialsChecked == false) {                      // We didn't check credentials yet.
+      checkCredentials();                                   // Do this now.
+      credentialsChecked = true;
+    }
+    if (loginValid != VALID) {                              // We need a valid login to be set.
+      if (millis() - lastSent > WARNING_INTERVAL) {         // Produce warnings now and then if this is not set.
+        checkCredentials();                                 // Check again for good measure. You never know.
+        if (loginValid != VALID) {                          // Still not? Produce the warning for real.
+          writeWarning(F("Logging 01: can not transmit messages or data: database login invalid."));
+          lastSent = millis();
+        }
+      }
+    }
+    else if (connectionFailed) {                            // If the connection failed,
+      if (millis() - connectionFailTime > CONNECTION_RETRY_DELAY) { // wait some time before trying again.
+        connectionFailed = false;
+      }
+      if (millis() - lastSent > WARNING_INTERVAL) {         // Produce warning if it's been long enough.
+        writeWarning(F("Logging 02: can not transmit messages or data: connection failed."));
+        lastSent = millis();
+      }
+    }
+    else {                                                  // Everything checked out; we can try to send messages and data now.
+      if (dataTransmitComplete == false) {                  // We have data points to transmit.
+        transmitData();
+      }
+      else if (messageTransmitComplete == false) {          // We have messages to transmit.
+        transmitMessages();
+      }
+    }
+  }
 }
 
 /********************************************************************************************************************
  * Transmit a sensor data record to the server.
  */
 void HydroMonitorLogging::transmitData() {
-  if (bitRead(sensorData->systemStatus, STATUS_WATERING)) {  // Don't do this while watering.
-    return;
-  }
-
-  if (loginValid != VALID) {                                // We need a valid login to be set.
-    if (millis() - lastSent > WARNING_INTERVAL) {
-      writeWarning(F("Logging 01: can not transmit messages or data: database login invalid."));
-      lastSent = millis();
-    }
-    return;
-  }
-    
-  if (connectionFailed &&                                   // If the connection failed, don't try again immediately.
-      millis() - connectionFailTime < CONNECTION_RETRY_DELAY) {
-    if (millis() - lastSent > CONNECTION_RETRY_DELAY) {
-      writeWarning(F("Logging 02: can not transmit messages or data: connection failed."));
-      lastSent = millis();
-    }
-    return;
-  }
-  
-  if (dataTransmitComplete) {                               // Nothing to transmit.
-    return;
-  }
-
-  if (WiFi.status() != WL_CONNECTED) {                      // We're not connected to WiFi - can't transmit.
-    return;
-  }
-  
-  if (millis() - lastSent < 1000) {                         // Wait at least a second before sending another record for responsiveness.
-    return;
-  }
-  
-  connectionFailed = false;
   File f = SPIFFS.open(dataLogFileName, "r+");              // Open log file for read/write.
 
   // All data is stored already in the logfile; read back the data to transmit, attempt to transmit it, and if
@@ -236,23 +245,27 @@ void HydroMonitorLogging::transmitData() {
   char buff[fileRecordSize];
   f.seek(dataRecordToTransmit * fileRecordSize, SeekSet);   // Start reading from the start of the next record we have to transmit.
   f.readBytes(buff, fileRecordSize);
-  memcpy(&dataEntry, buff + 1, dataRecordSize);             // Skip the record's byte 0, the status byte.
-  
-  uint16_t size = 90 + strlen(settings.hostname) + strlen(settings.hostpath) + strlen(settings.username) + strlen(settings.password);
+  uint32_t timestamp;
+  memcpy(&timestamp, buff + 1, 4);                          // Skip the record's byte 0, the status byte.
+  memcpy(&dataEntry, buff + 16, dataRecordSize);            // Skip the record's 16-byte header.
+  uint16_t size = 120 + strlen(settings.hostname) + strlen(settings.hostpath) + strlen(settings.username) + strlen(settings.password);
   char postData[size];
 #ifdef USE_WATERLEVEL_SENSOR
-  sprintf_P(postData, PSTR("https://%s%s?username=%s&password=%s&ec=%4.2f&watertemp=%4.2f&waterlevel=%4.2f&ph=%4.2f"),
+  sprintf_P(postData, PSTR("https://%s%s?username=%s&password=%s&ec=%4.2f&watertemp=%4.2f&waterlevel=%4.2f&ph=%4.2f&timestamp=%u"),
                             settings.hostname, settings.hostpath, settings.username, settings.password, 
-                            dataEntry.EC, dataEntry.waterTemp, dataEntry.waterLevel, dataEntry.pH);
+                            dataEntry.EC, dataEntry.waterTemp, dataEntry.waterLevel, dataEntry.pH,
+                            timestamp);
 #else
-  sprintf_P(postData, PSTR("https://%s%s?username=%s&password=%s&ec=%4.2f&watertemp=%4.2f&waterlevel=%4.2f&ph=%4.2f"),
+  sprintf_P(postData, PSTR("https://%s%s?username=%s&password=%s&ec=%4.2f&watertemp=%4.2f&waterlevel=%4.2f&ph=%4.2f&timestamp=%u"),
                             settings.hostname, settings.hostpath, settings.username, settings.password, 
-                            dataEntry.EC, dataEntry.waterTemp, 0, dataEntry.pH);
+                            dataEntry.EC, dataEntry.waterTemp, 0, dataEntry.pH,
+                            timestamp);
 #endif
 
   uint16_t httpCode = sendPostData(postData);
   if (httpCode == 200) {                                    // 200 = OK, transmissions successful.
-    f.seek(dataRecordToTransmit * fileRecordSize, SeekSet);    
+    uint16_t seekPointer = dataRecordToTransmit * fileRecordSize;
+    f.seek(dataRecordToTransmit * fileRecordSize, SeekSet);
     f.write(RECORD_TRANSMITTED);                            // Mark file entry as transmitted.
     dataRecordToTransmit++;                                 // Proceed to next entry.
     if (f.size() == dataRecordToTransmit * fileRecordSize) {
@@ -274,23 +287,6 @@ void HydroMonitorLogging::transmitData() {
  * Transmit a message record to the server.
  */
 void HydroMonitorLogging::transmitMessages() {
-  if (bitRead(sensorData->systemStatus, STATUS_WATERING)) {  // Don't do this while watering.
-    return;
-  }
-
-  if (messageTransmitComplete) {
-    return;
-  }
-
-  if (WiFi.status() != WL_CONNECTED) {
-    return;
-  }
-
-  if (millis() - lastSent < 1000) {                         // Wait at least a second before sending another record for responsiveness.
-    return;
-  }
-
-  connectionFailed = false;
   File f = SPIFFS.open(messageLogFileName, "r+");           // Open log file for read/write.
   f.seek(messageToTransmit, SeekSet);                       // Set seek pointer to start of the next message.
   f.readBytes(msg, 6);                                      // The control bytes.
@@ -348,9 +344,7 @@ void HydroMonitorLogging::checkCredentials(char* host, char* path, char* un, cha
   char postData[size];
   sprintf_P(postData, PSTR("https://%s%s?username=%s&password=%s&validate=1"),
                            host, path, un, pw);
-  
   uint16_t responseCode = sendPostData(postData);
-
   if (responseCode == 404) {
     hostValid = VALID;
     pathValid = INVALID;
