@@ -500,8 +500,6 @@ void HydroMonitorLogging::bufferMsg(const char *str) {
  */
 void HydroMonitorLogging::settingsHtml(ESP8266WebServer *server) {
 
-  // Check the validity of our locally stored credentials - this may differ from the global set if invalid & not stored to EEPROM.
-  checkCredentials(settings.hostname, settings.hostpath, settings.username, settings.password);
   server->sendContent_P(PSTR("\
       <tr>\n\
         <th colspan=\"2\">Remote logging settings.</th>\n\
@@ -572,8 +570,6 @@ void HydroMonitorLogging::settingsHtml(ESP8266WebServer *server) {
  */
 bool HydroMonitorLogging::settingsJSON(ESP8266WebServer* server) {
 
-  // Check the validity of our locally stored credentials - this may differ from the global set if invalid & not stored to EEPROM.
-  checkCredentials(settings.hostname, settings.hostpath, settings.username, settings.password);
   server->sendContent_P(PSTR("  \"logging\": {\n"
                              "    \"hostname\":\""));
   if (strlen(settings.hostname) > 0) {
