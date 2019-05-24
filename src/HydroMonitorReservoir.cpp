@@ -179,13 +179,13 @@ void HydroMonitorReservoir::doReservoir() {
     openValve();
     startAddWater = millis();
     lastLevelCheck = millis();
-    waterLevelSensor->readSensor();
+    waterLevelSensor->readSensor(readNow = true);
     logging->writeTrace(F("HydroMonitorReservoir: No water level detected for half a minute, opening water inlet valve for 30 seconds to try and get the water level sensor to react."));
   }
   else if (initialFillingInProgress) {                      // We're trying to add some water to the reservoir.
     if (millis() - lastLevelCheck > 500) {                  // Check the sensor every 0.5 seconds.
       lastLevelCheck += 500;
-      waterLevelSensor->readSensor();
+      waterLevelSensor->readSensor(readNow = true);
     }
     if (millis() - startAddWater > 30 * 1000                // After 30 seconds, or:
         || sensorData->waterLevel > 0) {                    // if we actually have a reading, we can stop this.
@@ -198,7 +198,7 @@ void HydroMonitorReservoir::doReservoir() {
     if (bitRead(sensorData->systemStatus, STATUS_FILLING_RESERVOIR)) { // Reservoir is being filled.
       if (millis() - lastLevelCheck > 500) {                // Measure the reservoir fill every 0.5 seconds.
         lastLevelCheck += 500;
-        waterLevelSensor->readSensor();
+        waterLevelSensor->readSensor(readNow = true);
       }
       if (sensorData->waterLevel > settings.maxFill) {      // If we have enough water in the reservoir, close the valve.
         closeValve();

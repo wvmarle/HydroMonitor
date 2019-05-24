@@ -34,14 +34,14 @@ class HydroMonitorIsolatedSensorBoard: public HydroMonitorSensorBase
     struct Settings {
     };
     
-    HydroMonitorIsolatedSensorBoard();           // The constructor.
+    HydroMonitorIsolatedSensorBoard();                      // The constructor.
     
     // The functions required for all sensors.
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, SoftwareSerial*);
-    void readSensor(void);            // Measures the EC value, takes the water temperature as input, returns the result.
-    void dataHtml(ESP8266WebServer*);            // Provides html code with the sensor data.
-    void settingsHtml(ESP8266WebServer*);        // Provides html code with the settings.
-    bool settingsJSON(ESP8266WebServer*);        // Provides JSON code with the settings.
+    void readSensor(bool readNow = false);                  // Measures the EC value, takes the water temperature as input, returns the result.
+    void dataHtml(ESP8266WebServer*);                       // Provides html code with the sensor data.
+    void settingsHtml(ESP8266WebServer*);                   // Provides html code with the settings.
+    bool settingsJSON(ESP8266WebServer*);                   // Provides JSON code with the settings.
     void updateSettings(ESP8266WebServer*);
     
   private:
@@ -49,8 +49,8 @@ class HydroMonitorIsolatedSensorBoard: public HydroMonitorSensorBase
     // Variables and functions related to the reading of the sensor.
 
     // Other.
-    HydroMonitorCore core;            // Provides some utility functions.
-    Settings settings;                // The settings store.
+    HydroMonitorCore core;                                  // Provides some utility functions.
+    Settings settings;                                      // The settings store.
     HydroMonitorCore::SensorData *sensorData;
     HydroMonitorLogging *logging;
     SoftwareSerial *sensorSerial;

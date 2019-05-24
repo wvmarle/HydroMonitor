@@ -29,7 +29,7 @@ void HydroMonitorIsolatedSensorBoard::begin(HydroMonitorCore::SensorData *sd, Hy
  * Take a measurement from the sensor.
  * As this is a Serial input this one should be called frequently.
  */ 
-void HydroMonitorIsolatedSensorBoard::readSensor() {
+void HydroMonitorIsolatedSensorBoard::readSensor(bool readNow) {
   if (sensorSerial->available()) {
     char c = sensorSerial->read();
     Serial.print(c);

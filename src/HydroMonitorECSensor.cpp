@@ -75,54 +75,59 @@ void HydroMonitorECSensor::readCalibration() {
 /*
  * Take a measurement from the sensor.
  */
-void HydroMonitorECSensor::readSensor() {
+void HydroMonitorECSensor::readSensor(bool readNow) {
+  static uint32_t lastReadSensor = -REFRESH_SENSORS;
+  if (millis() - lastReadSensor > REFRESH_SENSORS ||
+      readNow) {
+    lastReadSensor = millis();
 #ifdef USE_ISOLATED_SENSOR_BOARD
-  uint32_t reading = sensorData->ecReading;
+    uint32_t reading = sensorData->ecReading;
 #else
-  uint32_t reading = takeReading();
+    uint32_t reading = takeReading();
 #endif
-  if (reading > 0) {
-    sensorData->EC = calibratedSlope / (reading - calibratedIntercept);
-    if (sensorData->waterTemp > 0) {
-      sensorData->EC = (double)sensorData->EC / (1 + ALPHA * (sensorData->waterTemp - 25)); // temperature correction: measured to nominal.
-    }
+    if (reading > 0) {
+      sensorData->EC = calibratedSlope / (reading - calibratedIntercept);
+      if (sensorData->waterTemp > 0) {
+        sensorData->EC = (double)sensorData->EC / (1 + ALPHA * (sensorData->waterTemp - 25)); // temperature correction: measured to nominal.
+      }
 
-    // Send warning if it's been long enough ago & EC is >30% below target.
-    if (millis() - lastWarned > WARNING_INTERVAL && sensorData->EC < 0.7 * sensorData->targetEC) {
-      lastWarned = millis();
-      char message[120];
-      sprintf_P(message, PSTR("ECSensor 01: EC level is too low; additional fertiliser is urgently needed.\n"
-                              "Target set: %2.2f mS/cm, current EC: %2.2f mS/cm."), 
-                              sensorData->targetEC, sensorData->EC);
-      logging->writeWarning(message);
-    }
+      // Send warning if it's been long enough ago & EC is >30% below target.
+      if (millis() - lastWarned > WARNING_INTERVAL && sensorData->EC < 0.7 * sensorData->targetEC) {
+        lastWarned = millis();
+        char message[120];
+        sprintf_P(message, PSTR("ECSensor 01: EC level is too low; additional fertiliser is urgently needed.\n"
+                                "Target set: %2.2f mS/cm, current EC: %2.2f mS/cm."), 
+                                sensorData->targetEC, sensorData->EC);
+        logging->writeWarning(message);
+      }
 
-    // Send warning if EC is exceptionally high.
-    if (millis() - lastWarned > WARNING_INTERVAL && sensorData->EC > 5) {
-      lastWarned = millis();
-      char message[120];
-      sprintf_P(message, PSTR("ECSensor 02: EC level is exceptionally high: %2.2f mS/cm. Check sensor."), 
-                              sensorData->EC);
-      logging->writeWarning(message);
+      // Send warning if EC is exceptionally high.
+      if (millis() - lastWarned > WARNING_INTERVAL && sensorData->EC > 5) {
+        lastWarned = millis();
+        char message[120];
+        sprintf_P(message, PSTR("ECSensor 02: EC level is exceptionally high: %2.2f mS/cm. Check sensor."), 
+                                sensorData->EC);
+        logging->writeWarning(message);
+      }
     }
-  }
-  else {
-    sensorData->EC = -1;
-    if (millis() - lastWarned > WARNING_INTERVAL) {
-      lastWarned = millis();
-      char message[120];
-      sprintf_P(message, PSTR("ECSensor 03: EC sensor not detected."));
-      logging->writeWarning(message);
+    else {
+      sensorData->EC = -1;
+      if (millis() - lastWarned > WARNING_INTERVAL) {
+        lastWarned = millis();
+        char message[120];
+        sprintf_P(message, PSTR("ECSensor 03: EC sensor not detected."));
+        logging->writeWarning(message);
+      }
     }
+    Serial.println();
+    Serial.print(F("ECSensor: got reading "));
+    Serial.print(reading);
+    Serial.print(F(" cycles and water temperature "));
+    Serial.print(sensorData->waterTemp);
+    Serial.print(F(", calculated EC: "));
+    Serial.print(sensorData->EC);
+    Serial.println(F(" mS/cm."));
   }
-  Serial.println();
-  Serial.print(F("ECSensor: got reading "));
-  Serial.print(reading);
-  Serial.print(F(" cycles and water temperature "));
-  Serial.print(sensorData->waterTemp);
-  Serial.print(F(", calculated EC: "));
-  Serial.print(sensorData->EC);
-  Serial.println(F(" mS/cm."));
 }
 
 
@@ -449,7 +454,7 @@ void HydroMonitorECSensor::saveCalibrationData() {
   readCalibration();
   
   // Take a new reading of the sensor value now we have new calibration values.
-  readSensor();
+  readSensor(true);
   return;
 }
 

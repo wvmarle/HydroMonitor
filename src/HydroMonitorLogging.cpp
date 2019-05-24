@@ -662,6 +662,8 @@ void HydroMonitorLogging::updateSettings(ESP8266WebServer* server) {
  */
 uint16_t HydroMonitorLogging::sendPostData(char* postData) {
 
+  return 404;
+
   // Create an https client, and set it to ignore the certificate.
   // This is insecure: it allows for a MITM attack.
   std::unique_ptr<BearSSL::WiFiClientSecure>client(new BearSSL::WiFiClientSecure);

@@ -32,10 +32,9 @@ void HydroMonitorWaterTempSensor::begin(HydroMonitorCore::SensorData *sd, HydroM
   void HydroMonitorWaterTempSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, DallasTemperature *ds, OneWire *oneWire) {
   ds18b20 = ds;
   ds18b20->begin();
-  if (ds18b20->getDeviceCount() > 0) {
-    oneWire->reset_search();
-    oneWire->search(deviceAddress);
-    ds18b20->setResolution(deviceAddress, 12);
+  ds18b20->setWaitForConversion(false);
+  startConversion();
+  if (sensorPresent) {
     l->writeTrace(F("WaterTempSensor: configured DS18B20 sensor."));
   }
   else {
@@ -61,43 +60,81 @@ void HydroMonitorWaterTempSensor::begin(HydroMonitorCore::SensorData *sd, HydroM
 /*
  * Get a reading from the sensor.
  */
-void HydroMonitorWaterTempSensor::readSensor() {
-
+void HydroMonitorWaterTempSensor::readSensor(bool readNow) {
+  
+////////////////////////////////////////////////////////////
+// Code for reading the temperature using an NTC probe.
 #ifdef USE_NTC 
-  // read the value from the NTC sensor.
-  uint32_t reading = 0;
+  static uint32_t lastReadSensor = -REFRESH_SENSORS;
+  if (millis() - lastReadSensor > REFRESH_SENSORS ||
+      readNow) {
+    lastReadSensor = millis();
+    uint32_t reading = 0;
   
   // Check whether the NTC sensor is present.
 #ifdef NTC_ADS_PIN
-  reading = ads1115->readADC_SingleEnded(NTC_ADS_PIN);
+    reading = ads1115->readADC_SingleEnded(NTC_ADS_PIN);
 #elif defined(NTC_PIN)
-  reading = analogRead(NTC_PIN);
+    reading = analogRead(NTC_PIN);
 #else
 #error no ntc pin defined.
 #endif
-  if (reading < 0.03*ADCMAX || reading > 0.97*ADCMAX) {
-    return;
+    if (reading < 0.03*ADCMAX || reading > 0.97*ADCMAX) {
+      return;
+    }
+
+    for (uint8_t i = 0; i < (1 << NTCSAMPLES) - 1; i++) {
+#ifdef NTC_ADS_PIN
+      reading += ads1115->readADC_SingleEnded(NTC_ADS_PIN);
+#elif defined(NTC_PIN)
+      reading += analogRead(NTC_PIN);
+#endif
+      delay(10);
+      yield();
+    }
+    
+    //Calculate temperature using the Beta Factor equation
+//  reading = reading >> NTCSAMPLES;
+    sensorData->waterTemp = 1.0 / (log (NTCSERIESRESISTOR / ((ADCMAX / (reading >> NTCSAMPLES) - 1) * THERMISTORNOMINAL)) / BCOEFFICIENT + 1.0 / (TEMPERATURENOMINAL + 273.15)) - 273.15;
+  }
+  
+////////////////////////////////////////////////////////////
+// Code for reading the temperature using the MS5837 underwater pressure and temperature sensor.
+#elif defined(USE_MS5837)
+  static uint32_t lastReadSensor = -REFRESH_SENSORS;
+  if (millis() - lastReadSensor > REFRESH_SENSORS ||
+      readNow) {
+    lastReadSensor = millis();
+    sensorData->waterTemp = ms5837->readTemperature();
   }
 
-  for (uint8_t i = 0; i < (1 << NTCSAMPLES) - 1; i++) {
-#ifdef NTC_ADS_PIN
-    reading += ads1115->readADC_SingleEnded(NTC_ADS_PIN);
-#elif defined(NTC_PIN)
-    reading += analogRead(NTC_PIN);
-#endif
-    delay(10);
-    yield();
-  }
-  
-  //Calculate temperature using the Beta Factor equation
-//  reading = reading >> NTCSAMPLES;
-  sensorData->waterTemp = 1.0 / (log (NTCSERIESRESISTOR / ((ADCMAX / (reading >> NTCSAMPLES) - 1) * THERMISTORNOMINAL)) / BCOEFFICIENT + 1.0 / (TEMPERATURENOMINAL + 273.15)) - 273.15;
-  
-#elif defined(USE_MS5837)
-  sensorData->waterTemp = ms5837->readTemperature();
+////////////////////////////////////////////////////////////
+// Code for reading the temperature using the DS18B20 digital temperature sensor.
 #elif defined(USE_DS18B20)
-  ds18b20->requestTemperatures();
-  sensorData->waterTemp = ds18b20->getTempC(deviceAddress);
+  static uint32_t lastReadSensor = -REFRESH_SENSORS;
+  static bool conversionInProgress;
+  static uint32_t temp;
+  if (millis() - lastReadSensor > REFRESH_SENSORS ||
+      readNow) {
+    lastReadSensor = millis();
+    conversionInProgress = true;                            // we have to start a new conversion.
+    startConversion();
+  }
+
+  // When the conversion time is over, read the sensor data.
+  if (millis() - lastReadSensor > 750 &&                    // We need at least that much time for a 12-bit conversion.
+      conversionInProgress) {
+    conversionInProgress = false;
+    if (sensorPresent) {                                    // If we detected a sensor,
+      sensorData->waterTemp = ds18b20->getTempC(deviceAddress); // take a reading.
+      if (sensorData->waterTemp < -100) {                   // Missing sensor returns -127.
+        sensorPresent = false;
+      }
+    }
+  }
+
+////////////////////////////////////////////////////////////
+// Code for if we get the temperature from the isolated sensor board.
 #elif defined(USE_ISOLATED_SENSOR_BOARD)
   // Nothing to do here.
 #endif
@@ -112,6 +149,22 @@ void HydroMonitorWaterTempSensor::readSensor() {
 
   return;
 }
+
+#ifdef USE_DS18B20
+void HydroMonitorWaterTempSensor::startConversion() {
+  if (sensorPresent == false) {
+    sensorPresent = ds18b20->getAddress(deviceAddress, 0);  // Check whether the sensor is connected.
+    if (sensorPresent) {                                    // Sensor found, set it up.
+      ds18b20->setResolution(deviceAddress, 12);            // 12-bit, 0.0625C resolution - 750 ms conversion time. Higest available.
+    }
+  }
+
+  // No else if here: sensorPresent may get set above.
+  if (sensorPresent) {
+    ds18b20->requestTemperatures();                         // Send the command to get temperatures
+  }
+}
+#endif
 
 /*
  * The settings as html.

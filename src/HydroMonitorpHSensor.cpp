@@ -91,27 +91,32 @@ void HydroMonitorpHSensor::readCalibration() {
 /*
  * Read the pH value.
  */
-void HydroMonitorpHSensor::readSensor() {
-  uint32_t reading = takeReading();
-  sensorData->pH = ((float)reading - calibratedIntercept)/calibratedSlope;
-  if (sensorData->pH > 15) {    // Impossible value! Sensor not connected or calibration not done.
-    sensorData->pH = -1;
-  }
-
-  // Send warning if it's been long enough ago & pH is > 1 point above target.
-  if (millis() - lastWarned > WARNING_INTERVAL) {
-    if (sensorData->pH > 9 || sensorData->pH < 4) {
-      lastWarned = millis();
-      char message[110];
-      sprintf_P(message, PSTR("pHSensor 01: unusual pH level measured: %2.2f. Check sensor."), sensorData->pH);
-      logging->writeWarning(message);
+void HydroMonitorpHSensor::readSensor(bool readNow) {
+  static uint32_t lastReadSensor = -REFRESH_SENSORS;
+  if (millis() - lastReadSensor > REFRESH_SENSORS ||
+      readNow) {
+    lastReadSensor = millis();
+    uint32_t reading = takeReading();
+    sensorData->pH = ((float)reading - calibratedIntercept)/calibratedSlope;
+    if (sensorData->pH > 15) {    // Impossible value! Sensor not connected or calibration not done.
+      sensorData->pH = -1;
     }
-    else if (sensorData->pH > sensorData->targetpH + 1) {
-      lastWarned = millis();
-      char message[120];
-      sprintf_P(message, PSTR("pHSensor 02: pH level is too high; correction with pH adjuster is urgently needed.\n"
-                              "Target set: %2.2f, current pH: %2.2f."), sensorData->targetpH, sensorData->pH);
-      logging->writeWarning(message);
+
+    // Send warning if it's been long enough ago & pH is > 1 point above target.
+    if (millis() - lastWarned > WARNING_INTERVAL) {
+      if (sensorData->pH > 9 || sensorData->pH < 4) {
+        lastWarned = millis();
+        char message[110];
+        sprintf_P(message, PSTR("pHSensor 01: unusual pH level measured: %2.2f. Check sensor."), sensorData->pH);
+        logging->writeWarning(message);
+      }
+      else if (sensorData->pH > sensorData->targetpH + 1) {
+        lastWarned = millis();
+        char message[120];
+        sprintf_P(message, PSTR("pHSensor 02: pH level is too high; correction with pH adjuster is urgently needed.\n"
+                                "Target set: %2.2f, current pH: %2.2f."), sensorData->targetpH, sensorData->pH);
+        logging->writeWarning(message);
+      }
     }
   }
   return;

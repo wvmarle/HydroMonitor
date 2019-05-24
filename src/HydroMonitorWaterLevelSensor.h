@@ -69,7 +69,7 @@ class HydroMonitorWaterLevelSensor: public HydroMonitorSensorBase
 
 #endif
 
-    void readSensor(void);
+    void readSensor(bool readNow = false);
     void dataHtml(ESP8266WebServer*);                       // Provides html code with the sensor data.
     void settingsHtml(ESP8266WebServer*);
     bool settingsJSON(ESP8266WebServer*);

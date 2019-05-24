@@ -11,7 +11,7 @@
 class HydroMonitorSensorBase
 {
   public:
-  virtual void readSensor(void);
+  virtual void readSensor(bool readNow = false);
   virtual void dataHtml(ESP8266WebServer*);
   virtual void settingsHtml(ESP8266WebServer*);
   virtual bool settingsJSON(ESP8266WebServer*); // return true if have anything, false if empty.

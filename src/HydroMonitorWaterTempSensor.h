@@ -50,7 +50,7 @@ class HydroMonitorWaterTempSensor: public HydroMonitorSensorBase
 #elif defined(USE_ISOLATED_SENSOR_BOARD)
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*);
 #endif
-    void readSensor(void);                                  // Read the temperature using the probe.
+    void readSensor(bool readNow = false);                  // Read the temperature using the probe.
     void dataHtml(ESP8266WebServer*);                       // Provides html code with the sensor data.
     void settingsHtml(ESP8266WebServer*);
     bool settingsJSON(ESP8266WebServer*);
@@ -62,8 +62,10 @@ class HydroMonitorWaterTempSensor: public HydroMonitorSensorBase
 #elif defined(USE_MS5837)
     MS5837 *ms5837;
 #elif defined(USE_DS18B20)
+    void startConversion();
     DallasTemperature *ds18b20;
     DeviceAddress deviceAddress;
+    bool sensorPresent;
 #endif
     Settings settings;
     HydroMonitorCore::SensorData *sensorData;

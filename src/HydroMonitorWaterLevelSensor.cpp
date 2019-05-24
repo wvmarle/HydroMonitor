@@ -143,26 +143,30 @@ void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData *sd, Hydro
  *
  * The sensor returns the level in fill % (where 100% is 2 cm below the sensor).
  */
-void HydroMonitorWaterLevelSensor::readSensor() {
+void HydroMonitorWaterLevelSensor::readSensor(bool readNow = true) {
+  static uint32_t lastReadSensor = -REFRESH_SENSORS;
+  if (millis() - lastReadSensor > REFRESH_SENSORS ||
+      readNow) {
+    lastReadSensor = millis();
+    float reading = 0;
 
-  float reading = 0;
+    for (uint8_t i = 0; i < (1 << HCSR04SAMPLES); i++) {
+      reading += measureLevel();
+      delay(10); // to make sure the echoes have died out
+    }
+    reading /= (1 << HCSR04SAMPLES);
+      
+    // Only calculate the fill level for readings that have a positive value and are less than the
+    // reservoirheight. Any readings outside that range are impossible and considered invalid.
+    // The reservoir is considered 100% full at 2 cm below the sensor, which is the minimum distance for
+    // it to measure - and a minimum safe distance between the water and the sensor.
+    if (reading > 0 && reading < settings.reservoirHeight)
+      sensorData->waterLevel = 100.0 * (settings.reservoirHeight - reading) / (settings.reservoirHeight - 2);
+    else 
+      sensorData->waterLevel = -1;
 
-  for (uint8_t i = 0; i < (1 << HCSR04SAMPLES); i++) {
-    reading += measureLevel();
-    delay(10); // to make sure the echoes have died out
+    warning();
   }
-  reading /= (1 << HCSR04SAMPLES);
-    
-  // Only calculate the fill level for readings that have a positive value and are less than the
-  // reservoirheight. Any readings outside that range are impossible and considered invalid.
-  // The reservoir is considered 100% full at 2 cm below the sensor, which is the minimum distance for
-  // it to measure - and a minimum safe distance between the water and the sensor.
-  if (reading > 0 && reading < settings.reservoirHeight)
-    sensorData->waterLevel = 100.0 * (settings.reservoirHeight - reading) / (settings.reservoirHeight - 2);
-  else 
-    sensorData->waterLevel = -1;
-
-  warning();
   return;
 }
 
@@ -221,20 +225,25 @@ float HydroMonitorWaterLevelSensor::measureLevel() {
  * Requires the atmospheric pressure as compensation.
  */
 #elif defined(USE_MS5837)
-void HydroMonitorWaterLevelSensor::readSensor() {
-  sensorData->waterLevel = -1;
-  
-  // Get the water level in cm.
-  // The reservoir is considered "full" at 95% of the total level.
-  float reading = ms5837->readWaterLevel(sensorData->pressure) - settings.zeroLevel;
-  if (reading > 0 && reading < settings.reservoirHeight) {
-    sensorData->waterLevel = 100.0 * reading / (0.95 * settings.reservoirHeight);
-  }
-  else {
+void HydroMonitorWaterLevelSensor::readSensor(bool readNow = true) {
+  static uint32_t lastReadSensor = -REFRESH_SENSORS;
+  if (millis() - lastReadSensor > REFRESH_SENSORS ||
+      readNow) {
+    lastReadSensor = millis();
     sensorData->waterLevel = -1;
+    
+    // Get the water level in cm.
+    // The reservoir is considered "full" at 95% of the total level.
+    float reading = ms5837->readWaterLevel(sensorData->pressure) - settings.zeroLevel;
+    if (reading > 0 && reading < settings.reservoirHeight) {
+      sensorData->waterLevel = 100.0 * reading / (0.95 * settings.reservoirHeight);
+    }
+    else {
+      sensorData->waterLevel = -1;
+    }
+    bitWrite(sensorData->systemStatus, STATUS_RESERVOIR_LEVEL_LOW, sensorData->waterLevel < 40);  
+    warning();
   }
-  bitWrite(sensorData->systemStatus, STATUS_RESERVOIR_LEVEL_LOW, sensorData->waterLevel < 40);  
-  warning();
   return;
 }
 
@@ -260,35 +269,45 @@ void HydroMonitorWaterLevelSensor::setZero() {
  * Measure water level using the DS1603L ultrasound sensor.
  */
 #elif defined(USE_DS1603L)
-void HydroMonitorWaterLevelSensor::readSensor() {
+void HydroMonitorWaterLevelSensor::readSensor(bool readNow = true) {
   
   // Get the water level in cm.
   // Sensor returns the value in mm as uint16_t, we divide this by 10 to get to cm.
   // The reservoir is considered "full" at 95% of the total level.
-  float reading = ds1603l->readSensor() / 10.0;
-  if (reading > 0 && reading < settings.reservoirHeight * 1.5) {
-    sensorData->waterLevel = 100 * reading / (0.95 * settings.reservoirHeight);
+  static uint32_t lastReadSensor = -REFRESH_SENSORS;
+  if (millis() - lastReadSensor > REFRESH_SENSORS ||
+      readNow) {
+    lastReadSensor = millis();
+    float reading = ds1603l->readSensor() / 10.0;
+    if (reading > 0 && reading < settings.reservoirHeight * 1.5) {
+      sensorData->waterLevel = 100 * reading / (0.95 * settings.reservoirHeight);
+    }
+    else {
+      sensorData->waterLevel = -1;
+    }
+    bitWrite(sensorData->systemStatus, STATUS_RESERVOIR_LEVEL_LOW, sensorData->waterLevel < 40);  
+    warning();
   }
-  else {
-    sensorData->waterLevel = -1;
-  }
-  bitWrite(sensorData->systemStatus, STATUS_RESERVOIR_LEVEL_LOW, sensorData->waterLevel < 40);  
-  warning();
 }
 
 /*
  * Measure water level using the MPXV5004 or MP3V5004 (or similar) pressure sensor.
  */
 #elif defined(USE_MPXV5004)
-void HydroMonitorWaterLevelSensor::readSensor() {
-  uint16_t reading = analogRead(MPXV5004_PIN);
-  float waterLevel = 100.0 * (reading - settings.zeroLevel) / (settings.reservoirHeight - settings.zeroLevel);
-  if (isnan(waterLevel)) {
-    waterLevel = -1;
+void HydroMonitorWaterLevelSensor::readSensor(bool readNow = true) {
+  static uint32_t lastReadSensor = -REFRESH_SENSORS;
+  if (millis() - lastReadSensor > REFRESH_SENSORS ||
+      readNow) {
+    lastReadSensor = millis();
+    uint16_t reading = analogRead(MPXV5004_PIN);
+    float waterLevel = 100.0 * (reading - settings.zeroLevel) / (settings.reservoirHeight - settings.zeroLevel);
+    if (isnan(waterLevel)) {
+      waterLevel = -1;
+    }
+    sensorData->waterLevel = waterLevel;
+    bitWrite(sensorData->systemStatus, STATUS_RESERVOIR_LEVEL_LOW, sensorData->waterLevel < 40);  
+    warning();
   }
-  sensorData->waterLevel = waterLevel;
-  bitWrite(sensorData->systemStatus, STATUS_RESERVOIR_LEVEL_LOW, sensorData->waterLevel < 40);  
-  warning();
 }
 
 /*
@@ -325,34 +344,39 @@ void HydroMonitorWaterLevelSensor::setMax() {
  * Measure the water level using three float switches (giving high, medium and low level).
  */
 #elif defined (USE_FLOATSWITCHES)
-void HydroMonitorWaterLevelSensor::readSensor() {
-  bool high, medium, low;
+void HydroMonitorWaterLevelSensor::readSensor(bool readNow = true) {
+  static uint32_t lastReadSensor = -REFRESH_SENSORS;
+  if (millis() - lastReadSensor > REFRESH_SENSORS ||
+      readNow) {
+    lastReadSensor = millis();
+    bool high, medium, low;
 #ifdef FLOATSWITCH_HIGH_MCP17_PIN
-  high = mcp23017->digitalRead(FLOATSWITCH_HIGH_MCP17_PIN);
+    high = mcp23017->digitalRead(FLOATSWITCH_HIGH_MCP17_PIN);
 #else
-  high = digitalRead(FLOATSWITCH_HIGH_PIN);
+    high = digitalRead(FLOATSWITCH_HIGH_PIN);
 #endif
 #ifdef FLOATSWITCH_MEDIUM_MCP17_PIN
-  medium = mcp23017->digitalRead(FLOATSWITCH_MEDIUM_MCP17_PIN);
+    medium = mcp23017->digitalRead(FLOATSWITCH_MEDIUM_MCP17_PIN);
 #else
-  medium = digitalRead(FLOATSWITCH_MEDIUM_PIN);
+    medium = digitalRead(FLOATSWITCH_MEDIUM_PIN);
 #endif
 #ifdef FLOATSWITCH_LOW_MCP17_PIN
-  low = mcp23017->digitalRead(FLOATSWITCH_LOW_MCP17_PIN);
+    low = mcp23017->digitalRead(FLOATSWITCH_LOW_MCP17_PIN);
 #else
-  low = digitalRead(FLOATSWITCH_LOW_PIN);
+    low = digitalRead(FLOATSWITCH_LOW_PIN);
 #endif
-  if (high) {
-    sensorData->waterLevel = 100;
-  }
-  else if (medium) {
-    sensorData->waterLevel = 70;
-  }
-  else if (low) {
-    sensorData->waterLevel = 30;
-  }
-  else {
-    sensorData->waterLevel = 0;
+    if (high) {
+      sensorData->waterLevel = 100;
+    }
+    else if (medium) {
+      sensorData->waterLevel = 70;
+    }
+    else if (low) {
+      sensorData->waterLevel = 30;
+    }
+    else {
+      sensorData->waterLevel = 0;
+    }
   }
 }
 #endif

@@ -22,7 +22,7 @@
 #include <HydroMonitorLogging.h>
 #include <HydroMonitorSensorBase.h>
 
-#define ECSAMPLES 6                   // Take 2^ECSAMPLES = 64 samples to produce a single reading.
+#define ECSAMPLES 6                                         // Take 2^ECSAMPLES = 64 samples to produce a single reading.
 
 class HydroMonitorECSensor: public HydroMonitorSensorBase
 {
@@ -30,14 +30,14 @@ class HydroMonitorECSensor: public HydroMonitorSensorBase
     struct Settings {
     };
     
-    HydroMonitorECSensor();           // The constructor.
+    HydroMonitorECSensor();                                 // The constructor.
     
     // The functions required for all sensors.
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*);
-    void readSensor(void);            // Measures the EC value, takes the water temperature as input, returns the result.
-    void dataHtml(ESP8266WebServer*);            // Provides html code with the sensor data.
-    void settingsHtml(ESP8266WebServer*);        // Provides html code with the settings.
-    bool settingsJSON(ESP8266WebServer*);        // Provides JSON code with the settings.
+    void readSensor(bool readNow = false);                  // Measures the EC value, takes the water temperature as input, returns the result.
+    void dataHtml(ESP8266WebServer*);                       // Provides html code with the sensor data.
+    void settingsHtml(ESP8266WebServer*);                   // Provides html code with the settings.
+    bool settingsJSON(ESP8266WebServer*);                   // Provides JSON code with the settings.
     void updateSettings(ESP8266WebServer*);
     
     // Extra calibration-related functions for this sensor.
@@ -51,14 +51,14 @@ class HydroMonitorECSensor: public HydroMonitorSensorBase
   private:
   
     // Variables and functions related to the reading of the sensor.
-    uint32_t startCycle;              // Cycle number at the start of a sampling.
-    static void capDischarged(void);  // The interrupt handler. Must be made static as this way it can be attached to the interrupt.
+    uint32_t startCycle;                                    // Cycle number at the start of a sampling.
+    static void capDischarged(void);                        // The interrupt handler. Must be made static as this way it can be attached to the interrupt.
     
     // Variables and functions related to the calibration functions.
-    uint32_t takeReading();           // Measures the EC value, takes the water temperature as input, returns the result.
-    float calibratedSlope;            // The calculated slope of the calibration curve.
-    float calibratedIntercept;        // The calculated intercept of the calibration curve.
-    void readCalibration();           // Read the current calibration parameters from EEPROM.
+    uint32_t takeReading();                                 // Measures the EC value, takes the water temperature as input, returns the result.
+    float calibratedSlope;                                  // The calculated slope of the calibration curve.
+    float calibratedIntercept;                              // The calculated intercept of the calibration curve.
+    void readCalibration();                                 // Read the current calibration parameters from EEPROM.
     void temperatureCorrection(uint32_t*);
     uint32_t lastWarned;
     void saveCalibrationData();
@@ -66,8 +66,8 @@ class HydroMonitorECSensor: public HydroMonitorSensorBase
     float originalEC;
 
     // Other.
-    HydroMonitorCore core;            // Provides some utility functions.
-    Settings settings;                // The settings store.
+    HydroMonitorCore core;                                  // Provides some utility functions.
+    Settings settings;                                      // The settings store.
     HydroMonitorCore::SensorData *sensorData;
     HydroMonitorLogging *logging;
 };
