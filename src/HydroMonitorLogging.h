@@ -35,19 +35,18 @@
 //#define RECORD_STATUS_SENT_BIT            0
 //#define RECORD_STATUS_EMAILED_BIT         1
 
-#define CONNECTION_RETRY_DELAY            60*60*1000
+const uint16_t CONNECTION_RETRY_DELAY = 60*60*1000ul;
 
 // Maximum file size to store messages and data.
-#define MAX_LOGFILE_SIZE                  20000
-#define MAX_FILE_SIZE                     20000
+const uint16_t MAX_LOGFILE_SIZE = 20000;
+const uint16_t MAX_FILE_SIZE    = 20000;
 
-#define RECORD_STORED                     0x01
-#define RECORD_TRANSMITTED                0x02
+const uint8_t RECORD_STORED       = 0x01;
+const uint8_t RECORD_TRANSMITTED  =  0x02;
 
-#define INVALID 0
-#define UNCHECKED 1
-#define VALID 2
-
+const uint8_t INVALID   = 0;
+const uint8_t UNCHECKED = 1;
+const uint8_t VALID     = 2;
 
 class HydroMonitorLogging
 {
@@ -62,7 +61,6 @@ class HydroMonitorLogging
 
     HydroMonitorLogging();
     void begin(HydroMonitorCore::SensorData*);
-
     void updateSettings(ESP8266WebServer*);
     void settingsHtml(ESP8266WebServer*);
     bool settingsJSON(ESP8266WebServer*);
@@ -105,6 +103,7 @@ class HydroMonitorLogging
     void addMessageToList(uint32_t);
     uint32_t latestMessageList[50];
     uint32_t lastSent;
+    uint32_t lastWarned = -WARNING_INTERVAL;
 	  
     Settings settings;
     Settings localSettings;

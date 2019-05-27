@@ -131,6 +131,9 @@ void HydroMonitorWaterTempSensor::readSensor(bool readNow) {
         sensorPresent = false;
       }
     }
+    else {
+      sensorData->waterTemp = -127;
+    }
   }
 
 ////////////////////////////////////////////////////////////

@@ -87,7 +87,7 @@ class HydroMonitorReservoir {
 #endif
     uint32_t startAddWater;
     uint32_t reservoirEmptyTime;
-    uint32_t lastWarned;
+    uint32_t lastWarned = -WARNING_INTERVAL;
     uint32_t lastBeep;
     
     bool oldBeep;

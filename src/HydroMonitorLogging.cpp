@@ -58,25 +58,38 @@ void HydroMonitorLogging::initDataLogFile() {
   else {                                                    // Data log exists already, figure out how far we were with transmission to the server->
     f = SPIFFS.open(dataLogFileName, "r");
     uint32_t nRecords = f.size() / fileRecordSize;          // Calculate number of records in the file.
-    dataTransmitComplete = false;
-    for (int32_t i = nRecords - 1; i >= 0; i--) {           // Start searching at the last record - usually less file to search through this way.
-      f.seek(i * fileRecordSize, SeekSet);                  // Set file pointer to the beginning of the record.
-      char recordStatus[1];
-      f.readBytes((char *)recordStatus, 1);                 // Read the status byte of this record.
-      if (recordStatus[0] == RECORD_TRANSMITTED) {          // This record has been transmitted already.
-        dataRecordToTransmit = i + 1;                       // Store which one is next in line to be transmitted.
-        if (dataRecordToTransmit == nRecords) {             // Last record has been transmitted already, so it's complete already.
-          dataTransmitComplete = true;
-        }
-        break;                                              // We've found what we're looking for.
-      }
+    if (f.size() != nRecords * fileRecordSize) {
+      Serial.println(F("Data record file corrupt; creating a new one."));
+      f.close();
+      SPIFFS.remove(dataLogFileName);
+      f = SPIFFS.open(dataLogFileName, "w");                // create a new one.
+      f.close();
+      nRecords = 0;
+      dataRecordToTransmit = 0;
     }
-    connectionFailTime = -CONNECTION_RETRY_DELAY;           // We want to start transmitting right away!
-    sprintf_P(msg, PSTR("HydroMonitorLogging: data points in this file: %d."), nRecords);
-    writeTrace(msg);
+    else {
+      dataTransmitComplete = false;
+      for (int32_t i = nRecords - 1; i >= 0; i--) {           // Start searching at the last record - usually less file to search through this way.
+        f.seek(i * fileRecordSize, SeekSet);                  // Set file pointer to the beginning of the record.
+        char recordStatus[1];
+        f.readBytes((char *)recordStatus, 1);                 // Read the status byte of this record.
+        if (recordStatus[0] == RECORD_TRANSMITTED) {          // This record has been transmitted already.
+          dataRecordToTransmit = i + 1;                       // Store which one is next in line to be transmitted.
+          if (dataRecordToTransmit == nRecords) {             // Last record has been transmitted already, so it's complete already.
+            dataTransmitComplete = true;
+          }
+          break;                                              // We've found what we're looking for.
+        }
+      }
+      connectionFailTime = -CONNECTION_RETRY_DELAY;           // We want to start transmitting right away!
+      sprintf_P(msg, PSTR("HydroMonitorLogging: data points in this file: %d."), nRecords);
+      writeTrace(msg);
+    }
   }
-  sprintf_P(msg, PSTR("HydroMonitorLogging: first unsent data point: %d."), dataRecordToTransmit);
+  sprintf_P(msg, PSTR("HydroMonitorLogging: first unsent data point: #%d."), dataRecordToTransmit);
   writeTrace(msg);
+  Serial.print(F("Sensor data logging is "));
+  Serial.println((dataTransmitComplete) ? F("completed") : F("not completed."));
   f.close();
 }
 
@@ -118,6 +131,8 @@ void HydroMonitorLogging::initMessageLogFile() {
         else {
           f.close();
           SPIFFS.remove(messageLogFileName);
+          f = SPIFFS.open(messageLogFileName, "w");         // create a new one.
+          f.close();
           nMessages = 0;
           messageToTransmit = 0;
           writeTrace(F("Message log file corrupt; removed this."));
@@ -133,6 +148,7 @@ void HydroMonitorLogging::initMessageLogFile() {
   if (messageToTransmit < f.size() &&
       f.size() > 0) {                                       // We have unsent messages.
     messageTransmitComplete = false;
+    Serial.println(F("We have messages to transmit."));
   }
   f.close();  
   writeTrace(F("HydroMonitorLogging: configured message logging facility."));
@@ -171,6 +187,7 @@ void HydroMonitorLogging::logData() {
     }
     f.close();
     dataTransmitComplete = false;                           // We have a new record to transmit!
+    Serial.println(F("New sensor data point logged."));
 
     // Check log file size, and if needed roll over into a new file.
     f = SPIFFS.open(dataLogFileName, "r");
@@ -205,11 +222,11 @@ void HydroMonitorLogging::logData() {
       credentialsChecked = true;
     }
     if (loginValid != VALID) {                              // We need a valid login to be set.
-      if (millis() - lastSent > WARNING_INTERVAL) {         // Produce warnings now and then if this is not set.
+      if (millis() - lastWarned > WARNING_INTERVAL) {       // Produce warnings now and then if this is not set.
         checkCredentials();                                 // Check again for good measure. You never know.
         if (loginValid != VALID) {                          // Still not? Produce the warning for real.
           writeWarning(F("Logging 01: can not transmit messages or data: database login invalid."));
-          lastSent = millis();
+          lastWarned = millis();
         }
       }
     }
@@ -217,16 +234,19 @@ void HydroMonitorLogging::logData() {
       if (millis() - connectionFailTime > CONNECTION_RETRY_DELAY) { // wait some time before trying again.
         connectionFailed = false;
       }
-      if (millis() - lastSent > WARNING_INTERVAL) {         // Produce warning if it's been long enough.
+      if (millis() - lastWarned > WARNING_INTERVAL) {       // Produce warning if it's been long enough.
         writeWarning(F("Logging 02: can not transmit messages or data: connection failed."));
-        lastSent = millis();
+        lastWarned = millis();
       }
     }
     else {                                                  // Everything checked out; we can try to send messages and data now.
       if (dataTransmitComplete == false) {                  // We have data points to transmit.
+        Serial.print(F("Going to transmit sensor data point #"));
+        Serial.println(dataRecordToTransmit);
         transmitData();
       }
       else if (messageTransmitComplete == false) {          // We have messages to transmit.
+        Serial.println(F("Going to transmit message."));
         transmitMessages();
       }
     }
@@ -250,6 +270,8 @@ void HydroMonitorLogging::transmitData() {
   memcpy(&dataEntry, buff + 16, dataRecordSize);            // Skip the record's 16-byte header.
   uint16_t size = 120 + strlen(settings.hostname) + strlen(settings.hostpath) + strlen(settings.username) + strlen(settings.password);
   char postData[size];
+  Serial.print(F("Sensor data postData buffer size: "));
+  Serial.println(size);
 #ifdef USE_WATERLEVEL_SENSOR
   sprintf_P(postData, PSTR("https://%s%s?username=%s&password=%s&ec=%4.2f&watertemp=%4.2f&waterlevel=%4.2f&ph=%4.2f&timestamp=%u"),
                             settings.hostname, settings.hostpath, settings.username, settings.password, 
@@ -270,9 +292,14 @@ void HydroMonitorLogging::transmitData() {
     dataRecordToTransmit++;                                 // Proceed to next entry.
     if (f.size() == dataRecordToTransmit * fileRecordSize) {
       dataTransmitComplete = true;
+      Serial.println(F("Sensor data transmission completed."));
     }
     else {
       dataTransmitComplete = false;
+      Serial.print(F("File size: "));
+      Serial.print(f.size());
+      Serial.print(F(", next data point starts at: "));
+      Serial.println(dataRecordToTransmit * fileRecordSize);
     }
   }
   else {                                                    // Connection failed: try again later.
@@ -289,28 +316,31 @@ void HydroMonitorLogging::transmitData() {
 void HydroMonitorLogging::transmitMessages() {
   File f = SPIFFS.open(messageLogFileName, "r+");           // Open log file for read/write.
   f.seek(messageToTransmit, SeekSet);                       // Set seek pointer to start of the next message.
-  f.readBytes(msg, 6);                                      // The control bytes.
-  uint16_t nBytes = f.readBytesUntil('\0', msg + 6, MAX_MESSAGE_SIZE - 7); // The actual message.
-  msg[nBytes + 6] = 0;                                      // Null terminator.
+  f.readBytes(msg, 16);                                     // The control bytes.
+  uint16_t nBytes = f.readBytesUntil('\0', msg + 16, MAX_MESSAGE_SIZE - 17); // The actual message.
+  msg[nBytes + 16] = 0;                                     // Null terminator.
   uint32_t timestamp;
   memcpy(&timestamp, msg + 2, 4);                           // The message's time stamp.
   uint8_t loglevel = msg[1];                                // The log level.
-  String encodedMessage = core.urlencode(msg + 6);          // URLencode the message.
+  String encodedMessage = core.urlencode(msg + 16);         // URLencode the message.
   uint16_t size = 80 + strlen(settings.hostname) + strlen(settings.hostpath) + strlen(settings.username) + strlen(settings.password) + encodedMessage.length();
   char postData[size];                                      // Create a buffer to hold the complete POST data.
   char aLoglevel[2];
   itoa(loglevel, aLoglevel, 10);
   char aTimestamp[12];
   itoa(timestamp, aTimestamp, 10);
+  Serial.print(F("Message postData buffer size: "));
+  Serial.println(size);
   sprintf_P(postData, PSTR("https://%s%s?username=%s&password=%s&loglevel=%s&message=%s&timestamp=%s"),
             settings.hostname, settings.hostpath, settings.username, settings.password, aLoglevel, encodedMessage.c_str(), aTimestamp);
   uint16_t httpCode = sendPostData(postData);               // Post the message to the database.
   if (httpCode == 200) {                                    // 200 = OK, transmissions successful.
     f.seek(messageToTransmit, SeekSet);                     // Set seek pointer back to the start of this message: the status byte.
     f.write(RECORD_TRANSMITTED);                            // Mark file entry as transmitted.
-    messageToTransmit += nBytes + 7;                        // Proceed to next entry.
+    messageToTransmit += nBytes + 17;                       // Proceed to next entry.
     if (f.size() == messageToTransmit) {                    // We reached the end of the file - transmission completed.
       messageTransmitComplete = true;
+      Serial.println(F("Message transmission completed."));
     }
   }
   else {                                                    // Connection failed: try again later.
@@ -378,10 +408,14 @@ void HydroMonitorLogging::writeLog(uint8_t loglevel) {
   uint16_t size = strlen(msg) + 1;                          // Message size should include the null terminator.
   uint32_t timestamp = now();
 
-  f.write(timestamp & 0xFF);                               // Bytes 2-5: the time stamp.
+  f.write(timestamp & 0xFF);                                // Bytes 2-5: the time stamp.
   f.write(timestamp >> 8) & 0xFF;
   f.write(timestamp >> 16) & 0xFF;
   f.write(timestamp >> 24);
+  
+  for (uint8_t i = 0; i < 10; i++) {                        // Bytes 6-15: reserved.
+    f.write(0xFF);
+  }
 
   f.print(msg);                                             // Print the whole message to the file.
   f.write(0);                                               // Add the null terminator to complete the record.
@@ -662,25 +696,48 @@ void HydroMonitorLogging::updateSettings(ESP8266WebServer* server) {
  */
 uint16_t HydroMonitorLogging::sendPostData(char* postData) {
 
-  return 404;
-
+/*
   // Create an https client, and set it to ignore the certificate.
   // This is insecure: it allows for a MITM attack.
+  #ifdef USE_SSL
   std::unique_ptr<BearSSL::WiFiClientSecure>client(new BearSSL::WiFiClientSecure);
   client->setInsecure();
+  #else
+  #warning Logging data over http, encryption disabled.
+  WiFiClient *client;
+  #endif
+  
+  HTTPClient https;
+*/
+
+//  std::unique_ptr<BearSSL::WiFiClientSecure>client(new BearSSL::WiFiClientSecure);
+//  client->setInsecure();                                    // Do not check for https fingerprints (insecure: allows MiM attacks).
+
+  WiFiClientSecure client;
+  client.setInsecure();                                     // Do not check for https fingerprints (insecure: allows MiM attacks).
   HTTPClient https;
   
   // Open a connection to the host.
   uint16_t responseCode;
-  if (https.begin(*client, postData)) {                     // HTTPS connection.
+  uint32_t startTransmission = millis();
+  Serial.print(F("Starting transmission of "));
+  Serial.print(strlen(postData));
+  Serial.print(F(" bytes: "));
+  Serial.println(postData);
+  if (https.begin(client, postData)) {                      // HTTP or HTTPS connection.
+    Serial.println(F("Connected."));
     responseCode = https.GET();                             // start connection and send HTTP header
+    Serial.println(F("Got the GET request result."));
     if (responseCode > 0) {                                 // httpCode will be negative on error
       if (responseCode == HTTP_CODE_OK || responseCode == HTTP_CODE_MOVED_PERMANENTLY) { // File found at server
         String payload = https.getString();
       }
     } 
     https.end();
-  } 
+  }
+  Serial.print(F("Transmission complete. Time taken: "));
+  Serial.print(millis() - startTransmission);
+  Serial.println(F(" ms."));
   return responseCode;    
 }  
 
@@ -702,6 +759,8 @@ char* HydroMonitorLogging::getLogMessage(uint8_t* status, uint32_t* timestamp, c
     f.seek(latestMessageList[*status] + 1, SeekSet);        // Start reading from the start of the requested record; skip byte 0 (transmission status).
     f.readBytes((char *)status, 1);                         // byte 1: message type (log level).
     f.readBytes((char *)timestamp, 4);
+    
+    f.seek(latestMessageList[*status] + 16, SeekSet);       // Set seek pointer to the start of the message.
     uint16_t nBytes = f.readBytesUntil('\0', message, MAX_MESSAGE_SIZE - 1); // Get total size of the stored message.        
     message[nBytes] = 0;
     f.close();

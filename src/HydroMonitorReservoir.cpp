@@ -146,7 +146,7 @@ void HydroMonitorReservoir::doReservoir() {
     else {
       beep = false;
     }
-    if (millis() - lastWarned > WARNING_INTERVAL) {
+    if (millis() - lastWarned > 1000) {
       logging->writeError(F("Reservoir 10: float switch triggered, reservoir water level is critically high."));
       lastWarned = millis();
     }
