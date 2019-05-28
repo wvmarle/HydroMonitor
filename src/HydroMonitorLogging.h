@@ -70,7 +70,6 @@ class HydroMonitorLogging
     void logData();
     void getLogData(uint8_t);
     void logMessage(char*);
-    char* getLogMessage(uint8_t*, uint32_t*, char*);
     void resetLog();
     void transmitData();
     void transmitMessages();
@@ -90,12 +89,14 @@ class HydroMonitorLogging
 	  void writeError(const __FlashStringHelper*);
 	  
   private:
-	  void checkCredentials (char*, char*, char*, char*);
-	  
+    void checkCredentials (char*, char*, char*, char*);
+    void getLogMessage(uint8_t*, uint32_t*);
+
 	  void writeLog(uint8_t);
 	  void bufferMsg_P(const char*);
 	  void bufferMsg(const char*);
-    char msg[MAX_MESSAGE_SIZE];                             // Buffer to store the message to log.
+	  char control[16];                                       // Buffer to store the control data: 16 bytes.
+    char buff[MAX_MESSAGE_SIZE + 1];                        // Buffer to store the data or message to log: MAX_MESSAGE_SIZE + null terminator.
 
     uint16_t sendPostData(char*);
     void initDataLogFile();
@@ -109,7 +110,7 @@ class HydroMonitorLogging
     Settings localSettings;
     HydroMonitorCore::SensorData *sensorData;
     HydroMonitorCore core;
-    
+
     const uint16_t httpsPort = 443;
     char* username;
     char* password;

@@ -58,13 +58,12 @@ void HydroMonitorLogging::initDataLogFile() {
   else {                                                    // Data log exists already, figure out how far we were with transmission to the server->
     f = SPIFFS.open(dataLogFileName, "r");
     uint32_t nRecords = f.size() / fileRecordSize;          // Calculate number of records in the file.
-    if (f.size() != nRecords * fileRecordSize) {
+    if (f.size() != nRecords * fileRecordSize) {            // Basic sanity check.
       Serial.println(F("Data record file corrupt; creating a new one."));
       f.close();
       SPIFFS.remove(dataLogFileName);
       f = SPIFFS.open(dataLogFileName, "w");                // create a new one.
       f.close();
-      nRecords = 0;
       dataRecordToTransmit = 0;
     }
     else {
@@ -82,12 +81,12 @@ void HydroMonitorLogging::initDataLogFile() {
         }
       }
       connectionFailTime = -CONNECTION_RETRY_DELAY;           // We want to start transmitting right away!
-      sprintf_P(msg, PSTR("HydroMonitorLogging: data points in this file: %d."), nRecords);
-      writeTrace(msg);
+      sprintf_P(buff, PSTR("HydroMonitorLogging: data points in this file: %d."), nRecords);
+      writeTrace(buff);
     }
   }
-  sprintf_P(msg, PSTR("HydroMonitorLogging: first unsent data point: #%d."), dataRecordToTransmit);
-  writeTrace(msg);
+  sprintf_P(buff, PSTR("HydroMonitorLogging: first unsent data point: #%d."), dataRecordToTransmit);
+  writeTrace(buff);
   Serial.print(F("Sensor data logging is "));
   Serial.println((dataTransmitComplete) ? F("completed") : F("not completed."));
   f.close();
@@ -118,7 +117,7 @@ void HydroMonitorLogging::initMessageLogFile() {
         f.seek(i, SeekSet);
         status = f.read();                                  // Read the message status byte.
         f.seek(i + 16, SeekSet);                            // Set search pointer to start of the logged message - skipping the header bytes.
-        nBytes = f.readBytesUntil('\0', msg, MAX_MESSAGE_SIZE - 1); // Get total size of the stored message.        
+        nBytes = f.readBytesUntil('\0', buff, MAX_MESSAGE_SIZE); // Get total size of the stored message.        
         if ((status == RECORD_STORED || status == RECORD_TRANSMITTED) &&
             nBytes <= MAX_MESSAGE_SIZE) {                   // Record appears sound.
           nMessages++;                                      // Keep track of total number of messages we have stored.
@@ -141,10 +140,10 @@ void HydroMonitorLogging::initMessageLogFile() {
       }
     }
   }
-  sprintf_P(msg, PSTR("HydroMonitorLogging: messages in this file: %d."), nMessages);
-  writeTrace(msg);
-  sprintf_P(msg, PSTR("HydroMonitorLogging: first unsent message starts at byte %d."), messageToTransmit);
-  writeTrace(msg);
+  sprintf_P(buff, PSTR("HydroMonitorLogging: messages in this file: %d."), nMessages);
+  writeTrace(buff);
+  sprintf_P(buff, PSTR("HydroMonitorLogging: first unsent message starts at byte %d."), messageToTransmit);
+  writeTrace(buff);
   if (messageToTransmit < f.size() &&
       f.size() > 0) {                                       // We have unsent messages.
     messageTransmitComplete = false;
@@ -180,14 +179,14 @@ void HydroMonitorLogging::logData() {
     for (uint8_t i = 0; i < 11; i++) {
       f.write('\0');                                        // Fill the rest of the header with zeros.
     }
-    uint8_t buff[dataRecordSize];                           // Create a copy of the sensorData in different type
-    memcpy(buff, sensorData, dataRecordSize);               // for easier writing to the file.
-    for (uint8_t i = 0; i < dataRecordSize; i++) {          // TODO: can this be done through cast? 
-      f.write(buff[i]);                                     // Something like: (uint8_t *)sensorData[i]
+    memcpy(buff, sensorData, dataRecordSize);               // Make a copy for easier writing to the file.
+    for (uint8_t i = 0; i < dataRecordSize; i++) {
+      f.write(buff[i]);
     }
+    Serial.print(F("New sensor data point logged. New data file size: "));
+    Serial.println(f.size());
     f.close();
     dataTransmitComplete = false;                           // We have a new record to transmit!
-    Serial.println(F("New sensor data point logged."));
 
     // Check log file size, and if needed roll over into a new file.
     f = SPIFFS.open(dataLogFileName, "r");
@@ -262,7 +261,12 @@ void HydroMonitorLogging::transmitData() {
   // All data is stored already in the logfile; read back the data to transmit, attempt to transmit it, and if
   // successful mark the record as transmitted.
   HydroMonitorCore::SensorData dataEntry;
-  char buff[fileRecordSize];
+  Serial.print(F("Sensor data record start byte: "));
+  Serial.print(dataRecordToTransmit * fileRecordSize);
+  Serial.print(F(", end byte: "));
+  Serial.print(dataRecordToTransmit * fileRecordSize + fileRecordSize);
+  Serial.print(F(", file size: "));
+  Serial.println(f.size());
   f.seek(dataRecordToTransmit * fileRecordSize, SeekSet);   // Start reading from the start of the next record we have to transmit.
   f.readBytes(buff, fileRecordSize);
   uint32_t timestamp;
@@ -273,12 +277,12 @@ void HydroMonitorLogging::transmitData() {
   Serial.print(F("Sensor data postData buffer size: "));
   Serial.println(size);
 #ifdef USE_WATERLEVEL_SENSOR
-  sprintf_P(postData, PSTR("https://%s%s?username=%s&password=%s&ec=%4.2f&watertemp=%4.2f&waterlevel=%4.2f&ph=%4.2f&timestamp=%u"),
+  sprintf_P(postData, PSTR("http://%s%s?username=%s&password=%s&ec=%4.2f&watertemp=%4.2f&waterlevel=%4.2f&ph=%4.2f&timestamp=%u"),
                             settings.hostname, settings.hostpath, settings.username, settings.password, 
                             dataEntry.EC, dataEntry.waterTemp, dataEntry.waterLevel, dataEntry.pH,
                             timestamp);
 #else
-  sprintf_P(postData, PSTR("https://%s%s?username=%s&password=%s&ec=%4.2f&watertemp=%4.2f&waterlevel=%4.2f&ph=%4.2f&timestamp=%u"),
+  sprintf_P(postData, PSTR("http://%s%s?username=%s&password=%s&ec=%4.2f&watertemp=%4.2f&waterlevel=%4.2f&ph=%4.2f&timestamp=%u"),
                             settings.hostname, settings.hostpath, settings.username, settings.password, 
                             dataEntry.EC, dataEntry.waterTemp, 0, dataEntry.pH,
                             timestamp);
@@ -293,6 +297,18 @@ void HydroMonitorLogging::transmitData() {
     if (f.size() == dataRecordToTransmit * fileRecordSize) {
       dataTransmitComplete = true;
       Serial.println(F("Sensor data transmission completed."));
+    }
+    else if (f.size() > dataRecordToTransmit * fileRecordSize) { // This should never happen, yet it does...
+      Serial.println(F("Data record file corrupt; creating a new one."));
+      Serial.print(F("Data file size: "));
+      Serial.print(f.size());
+      Serial.print(F(", expected size: "));
+      Serial.println(dataRecordToTransmit * fileRecordSize);
+      f.close();
+      SPIFFS.remove(dataLogFileName);
+      f = SPIFFS.open(dataLogFileName, "w");                // create a new one.
+      f.close();
+      dataRecordToTransmit = 0;
     }
     else {
       dataTransmitComplete = false;
@@ -316,13 +332,13 @@ void HydroMonitorLogging::transmitData() {
 void HydroMonitorLogging::transmitMessages() {
   File f = SPIFFS.open(messageLogFileName, "r+");           // Open log file for read/write.
   f.seek(messageToTransmit, SeekSet);                       // Set seek pointer to start of the next message.
-  f.readBytes(msg, 16);                                     // The control bytes.
-  uint16_t nBytes = f.readBytesUntil('\0', msg + 16, MAX_MESSAGE_SIZE - 17); // The actual message.
-  msg[nBytes + 16] = 0;                                     // Null terminator.
+  f.readBytes(control, 16);                                 // The control bytes.
+  uint16_t nBytes = f.readBytesUntil('\0', buff, MAX_MESSAGE_SIZE); // The actual message.
+  buff[nBytes] = 0;                                         // Null terminator.
   uint32_t timestamp;
-  memcpy(&timestamp, msg + 2, 4);                           // The message's time stamp.
-  uint8_t loglevel = msg[1];                                // The log level.
-  String encodedMessage = core.urlencode(msg + 16);         // URLencode the message.
+  memcpy(&timestamp, control + 2, 4);                       // The message's time stamp.
+  uint8_t loglevel = control[1];                            // The log level.
+  String encodedMessage = core.urlencode(buff);             // URLencode the message.
   uint16_t size = 80 + strlen(settings.hostname) + strlen(settings.hostpath) + strlen(settings.username) + strlen(settings.password) + encodedMessage.length();
   char postData[size];                                      // Create a buffer to hold the complete POST data.
   char aLoglevel[2];
@@ -331,7 +347,7 @@ void HydroMonitorLogging::transmitMessages() {
   itoa(timestamp, aTimestamp, 10);
   Serial.print(F("Message postData buffer size: "));
   Serial.println(size);
-  sprintf_P(postData, PSTR("https://%s%s?username=%s&password=%s&loglevel=%s&message=%s&timestamp=%s"),
+  sprintf_P(postData, PSTR("http://%s%s?username=%s&password=%s&loglevel=%s&message=%s&timestamp=%s"),
             settings.hostname, settings.hostpath, settings.username, settings.password, aLoglevel, encodedMessage.c_str(), aTimestamp);
   uint16_t httpCode = sendPostData(postData);               // Post the message to the database.
   if (httpCode == 200) {                                    // 200 = OK, transmissions successful.
@@ -372,7 +388,7 @@ void HydroMonitorLogging::checkCredentials(char* host, char* path, char* un, cha
 
   uint16_t size = 35 + strlen(host) + strlen(path) + strlen(un) + strlen(pw);
   char postData[size];
-  sprintf_P(postData, PSTR("https://%s%s?username=%s&password=%s&validate=1"),
+  sprintf_P(postData, PSTR("http://%s%s?username=%s&password=%s&validate=1"),
                            host, path, un, pw);
   uint16_t responseCode = sendPostData(postData);
   if (responseCode == 404) {
@@ -397,7 +413,7 @@ void HydroMonitorLogging::checkCredentials(char* host, char* path, char* un, cha
 void HydroMonitorLogging::writeLog(uint8_t loglevel) {
 
 #if defined(LOG_SERIAL) && defined(SERIAL)
-  Serial.println(msg);
+  Serial.println(buff);
 #endif
 
   // Store message to the message log file.
@@ -405,7 +421,7 @@ void HydroMonitorLogging::writeLog(uint8_t loglevel) {
   addMessageToList(f.size());                               // New message starts at the end of the current file.
   f.write(RECORD_STORED);                                   // Byte 0: message status.
   f.write(loglevel);                                        // Byte 1: log level.
-  uint16_t size = strlen(msg) + 1;                          // Message size should include the null terminator.
+  uint16_t size = strlen(buff) + 1;                         // Message size should include the null terminator.
   uint32_t timestamp = now();
 
   f.write(timestamp & 0xFF);                                // Bytes 2-5: the time stamp.
@@ -416,8 +432,7 @@ void HydroMonitorLogging::writeLog(uint8_t loglevel) {
   for (uint8_t i = 0; i < 10; i++) {                        // Bytes 6-15: reserved.
     f.write(0xFF);
   }
-
-  f.print(msg);                                             // Print the whole message to the file.
+  f.print(buff);                                            // Print the whole message to the file.
   f.write(0);                                               // Add the null terminator to complete the record.
   f.close();
 
@@ -510,22 +525,22 @@ void HydroMonitorLogging::writeError(const __FlashStringHelper *str) {
 void HydroMonitorLogging::bufferMsg_P(const char *str) {
   uint16_t size = strlen_P(str);
   if (size > MAX_MESSAGE_SIZE) {
-    strncpy_P(msg, str, MAX_MESSAGE_SIZE - 3);
-    strcat_P(msg, PSTR("..."));
+    strncpy_P(buff, str, MAX_MESSAGE_SIZE - 3);
+    strcat_P(buff, PSTR("..."));
   }
   else {
-    strcpy_P(msg, str);
+    strcpy_P(buff, str);
   }
 }
 
 void HydroMonitorLogging::bufferMsg(const char *str) {
   uint16_t size = strlen(str);
   if (size > MAX_MESSAGE_SIZE) {
-    strncpy(msg, str, MAX_MESSAGE_SIZE - 3);
-    strcat_P(msg, PSTR("..."));
+    strncpy(buff, str, MAX_MESSAGE_SIZE - 3);
+    strcat_P(buff, PSTR("..."));
   }
   else {
-    strcpy(msg, str);
+    strcpy(buff, str);
   }
 }
 
@@ -696,27 +711,19 @@ void HydroMonitorLogging::updateSettings(ESP8266WebServer* server) {
  */
 uint16_t HydroMonitorLogging::sendPostData(char* postData) {
 
-/*
-  // Create an https client, and set it to ignore the certificate.
-  // This is insecure: it allows for a MITM attack.
-  #ifdef USE_SSL
-  std::unique_ptr<BearSSL::WiFiClientSecure>client(new BearSSL::WiFiClientSecure);
-  client->setInsecure();
-  #else
-  #warning Logging data over http, encryption disabled.
-  WiFiClient *client;
-  #endif
+//  return 500;                                               // Disable the transmission of logging data for now.
   
-  HTTPClient https;
-*/
 
 //  std::unique_ptr<BearSSL::WiFiClientSecure>client(new BearSSL::WiFiClientSecure);
-//  client->setInsecure();                                    // Do not check for https fingerprints (insecure: allows MiM attacks).
+//  client.setInsecure();                                    // Do not check for https fingerprints (insecure: allows MiM attacks).
 
-  WiFiClientSecure client;
-  client.setInsecure();                                     // Do not check for https fingerprints (insecure: allows MiM attacks).
-  HTTPClient https;
-  
+//  WiFiClientSecure client;
+//  client.setInsecure();                                     // Do not check for https fingerprints (insecure: allows MiM attacks).
+//  HTTPClient https;
+
+  WiFiClient client;
+  HTTPClient http;
+
   // Open a connection to the host.
   uint16_t responseCode;
   uint32_t startTransmission = millis();
@@ -724,18 +731,21 @@ uint16_t HydroMonitorLogging::sendPostData(char* postData) {
   Serial.print(strlen(postData));
   Serial.print(F(" bytes: "));
   Serial.println(postData);
-  if (https.begin(client, postData)) {                      // HTTP or HTTPS connection.
+  if (http.begin(client, postData)) {                       // HTTP connection.
     Serial.println(F("Connected."));
-    responseCode = https.GET();                             // start connection and send HTTP header
+    responseCode = http.GET();                              // start connection and send HTTP header
     Serial.println(F("Got the GET request result."));
     if (responseCode > 0) {                                 // httpCode will be negative on error
       if (responseCode == HTTP_CODE_OK || responseCode == HTTP_CODE_MOVED_PERMANENTLY) { // File found at server
-        String payload = https.getString();
+        String payload = http.getString();
       }
     } 
-    https.end();
   }
-  Serial.print(F("Transmission complete. Time taken: "));
+  http.end();
+  client.stop();
+  Serial.print(F("Transmission complete. Response code: "));
+  Serial.print(responseCode);
+  Serial.print(F(" Time taken: "));
   Serial.print(millis() - startTransmission);
   Serial.println(F(" ms."));
   return responseCode;    
@@ -748,11 +758,11 @@ uint16_t HydroMonitorLogging::sendPostData(char* postData) {
  * message: returns the actual message.
  * The function returns a reference to message for convenience.
  */
-char* HydroMonitorLogging::getLogMessage(uint8_t* status, uint32_t* timestamp, char* message) {
+void HydroMonitorLogging::getLogMessage(uint8_t* status, uint32_t* timestamp) {
   if (*status > 49) {                                       // We don't have that many messages available...
     status = 0;
     timestamp = 0;
-    strcpy(message, "");
+    strcpy(buff, "");
   }
   else {
     File f = SPIFFS.open(messageLogFileName, "r");          // Open log file for read/write.
@@ -761,11 +771,10 @@ char* HydroMonitorLogging::getLogMessage(uint8_t* status, uint32_t* timestamp, c
     f.readBytes((char *)timestamp, 4);
     
     f.seek(latestMessageList[*status] + 16, SeekSet);       // Set seek pointer to the start of the message.
-    uint16_t nBytes = f.readBytesUntil('\0', message, MAX_MESSAGE_SIZE - 1); // Get total size of the stored message.        
-    message[nBytes] = 0;
+    uint16_t nBytes = f.readBytesUntil('\0', buff, MAX_MESSAGE_SIZE); // Get total size of the stored message.        
+    buff[nBytes] = 0;
     f.close();
   }
-  return message;
 }
 
 
@@ -776,13 +785,11 @@ void HydroMonitorLogging::messagesJSON(ESP8266WebServer* server) {
   server->sendContent_P(PSTR("{\"messagelog\":\n"
                              "  {\n"));
   bool isFirst = true;
-  char buff[10];
   uint8_t status;
   uint32_t timestamp;
-  char message[MAX_MESSAGE_SIZE];
   for (uint8_t i = 0; i < 50; i++) {
     status = i;
-    getLogMessage(&status, &timestamp, message);
+    getLogMessage(&status, &timestamp);                     // Places the message in the global buff.
     if (isFirst) {
       isFirst = false;
     }
@@ -790,14 +797,14 @@ void HydroMonitorLogging::messagesJSON(ESP8266WebServer* server) {
       server->sendContent_P(PSTR(",\n"));
     }
     server->sendContent_P(PSTR("    \""));
-    server->sendContent(itoa(i, buff, 10));
+    server->sendContent(itoa(i, control, 10));
     server->sendContent_P(PSTR("\":[\""));
-    server->sendContent(itoa(status, buff, 10));
+    server->sendContent(itoa(status, control, 10));
     server->sendContent_P(PSTR("\",\""));
-    server->sendContent(itoa(timestamp, buff, 10));
+    server->sendContent(itoa(timestamp, control, 10));
     server->sendContent_P(PSTR("\",\""));
-    if (strlen(message) > 0) {
-      server->sendContent(message);
+    if (strlen(buff) > 0) {
+      server->sendContent(buff);
     }
     server->sendContent_P(PSTR("\"]"));
   }

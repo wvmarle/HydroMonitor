@@ -377,8 +377,6 @@ void HydroMonitorDrainage::updateSettings(ESP8266WebServer *server) {
   EEPROM.put(DRAINAGE_EEPROM, settings);
   EEPROM.commit();
 #endif
-  logging->writeTrace(F("HydroMonitorDrainage: updated settings."));
-  return;
 }
 
 /*
