@@ -120,31 +120,21 @@ void HydroMonitorFertiliser::doFertiliser() {
       measuring = false;
       bRunning = false;
     }
-    
-    // Don't do anything else while measuring!
-    return;
-  }
-  
-  // Don't start adding fertiliser if the sensor is not connected, or if calibration is not set (in which case
-  // the value is nan, and any comparison results in false).
-  if (sensorData->EC <= 0) {
-    return;
   }
 
-  // All parameters must have been set.
-  // The user may set the targetEC to 0 to stop this process.
-  if (sensorData->targetEC == 0 || 
-      sensorData->solutionVolume == 0 || 
-      sensorData->fertiliserConcentration == 0) {
-    return;
+  else if ((sensorData->EC <= 0) ||                         // Don't start adding fertiliser if the sensor is not connected, or if calibration is
+           //                                                  not set (in which case the value is nan, and any comparison results in false).
+           sensorData->targetEC == 0 ||                     // The user may set the targetEC to 0 to stop this process.
+           sensorData->solutionVolume == 0 ||               // All parameters must have been set.
+           sensorData->fertiliserConcentration == 0) {
+    // Nothing to do in this case.
   }
-  
-  // Don't start adding fertiliser if the reservoir level is low.
-  if (bitRead(sensorData->systemStatus, STATUS_RESERVOIR_LEVEL_LOW) ||
-      bitRead(sensorData->systemStatus, STATUS_DRAINING_RESERVOIR) ||
-      bitRead(sensorData->systemStatus, STATUS_MAINTENANCE) ||
-      bitRead(sensorData->systemStatus, STATUS_DRAINAGE_NEEDED)) {
-    if (aRunning) {
+
+  else if (bitRead(sensorData->systemStatus, STATUS_RESERVOIR_LEVEL_LOW) || // Don't start adding fertiliser if the reservoir level is low,
+           bitRead(sensorData->systemStatus, STATUS_DRAINING_RESERVOIR) ||       // the reservoir is being drained,
+           bitRead(sensorData->systemStatus, STATUS_MAINTENANCE) ||              // the system is in maintenance mode, or
+           bitRead(sensorData->systemStatus, STATUS_DRAINAGE_NEEDED)) {          // drainage has been requested.
+    if (aRunning) {                                         // If they're running, switch off the pumps.
       aRunning = false;
       switchPumpOff(pumpA);
     }
@@ -153,19 +143,17 @@ void HydroMonitorFertiliser::doFertiliser() {
       switchPumpOff(pumpA);
     }
     lastGoodEC = millis();                                  // Make sure we're locked out from adding EC for some time.
-    return;
   }
 
-  // Add solution B, if needed.
   // It's best to start with B first, and do A second.
-  if (addB) {
+  else if (addB) {                                          // Add solution B, if needed.
     logging->writeTrace(F("HydroMonitorFertiliser: start adding solution B, switching pump B on."));
     switchPumpOn(pumpB);                                    // Switch on the pump,
     bRunning = true;                                        // and flag it's running.
     addB = false;                                           // Reset this flag, as we're adding B now.
     startTime = millis();                                   // The time the addition started.
   }
-  
+
   // Check whether B is running, and if so whether it's time to stop.
   else if (bRunning && millis() - startTime > runBTime) {
     logging->writeTrace(F("HydroMonitorFertiliser: finished adding solution B, switching pump B off."));
@@ -173,7 +161,7 @@ void HydroMonitorFertiliser::doFertiliser() {
     startATime = millis();                                  // Record when we did this, after a short delay A may start.
     bRunning = false;                                       // Reset the running flag.
   }
-  
+
   // Start adding A if needed and B is not running and the 500 ms break is over.
   else if (addA && !bRunning && millis() - startATime > 500) {
     logging->writeTrace(F("HydroMonitorFertiliser: start adding solution A, switching pump A on."));
@@ -182,7 +170,7 @@ void HydroMonitorFertiliser::doFertiliser() {
     addA = false;                                           // Reset this flag, as we're adding A now.
     startTime = millis();                                   // The time the addition started.
   }
-  
+
   // Check whether A is running, and if so whether it's time to stop.
   else if (aRunning && millis() - startTime > runATime) {
     logging->writeTrace(F("HydroMonitorFertiliser: finished adding solution A, switching pump A off."));
@@ -192,66 +180,61 @@ void HydroMonitorFertiliser::doFertiliser() {
   }
 
   // Check whether the EC is not more than 0.1 mS/cm under the target value
-  // and less than 0.5 mS/cm above the target value, and if so 
+  // and less than 0.5 mS/cm above the target value, and if so
   // record the time when we found the EC to be good.
-  if (sensorData->EC > sensorData->targetEC - 0.1 &&
-      sensorData->EC < sensorData->targetEC + 0.5) {
+  else if (sensorData->EC > sensorData->targetEC - 0.1 &&
+           sensorData->EC < sensorData->targetEC + 0.5) {
     lastGoodEC = millis();
   }
 
   // Start adding after ten minutes of continuous too low EC, and at least fertiliserDelay
   // since we last added any fertiliser.
-  else if (sensorData->EC < sensorData->targetEC && 
-           millis() - lastGoodEC > 10 * 60 * 1000 && 
+  else if (sensorData->EC < sensorData->targetEC &&
+           millis() - lastGoodEC > 10 * 60 * 1000 &&
            millis() - lastTimeAdded > fertiliserDelay) {
-  
+
     // Flag that we want to add fertilisers - both, of course.
     addA = true;
     addB = true;
-    
-    // Add an amount of fertiliser that will add 0.1 mS/cm to the EC of the total solution, and calculate how
-    // long the pumps have to run to add just that volume.
-    // So if target EC = 1.00, it will start adding when the EC is <0.95 for >10 minutes, and top up the EC
-    // to about 1.04 (not 1.05 as it was less than 0.95 to begin with).
     float addVolume = 0.1 * 1000 * sensorData->solutionVolume / sensorData->fertiliserConcentration; // The amount of fertiliser in ml to be added of 0.1 mS/cm worth of EC.
-    
-    // If the EC we measure is more than 0.1 mS/cm lower than the target volume, add a full shot of fertiliser.
-    if (sensorData->EC > sensorData->targetEC - 0.1) {
-    
-      // Don't add more than 1 mS/cm worth of fertiliser in one go.
-      if (sensorData->EC > sensorData->targetEC - 1) {
+    if (sensorData->EC > sensorData->targetEC - 0.1) {      // If the EC we measure is more than 0.1 mS/cm lower than the target volume, add a full shot of fertiliser.
+      if (sensorData->EC > sensorData->targetEC - 1) {      // But don't add more than 1 mS/cm worth of fertiliser in one go.
         addVolume *= 1 * 10;
       }
       else {
         addVolume *= (sensorData->targetEC - sensorData->EC) * 10;
       }
     }
+    logging->writeTrace(F("HydroMonitorFertiliser: 10 minutes of too low EC; have to start adding fertiliser."));
     char buff[70];
     sprintf_P(buff, PSTR("HydroMonitorFertiliser: adding %3.1f ml of fertiliser solution."), addVolume);
-    logging->writeInfo(buff);    
+    logging->writeInfo(buff);
     runATime = addVolume / settings.pumpASpeed * 60 * 1000; // the time in milliseconds pump A has to run.
     runBTime = addVolume / settings.pumpBSpeed * 60 * 1000; // the time in milliseconds pump B has to run.
-    logging->writeTrace(F("HydroMonitorFertiliser: 10 minutes of too low EC; have to start adding fertiliser."));
     lastTimeAdded = millis();                               // Time we last added any fertiliser - which is what we're going to do now.
     originalEC = sensorData->EC;                            // Try to detect whether the EC really came up as expected.
   }
 
 #ifdef USE_DRAINAGE_PUMP
   // Start draining the reservoir after ten minutes of continuous too high EC.
-  else if (sensorData->EC > sensorData->targetEC && 
+  else if (sensorData->EC > sensorData->targetEC &&
            millis() - lastGoodEC > 10 * 60 * 1000) {
-     bitSet(sensorData->systemStatus, STATUS_DRAINAGE_NEEDED);
+    logging->writeTrace(F("HydroMonitorFertiliser: 10 minutes of too high EC; completely refresh the reservoir."));
+    logging->writeInfo(F("HydroMonitorFertiliser: refreshing reservoir to be able to reduce the EC value."));
+    bitSet(sensorData->systemStatus, STATUS_DRAINAGE_NEEDED);
   }
 #endif
-  
-  if (millis() - lastTimeAdded < 30 * 60 * 1000) {          // Monitor EC for 30 minutes after last time added; it should be going up now.
-    if (sensorData->EC > originalEC + 0.07) {
+
+  if (lastTimeAdded > 0 &&
+    sensorData->EC > 0) {
+    if (millis() - lastTimeAdded < 30 * 60 * 1000 &&          // Monitor EC for 30 minutes after last time added; it should be going up now.
+        sensorData->EC > originalEC + 0.07) {
       originalEC = 0;
     }
-  }
-  else if (originalEC > 0 && millis() - lastWarned > WARNING_INTERVAL) {
-    logging->writeWarning(F("Fertiliser 01: fertiliser did not go up as expected after running the pumps. Fertiliser bottles may be empty."));
-    lastWarned = millis();
+    else if (originalEC > 0 && millis() - lastWarned > WARNING_INTERVAL) {
+      logging->writeWarning(F("Fertiliser 01: fertiliser did not go up as expected after running the pumps. Fertiliser bottles may be empty."));
+      lastWarned = millis();
+    }
   }
 }
 

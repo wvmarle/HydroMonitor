@@ -64,9 +64,9 @@ void HydroMonitorpHMinus::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLo
 #endif 
 
   // Check whether any settings have been set, if not apply defaults.
-  if (settings.pumpSpeed < 0 || settings.pumpSpeed > 500) {
+  if (settings.pumpSpeed < 0 || settings.pumpSpeed > 200) {
     l->writeTrace(F("HydroMonitorpHMinus: applying default settings."));
-    settings.pumpSpeed = 100;      // ml per minute.
+    settings.pumpSpeed = 20;      // ml per minute.
 #ifdef USE_24LC256_EEPROM
     sensorData->EEPROM->put(PHMINUS_EEPROM, settings);
 #else

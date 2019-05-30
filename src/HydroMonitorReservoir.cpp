@@ -132,10 +132,11 @@ void HydroMonitorReservoir::doReservoir() {
       floatswitchTriggered = true;
     }
   }
-  
   if (floatswitchTriggered) {
 #ifndef USE_WATERLEVEL_SENSOR
-    bitSet(sensorData->systemStatus, STATUS_DRAINAGE_NEEDED); // Trigger drainage - if not using water level sensor, and retrigger until it's resolved.
+    if (millis() - lastClear > 3000) {                      // 3-second delay to thwart spurious triggers, which appear to happen.
+      bitSet(sensorData->systemStatus, STATUS_DRAINAGE_NEEDED); // Trigger drainage - if not using water level sensor, and retrigger until it's resolved.
+    }
 #endif
     if (millis() - lastBeep > BEEP_FREQUENCY) {
       lastBeep += BEEP_FREQUENCY;
@@ -153,6 +154,9 @@ void HydroMonitorReservoir::doReservoir() {
   }
   else {
     beep = false;
+#ifndef USE_WATERLEVEL_SENSOR
+    lastClear = millis();
+#endif
   }
   if (beep != oldBeep) {
     mcp->digitalWrite(AUX1_MCP17_PIN, beep);

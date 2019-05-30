@@ -85,6 +85,9 @@ class HydroMonitorReservoir {
     uint32_t lastGoodFill;
     uint32_t lastLevelCheck;
 #endif
+#ifndef USE_WATERLEVEL_SENSOR
+    uint32_t lastClear;
+#endif
     uint32_t startAddWater;
     uint32_t reservoirEmptyTime;
     uint32_t lastWarned = -WARNING_INTERVAL;

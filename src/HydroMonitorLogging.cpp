@@ -41,8 +41,8 @@ void HydroMonitorLogging::begin(HydroMonitorCore::SensorData *sd) {
 
   // Set up the local storage (SPIFFS - store in flash).
   SPIFFS.begin();                                           // Initialse the SPIFFS storage.
+  initMessageLogFile();                                     // Do this first to be able to properly receive new messages.
   initDataLogFile();
-  initMessageLogFile();
 }
   
 //*******************************************************************************************************************
@@ -436,18 +436,34 @@ void HydroMonitorLogging::writeLog(uint8_t loglevel) {
   f.write(0);                                               // Add the null terminator to complete the record.
   f.close();
 
-  // Check log file size, and if needed roll over into a new file.
-  // TODO: copy latest 50 messages to the new log file.
-  f = SPIFFS.open(messageLogFileName, "r");
-  if (f.size() > MAX_FILE_SIZE) {
-    f.close();
+  // Check log file size, and if needed roll over into a new file. Copy latest 50 messages to the new log file.
+  File fOld = SPIFFS.open(messageLogFileName, "r");
+  if (fOld.size() > MAX_FILE_SIZE) {
+    Serial.println(fOld.size());
+    fOld.close();
     if (SPIFFS.exists(messageLogFile1Name)) {               // Check on the rollover file; if it exists, remove it.
       SPIFFS.remove(messageLogFile1Name);
     }
     SPIFFS.rename(messageLogFileName, messageLogFile1Name); // Rename the original log to the rollover file.
-    f = SPIFFS.open(messageLogFileName, "w");               // Create a new logfile.
+    File fNew = SPIFFS.open(messageLogFileName, "w");       // Create a new logfile.
+    fOld = SPIFFS.open(messageLogFile1Name, "r");           // Open the old one for reading back the latest 50 messages.
+    uint32_t idx = latestMessageList[49];                   // Starting point of oldest message in the list is at index 49.
+    for (uint8_t i = 0; i < 50; i++) {
+      latestMessageList[i] -= idx;                          // Set the list to point to where the messages are going to be in the new file.
+    }
+    uint16_t bytesToRead = fOld.size() - idx;               // Calculate how many bytes we have to copy.
+    fOld.seek(idx, SeekSet);                                // Start copying from here.
+    while (idx < fOld.size() - MAX_MESSAGE_SIZE) {          // Copy MAX_MESSAGE_SIZE bytes at a time - that fits in buff - until less than that left in the file.
+      fOld.readBytes(buff, MAX_MESSAGE_SIZE);
+      fNew.write(buff, MAX_MESSAGE_SIZE);
+      idx += MAX_MESSAGE_SIZE;
+    }
+    uint16_t lastBytes = fOld.size() - idx;                 // Calculate the remainder of bytes to copy.
+    fOld.readBytes(buff, lastBytes);
+    fNew.write(buff, lastBytes);
+    fNew.close();
   }
-  f.close();
+  fOld.close();
   messageTransmitComplete = false;                          // Because we just added a new one!
 }
 
@@ -765,14 +781,13 @@ void HydroMonitorLogging::getLogMessage(uint8_t* status, uint32_t* timestamp) {
     strcpy(buff, "");
   }
   else {
-    File f = SPIFFS.open(messageLogFileName, "r");          // Open log file for read/write.
-    f.seek(latestMessageList[*status] + 1, SeekSet);        // Start reading from the start of the requested record; skip byte 0 (transmission status).
-    f.readBytes((char *)status, 1);                         // byte 1: message type (log level).
-    f.readBytes((char *)timestamp, 4);
-    
+    File f = SPIFFS.open(messageLogFileName, "r");          // Open log file for reading.
     f.seek(latestMessageList[*status] + 16, SeekSet);       // Set seek pointer to the start of the message.
-    uint16_t nBytes = f.readBytesUntil('\0', buff, MAX_MESSAGE_SIZE); // Get total size of the stored message.        
-    buff[nBytes] = 0;
+    uint16_t nBytes = f.readBytesUntil('\0', buff, MAX_MESSAGE_SIZE); // Copy the stored message into global buffer buff,
+    buff[nBytes] = 0;                                       // and top it off with a null terminator.
+    f.seek(latestMessageList[*status] + 1, SeekSet);        // Start reading control bytes from the start of the requested record; skip byte 0 (transmission status).
+    f.readBytes((char *)status, 1);                         // Byte 1: message type (log level).
+    f.readBytes((char *)timestamp, 4);                      // Byte 2-6: timestamp.
     f.close();
   }
 }
