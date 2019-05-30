@@ -14,8 +14,8 @@ HydroMonitorWaterLevelSensor::HydroMonitorWaterLevelSensor() {
 
 #ifdef USE_HCSR04
 /*
- * Ultrasound sensor, trig pin connected through a MCP23008 port expander.
- */
+   Ultrasound sensor, trig pin connected through a MCP23008 port expander.
+*/
 #if defined(TRIG_MCP_PIN)
 void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, Adafruit_MCP23008 *mcp) {
 
@@ -23,12 +23,12 @@ void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData *sd, Hydro
   mcp23008 = mcp;
   mcp23008->pinMode(TRIG_MCP_PIN, OUTPUT);
   l->writeTrace(F("HydroMonitorWaterLevelSensor: configured HC-SR04 sensor with trig pin on MCP port expander."));
-  
+
 #elif defined(TRIG_PCF_PIN)
 /*
- * Ultrasound sensor, trig pin connected through a PCF8574 port expander.
- */
-void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, PCF857x *pcf) {
+   Ultrasound sensor, trig pin connected through a PCF8574 port expander.
+*/
+void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l, PCF857x * pcf) {
 
   // Set the parameters.
   pcf8574 = pcf;
@@ -36,52 +36,52 @@ void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData *sd, Hydro
 
 #elif defined(TRIG_PIN)
 /*
- * Ultrasound sensor, trig pin connected directly.
- */
-void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l) {
+   Ultrasound sensor, trig pin connected directly.
+*/
+void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l) {
 
   // Set the parameters.
   pinMode(TRIG_PIN, OUTPUT);
   l->writeTrace(F("HydroMonitorWaterLevelSensor: configured HC-SR04 sensor."));
 #endif
-  
+
   pinMode(ECHO_PIN, INPUT);
   l->writeTrace(F("HydroMonitorWaterLevelSensor: set up HC-SR04 sensor."));
 
-/*
- * MS5837 pressure sensor.
- */
+  /*
+     MS5837 pressure sensor.
+  */
 #elif defined(USE_MS5837)
-void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, MS5837 *ms) {
+void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l, MS5837 * ms) {
 
   // Set the parameters.
   ms5837 = ms;
   l->writeTrace(F("HydroMonitorWaterLevelSensor: set up MS5837 sensor."));
-  
-/*
- * DS1603L ultrasound sensor.
- */
+
+  /*
+     DS1603L ultrasound sensor.
+  */
 #elif defined(USE_DS1603L)
-void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, DS1603L *ds) {
+void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l, DS1603L * ds) {
 
   // Set the parameters.
   ds1603l = ds;
-  
-/*
- * MPXV5004 pressure sensor.
- */
-#elif defined (USE_MPXV5004)
-void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l) {
 
-/*
- * Three float switches.
- */
+  /*
+     MPXV5004 pressure sensor.
+  */
+#elif defined (USE_MPXV5004)
+void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l) {
+
+  /*
+     Three float switches.
+  */
 #elif defined (USE_FLOATSWITCHES)
 #if defined(FLOATSWITCH_HIGH_MCP17_PIN) || defined(FLOATSWITCH_MEDIUM_MCP17_PIN) || defined(FLOATSWITCH_LOW_MCP17_PIN)
-void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l,  Adafruit_MCP23017 *mcp) {
+void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l,  Adafruit_MCP23017 * mcp) {
   mcp23017 = mcp;
 #else
-void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l) {
+void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l) {
 #endif
 
 #ifdef FLOATSWITCH_HIGH_MCP17_PIN
@@ -115,7 +115,7 @@ void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData *sd, Hydro
 #else
     EEPROM.get(WATERLEVEL_SENSOR_EEPROM, settings);
 #endif
-    
+
   // Check whether any reasonable settings have been set, if not apply defaults.
   // Note: for some sensors the reservoir heights are in cm, for others it's the ADC reading.
   if (settings.reservoirHeight < 1 || settings.reservoirHeight > 1024) {
@@ -129,20 +129,19 @@ void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData *sd, Hydro
     EEPROM.commit();
 #endif
   }
-  return;
 }
 
 #ifdef USE_HCSR04
 /*
- * HC-SR04 distance sensor
- * 
- * To improve on the stability, a number of measurements is taken. We want
- * to have HCSR04SAMPLES good readings, but will take a maximum of 
- * 2 * HCSR04SAMPLES measurements for that. The level is the average 
- * of those HCSR04SAMPLES readings.
- *
- * The sensor returns the level in fill % (where 100% is 2 cm below the sensor).
- */
+   HC-SR04 distance sensor
+
+   To improve on the stability, a number of measurements is taken. We want
+   to have HCSR04SAMPLES good readings, but will take a maximum of
+   2 * HCSR04SAMPLES measurements for that. The level is the average
+   of those HCSR04SAMPLES readings.
+
+   The sensor returns the level in fill % (where 100% is 2 cm below the sensor).
+*/
 void HydroMonitorWaterLevelSensor::readSensor(bool readNow = true) {
   static uint32_t lastReadSensor = -REFRESH_SENSORS;
   if (millis() - lastReadSensor > REFRESH_SENSORS ||
@@ -155,53 +154,52 @@ void HydroMonitorWaterLevelSensor::readSensor(bool readNow = true) {
       delay(10); // to make sure the echoes have died out
     }
     reading /= (1 << HCSR04SAMPLES);
-      
+
     // Only calculate the fill level for readings that have a positive value and are less than the
     // reservoirheight. Any readings outside that range are impossible and considered invalid.
     // The reservoir is considered 100% full at 2 cm below the sensor, which is the minimum distance for
     // it to measure - and a minimum safe distance between the water and the sensor.
     if (reading > 0 && reading < settings.reservoirHeight)
       sensorData->waterLevel = 100.0 * (settings.reservoirHeight - reading) / (settings.reservoirHeight - 2);
-    else 
+    else
       sensorData->waterLevel = -1;
 
     warning();
   }
-  return;
 }
 
 /*
- * This function triggers the device and then reads the result, and calculates the distance
- * between the probe and the water from that.
- */
+   This function triggers the device and then reads the result, and calculates the distance
+   between the probe and the water from that.
+*/
 float HydroMonitorWaterLevelSensor::measureLevel() {
   float duration = 0;
   float distance = 0;
 
   // Calculate the pulse_in timeout: 1 1/2 times the maximum roundtrip based on the reservoir
   // height set by the user.
-  // Speed of sound = 0.03 cm/microsecond, 33 1/3 microsecond per cm, times 3 for (roundtrip * 1.5) 
+  // Speed of sound = 0.03 cm/microsecond, 33 1/3 microsecond per cm, times 3 for (roundtrip * 1.5)
   // gives a timeout of 100 microseconds per cm reservervoir height.
   uint16_t timeout = settings.reservoirHeight * 100;
-  
+
   // Trigger the measurement.
 #ifdef TRIG_PCF_PIN
   pcf8574->write(TRIG_PCF_PIN, LOW);
-  delayMicroseconds(2); 
+  delayMicroseconds(2);
   pcf8574->write(TRIG_PCF_PIN, HIGH);
   delayMicroseconds(10);
   pcf8574->write(TRIG_PCF_PIN, LOW);
   delayMicroseconds(2);
 #elif defined(TRIG_MCP_PIN)
   mcp23008->digitalWrite(TRIG_MCP_PIN, LOW);
-  delayMicroseconds(2); 
+  delayMicroseconds(2);
   mcp23008->digitalWrite(TRIG_MCP_PIN, HIGH);
   delayMicroseconds(10);
   mcp23008->digitalWrite(TRIG_MCP_PIN, LOW);
   delayMicroseconds(2);
 #elif defined(TRIG_PIN)
-  digitalWrite(TRIG_PIN, LOW); 
-  delayMicroseconds(2); 
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
   digitalWrite(TRIG_PIN, HIGH);
   delayMicroseconds(10);
   digitalWrite(TRIG_PIN, LOW);
@@ -209,21 +207,21 @@ float HydroMonitorWaterLevelSensor::measureLevel() {
 #else
 #error no trigpin defined.
 #endif
-  
+
   // Get the result.
   duration = pulseIn(ECHO_PIN, HIGH, timeout);
-  distance = (duration/2) / 29.1;
+  distance = (duration / 2) / 29.1;
   delay(0);
-  if (distance == 0) 
+  if (distance == 0)
     return -1;    // No valid reading received.
 
   return distance;
 }
 
 /*
- * Measure water level using the MS5837 pressure sensor.
- * Requires the atmospheric pressure as compensation.
- */
+   Measure water level using the MS5837 pressure sensor.
+   Requires the atmospheric pressure as compensation.
+*/
 #elif defined(USE_MS5837)
 void HydroMonitorWaterLevelSensor::readSensor(bool readNow = true) {
   static uint32_t lastReadSensor = -REFRESH_SENSORS;
@@ -231,7 +229,7 @@ void HydroMonitorWaterLevelSensor::readSensor(bool readNow = true) {
       readNow) {
     lastReadSensor = millis();
     sensorData->waterLevel = -1;
-    
+
     // Get the water level in cm.
     // The reservoir is considered "full" at 95% of the total level.
     float reading = ms5837->readWaterLevel(sensorData->pressure) - settings.zeroLevel;
@@ -241,16 +239,15 @@ void HydroMonitorWaterLevelSensor::readSensor(bool readNow = true) {
     else {
       sensorData->waterLevel = -1;
     }
-    bitWrite(sensorData->systemStatus, STATUS_RESERVOIR_LEVEL_LOW, sensorData->waterLevel < 40);  
+    bitWrite(sensorData->systemStatus, STATUS_RESERVOIR_LEVEL_LOW, sensorData->waterLevel < 40);
     warning();
   }
-  return;
 }
 
 /*
- * Use the current reading as zero water level (there's always a small difference between
- * the two sensors), and store the difference in EEPROM.
- */
+   Use the current reading as zero water level (there's always a small difference between
+   the two sensors), and store the difference in EEPROM.
+*/
 void HydroMonitorWaterLevelSensor::setZero() {
 
   // Get the water level in cm.
@@ -262,15 +259,14 @@ void HydroMonitorWaterLevelSensor::setZero() {
   EEPROM.put(WATERLEVEL_SENSOR_EEPROM, settings);
   EEPROM.commit();
 #endif
-  return;
 }
 
 /*
- * Measure water level using the DS1603L ultrasound sensor.
- */
+   Measure water level using the DS1603L ultrasound sensor.
+*/
 #elif defined(USE_DS1603L)
 void HydroMonitorWaterLevelSensor::readSensor(bool readNow = true) {
-  
+
   // Get the water level in cm.
   // Sensor returns the value in mm as uint16_t, we divide this by 10 to get to cm.
   // The reservoir is considered "full" at 95% of the total level.
@@ -285,14 +281,14 @@ void HydroMonitorWaterLevelSensor::readSensor(bool readNow = true) {
     else {
       sensorData->waterLevel = -1;
     }
-    bitWrite(sensorData->systemStatus, STATUS_RESERVOIR_LEVEL_LOW, sensorData->waterLevel < 40);  
+    bitWrite(sensorData->systemStatus, STATUS_RESERVOIR_LEVEL_LOW, sensorData->waterLevel < 40);
     warning();
   }
 }
 
 /*
- * Measure water level using the MPXV5004 or MP3V5004 (or similar) pressure sensor.
- */
+   Measure water level using the MPXV5004 or MP3V5004 (or similar) pressure sensor.
+*/
 #elif defined(USE_MPXV5004)
 void HydroMonitorWaterLevelSensor::readSensor(bool readNow = true) {
   static uint32_t lastReadSensor = -REFRESH_SENSORS;
@@ -305,14 +301,14 @@ void HydroMonitorWaterLevelSensor::readSensor(bool readNow = true) {
       waterLevel = -1;
     }
     sensorData->waterLevel = waterLevel;
-    bitWrite(sensorData->systemStatus, STATUS_RESERVOIR_LEVEL_LOW, sensorData->waterLevel < 40);  
+    bitWrite(sensorData->systemStatus, STATUS_RESERVOIR_LEVEL_LOW, sensorData->waterLevel < 40);
     warning();
   }
 }
 
 /*
- * Measure the zero offset of the sensor - typically 0.6V at no pressure difference between the two inputs.
- */
+   Measure the zero offset of the sensor - typically 0.6V at no pressure difference between the two inputs.
+*/
 void HydroMonitorWaterLevelSensor::setZero() {
   float reading = analogRead(MPXV5004_PIN);
   settings.zeroLevel = reading;
@@ -322,12 +318,11 @@ void HydroMonitorWaterLevelSensor::setZero() {
   EEPROM.put(WATERLEVEL_SENSOR_EEPROM, settings);
   EEPROM.commit();
 #endif
-  return;
 }
 
 /*
- * Measure the maximum water level - the 100% level as given by the user.
- */
+   Measure the maximum water level - the 100% level as given by the user.
+*/
 void HydroMonitorWaterLevelSensor::setMax() {
   float reading = analogRead(MPXV5004_PIN);
   settings.reservoirHeight = reading;
@@ -337,12 +332,11 @@ void HydroMonitorWaterLevelSensor::setMax() {
   EEPROM.put(WATERLEVEL_SENSOR_EEPROM, settings);
   EEPROM.commit();
 #endif
-  return;
 }
 
 /*
- * Measure the water level using three float switches (giving high, medium and low level).
- */
+   Measure the water level using three float switches (giving high, medium and low level).
+*/
 #elif defined (USE_FLOATSWITCHES)
 void HydroMonitorWaterLevelSensor::readSensor(bool readNow = true) {
   static uint32_t lastReadSensor = -REFRESH_SENSORS;
@@ -383,7 +377,7 @@ void HydroMonitorWaterLevelSensor::readSensor(bool readNow = true) {
 
 void HydroMonitorWaterLevelSensor::warning() {
 
-   // Send warning if it's been long enough ago & fill is <40%.
+  // Send warning if it's been long enough ago & fill is <40%.
   if (millis() - lastWarned > WARNING_INTERVAL && sensorData->waterLevel >= 0 && sensorData->waterLevel < 20) {
     lastWarned += WARNING_INTERVAL;
     char message[115];
@@ -394,9 +388,9 @@ void HydroMonitorWaterLevelSensor::warning() {
 }
 
 /*
- * The settings as html.
- */
-void HydroMonitorWaterLevelSensor::settingsHtml(ESP8266WebServer *server) {
+   The settings as html.
+*/
+void HydroMonitorWaterLevelSensor::settingsHtml(ESP8266WebServer * server) {
   char buff[10];
   server->sendContent_P(PSTR("\
       <tr>\n\
@@ -439,9 +433,9 @@ void HydroMonitorWaterLevelSensor::settingsHtml(ESP8266WebServer *server) {
 
 
 /*
- * The settings as JSON.
- */
-bool HydroMonitorWaterLevelSensor::settingsJSON(ESP8266WebServer *server) {
+   The settings as JSON.
+*/
+bool HydroMonitorWaterLevelSensor::settingsJSON(ESP8266WebServer * server) {
   char buff[10];
   server->sendContent_P(PSTR("  \"waterlevel_sensor\": {\n"
                              "    \"max_level\":\""));
@@ -457,9 +451,9 @@ bool HydroMonitorWaterLevelSensor::settingsJSON(ESP8266WebServer *server) {
 }
 
 /*
- * The sensor data as html.
- */
-void HydroMonitorWaterLevelSensor::dataHtml(ESP8266WebServer *server) {
+   The sensor data as html.
+*/
+void HydroMonitorWaterLevelSensor::dataHtml(ESP8266WebServer * server) {
   char buff[10];
   server->sendContent_P(PSTR("<tr>\n\
     <td>Reservoir water level</td>\n\
@@ -477,10 +471,10 @@ void HydroMonitorWaterLevelSensor::dataHtml(ESP8266WebServer *server) {
 }
 
 /*
- * Process the settings from the key/value pairs.
- */
-void HydroMonitorWaterLevelSensor::updateSettings(ESP8266WebServer* server) {
-  for (uint8_t i=0; i<server->args(); i++) {
+   Process the settings from the key/value pairs.
+*/
+void HydroMonitorWaterLevelSensor::updateSettings(ESP8266WebServer * server) {
+  for (uint8_t i = 0; i < server->args(); i++) {
     if (server->argName(i) == "waterlevel_reservoirheight") {
       if (core.isNumeric(server->arg(i))) {
         float val = server->arg(i).toFloat();
@@ -494,7 +488,6 @@ void HydroMonitorWaterLevelSensor::updateSettings(ESP8266WebServer* server) {
   EEPROM.put(WATERLEVEL_SENSOR_EEPROM, settings);
   EEPROM.commit();
 #endif
-  return;
 }
 #endif
 

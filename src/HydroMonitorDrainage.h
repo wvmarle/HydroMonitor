@@ -15,16 +15,16 @@
 class HydroMonitorDrainage
 {
   public:
-  
+
     struct Settings {
-      uint32_t latestDrainage;        // UNIX timestamp.
-      uint16_t drainageInterval;      // Interval in days.
+      uint32_t latestDrainage;                              // UNIX timestamp.
+      uint16_t drainageInterval;                            // Interval in days.
     };
-    
+
     HydroMonitorDrainage(void);
-    
+
     // Functions as required for all sensors.
-    
+
 #ifdef USE_WATERLEVEL_SENSOR
 #ifdef DRAINAGE_PIN
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, HydroMonitorWaterLevelSensor*);
@@ -43,8 +43,8 @@ class HydroMonitorDrainage
 #endif                                                      // endif pin definitions.
 #endif                                                      // endif USE_WATERLEVEL_SENSOR
     void doDrainage(void);
-    void settingsHtml(ESP8266WebServer*); 
-    bool settingsJSON(ESP8266WebServer*); 
+    void settingsHtml(ESP8266WebServer*);
+    bool settingsJSON(ESP8266WebServer*);
     void updateSettings(ESP8266WebServer*);
     void drainStart(void);
     void drainStop(void);
@@ -54,7 +54,7 @@ class HydroMonitorDrainage
 #elif defined(DRAINAGE_MCP17_PIN)
     Adafruit_MCP23017 *mcp;
 #endif
-    
+
   private:
     Settings settings;
     HydroMonitorCore core;
@@ -68,33 +68,33 @@ class HydroMonitorDrainage
     bool autoDrainageMode();
     uint32_t lastWarned;
 
-  enum DrainageStates {
-    DRAINAGE_IDLE,
+    enum DrainageStates {
+      DRAINAGE_IDLE,
 
-    DRAINAGE_AUTOMATIC_DRAINING_START,
-    DRAINAGE_AUTOMATIC_DRAINING_RUNNING,
-    DRAINAGE_AUTOMATIC_DRAINING_COMPLETE,
-    
-    DRAINAGE_MANUAL_DRAINING_START,
-    DRAINAGE_MANUAL_DRAINING_RUNNING,
-    DRAINAGE_MANUAL_DRAINING_HOLD_EMPTY,
-    DRAINAGE_MANUAL_DRAINING_COMPLETE,
+      DRAINAGE_AUTOMATIC_DRAINING_START,
+      DRAINAGE_AUTOMATIC_DRAINING_RUNNING,
+      DRAINAGE_AUTOMATIC_DRAINING_COMPLETE,
 
-    DRAINAGE_MAINTENANCE_RUN,
-    DRAINAGE_MAINTENANCE_RUNNING,
+      DRAINAGE_MANUAL_DRAINING_START,
+      DRAINAGE_MANUAL_DRAINING_RUNNING,
+      DRAINAGE_MANUAL_DRAINING_HOLD_EMPTY,
+      DRAINAGE_MANUAL_DRAINING_COMPLETE,
+
+      DRAINAGE_MAINTENANCE_RUN,
+      DRAINAGE_MAINTENANCE_RUNNING,
 
 #ifdef USE_WATERLEVEL_SENSOR
-    DRAINAGE_DRAIN_EXCESS,
-    DRAINAGE_DRAIN_EXCESS_RUNNING,
+      DRAINAGE_DRAIN_EXCESS,
+      DRAINAGE_DRAIN_EXCESS_RUNNING,
 #endif
-  };
-  DrainageStates drainageState;
-  uint32_t drainageCompletedTime;
-  HydroMonitorWaterLevelSensor *waterLevelSensor;
+    };
+    DrainageStates drainageState;
+    uint32_t drainageCompletedTime;
+    HydroMonitorWaterLevelSensor *waterLevelSensor;
 #ifdef USE_WATERLEVEL_SENSOR
-  uint32_t lastGoodFill;
+    uint32_t lastGoodFill;
 #endif
-  uint32_t lastDrainageRun;
+    uint32_t lastDrainageRun;
 };
 
 #endif

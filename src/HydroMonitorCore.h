@@ -1,9 +1,9 @@
 /*
- * HydroMonitorCore
- *
- * This module does not do any real work but provides definitions to the other modules of HydroMonitor.
- *
- */
+   HydroMonitorCore
+
+   This module does not do any real work but provides definitions to the other modules of HydroMonitor.
+
+*/
 
 #ifndef HYDROMONITORCORE_H
 #define HYDROMONITORCORE_H
@@ -76,7 +76,7 @@ const uint8_t STATUS_RESERVOIR_DRAINED      = 7;            // Reservoir is empt
 
 // Settings data is stored in the lower part of the EEPROM.
 // Address 0 is for all sensors that do not have specific settings. These can be given space later.
-// All sensors have 8 bytes 
+// All sensors have 8 bytes
 const uint16_t EC_SENSOR_EEPROM = 0;
 const uint16_t WATERTEMPERATURE_SENSOR_EEPROM = 0;
 const uint16_t BRIGHTNESS_SENSOR_EEPROM = 0;
@@ -106,7 +106,7 @@ const uint16_t FREE_EEPROM = 909;                           // Above this addres
 // Datapoints for the sensor calibration.
 // Each datapoint is 4+4+4+4+1 = 17 bytes.
 struct Datapoint {
-  uint32_t timestamp;                                       // timestamp (seconds since epoch) when the reading was taken. 
+  uint32_t timestamp;                                       // timestamp (seconds since epoch) when the reading was taken.
   float value;                                              // Temperature corrected value at which the sensor was calibrated.
   float nominalValue;                                       // Nominal value of the parameter at which the sensor was calibrated.
   uint32_t reading;                                         // The (temp, ... corrected) reading taken from the sensor at this value.
@@ -184,9 +184,9 @@ class HydroMonitorCore
       float timezone;
       uint32_t systemStatus;
     };
-    
+
     void begin(SensorData*);
-    
+
     // Various utility functions used by other modules.
     bool isNumeric(String);
     void leastSquares(float *, uint32_t *, uint8_t, float *, float *);
@@ -197,7 +197,7 @@ class HydroMonitorCore
 
     String urlencode(String);
     String urldecode(String);
-    
+
   private:
     SensorData* sensorData;
     unsigned char h2int(char);

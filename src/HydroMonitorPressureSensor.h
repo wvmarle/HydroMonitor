@@ -19,7 +19,6 @@
 #include <BME280.h>
 #endif
 
-// library interface description
 class HydroMonitorPressureSensor: public HydroMonitorSensorBase
 {
   public:
@@ -35,11 +34,10 @@ class HydroMonitorPressureSensor: public HydroMonitorSensorBase
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, BME280*);
 #endif
     void readSensor(void);
-    String dataHtml(void);            // Provides html code with the sensor data.
-    String settingsHtml(void);
+    void dataHtml(ESP8266WebServer * server);               // Provides html code with the sensor data.
+    void settingsHtml(ESP8266WebServer * server);
     void updateSettings(String[], String[], uint8_t);
 
-  // library-accessible "private" interface
   private:
 #ifdef USE_BMP180
     BMP180 *bmp180;

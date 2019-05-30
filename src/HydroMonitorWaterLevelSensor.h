@@ -1,11 +1,11 @@
 /*
- * HydroMonitorWaterLevelSensor.h
- * Library for measuring the water level using the HC-SR04 ultrasonic range finder.
- *
- * (C) Wouter van Marle / City Hydroponics
- * www.cityhydroponics.hk
- */
- 
+   HydroMonitorWaterLevelSensor.h
+   Library for measuring the water level using the HC-SR04 ultrasonic range finder.
+
+   (C) Wouter van Marle / City Hydroponics
+   www.cityhydroponics.hk
+*/
+
 
 #ifndef HYDROMONITORWATERLEVELSENSOR_h
 #define HYDROMONITORWATERLEVELSENSOR_h
@@ -35,7 +35,7 @@
 class HydroMonitorWaterLevelSensor: public HydroMonitorSensorBase
 {
   public:
-  
+
     struct Settings {
       float reservoirHeight;
       float zeroLevel;
@@ -86,7 +86,7 @@ class HydroMonitorWaterLevelSensor: public HydroMonitorSensorBase
 
 #elif defined(USE_MS5837)
     MS5837 *ms5837;
-    
+
 #elif defined(USE_DS1603L)
     DS1603L* ds1603l;
 

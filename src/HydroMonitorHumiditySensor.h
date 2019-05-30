@@ -1,10 +1,10 @@
 /*
- * HydroMonitorHumiditySensor.h
- *
- * (C) Wouter van Marle / City Hydroponics
- * www.cityhydroponics.hk
- */
- 
+   HydroMonitorHumiditySensor.h
+
+   (C) Wouter van Marle / City Hydroponics
+   www.cityhydroponics.hk
+*/
+
 #ifndef HYDROMONITORHUMIDITYSENSOR_h
 #define HYDROMONITORHUMIDITYSENSOR_h
 
@@ -22,14 +22,14 @@
 class HydroMonitorHumiditySensor: public HydroMonitorSensorBase
 {
   public:
-    
+
     struct Settings {
     };
-    
+
     // Constructor.
     HydroMonitorHumiditySensor(void);
-    
-    // The functions required for all sensors.    
+
+    // The functions required for all sensors.
 #ifdef DHT22_PIN
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging *logging, DHT22*);
 #endif
@@ -39,8 +39,8 @@ class HydroMonitorHumiditySensor: public HydroMonitorSensorBase
     void readSensor(void);
     float calcDewpoint(float, float);
     float calcDewpoint(void);
-    String dataHtml(void);            // Provides html code with the sensor data.
-    String settingsHtml(void);
+    void dataHtml(ESP8266WebServer *);                      // Provides html code with the sensor data.
+    void settingsHtml(ESP8266WebServer *);
     void updateSettings(String[], String[], uint8_t);
 
   private:

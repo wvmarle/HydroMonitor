@@ -20,7 +20,7 @@ class HydroMonitorFertiliser {
       float pumpBSpeed;
     };
 
-    // Constructor.    
+    // Constructor.
     HydroMonitorFertiliser(void);
 
     // The various functions to set up and control this module.
@@ -40,9 +40,9 @@ class HydroMonitorFertiliser {
     void measurePumpB(void);
     void updateSettings(ESP8266WebServer*);
     void doDrainageNow();
-    
+
   private:
-  
+
     // Hardware parameters.
     uint8_t pumpA;
     uint8_t pumpB;
@@ -51,7 +51,7 @@ class HydroMonitorFertiliser {
 #elif defined(FERTILISER_A_MCP_PIN)
     Adafruit_MCP23008 *mcp;
 #elif defined(FERTILISER_A_MCP17_PIN)
-  Adafruit_MCP23017 *mcp;
+    Adafruit_MCP23017 *mcp;
 #endif
 
     // Timing related variables.
@@ -63,7 +63,7 @@ class HydroMonitorFertiliser {
     uint32_t startATime;
     uint32_t lastGoodEC;
     uint32_t lastWarned;
-    
+
     // Various flags to keep track of what is going on.
     bool addA;
     bool addB;
@@ -71,7 +71,7 @@ class HydroMonitorFertiliser {
     bool bRunning;
     bool measuring;
     float originalEC;
-    
+
     // Utility functions.
     void switchPumpOn(uint8_t);
     void switchPumpOff(uint8_t);
@@ -79,6 +79,6 @@ class HydroMonitorFertiliser {
     Settings settings;
     HydroMonitorCore core;
     HydroMonitorCore::SensorData *sensorData;
-    HydroMonitorLogging *logging; 
+    HydroMonitorLogging *logging;
 };
 #endif

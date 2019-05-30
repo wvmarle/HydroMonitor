@@ -2,8 +2,8 @@
 
 #ifdef USE_PH_SENSOR
 /*
- * The constructor.
- */
+   The constructor.
+*/
 HydroMonitorpHSensor::HydroMonitorpHSensor() {
   calibratedSlope = 1;
   calibratedIntercept = 0;
@@ -11,9 +11,9 @@ HydroMonitorpHSensor::HydroMonitorpHSensor() {
 }
 
 /*
- * Setup the sensor.
- * This function is for when the connector is connected to an external ADS1115 ADC.
- */
+   Setup the sensor.
+   This function is for when the connector is connected to an external ADS1115 ADC.
+*/
 #ifdef PH_SENSOR_ADS_PIN
 #ifdef PH_POS_MCP_PIN
 void HydroMonitorpHSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, Adafruit_ADS1115 *ads, Adafruit_MCP23008 *mcp) {
@@ -23,21 +23,21 @@ void HydroMonitorpHSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorL
   ads1115 = ads;
   l->writeTrace(F("HydroMonitorpHSensor: configured pH sensor on ADS port expander."));
 
-/*
- * Setup the sensor.
- * This function is for when the connector is connected to the internal ADC.
- */
+  /*
+     Setup the sensor.
+     This function is for when the connector is connected to the internal ADC.
+  */
 #elif defined(PH_SENSOR_PIN)
 #ifdef PH_POS_MCP_PIN
-void HydroMonitorpHSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, Adafruit_MCP23008 *mcp) {
+void HydroMonitorpHSensor::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l, Adafruit_MCP23008 * mcp) {
 #else
-void HydroMonitorpHSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l) {
+void HydroMonitorpHSensor::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l) {
 #endif
   l->writeTrace(F("HydroMonitorpHSensor: configured pH sensor."));
 #endif
   sensorData = sd;
   logging = l;
-  
+
 #ifdef PH_POS_MCP_PIN
   mcp23008 = mcp;
   mcp23008->pinMode(PH_POS_MCP_PIN, OUTPUT);
@@ -55,15 +55,14 @@ void HydroMonitorpHSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorL
     sensorData->EEPROM->get(PH_SENSOR_EEPROM, settings);
 #else
     EEPROM.get(PH_SENSOR_EEPROM, settings);
-#endif  
+#endif
   // Read the calibration parameters.
   readCalibration();
-  return;
 }
 
 /*
- * Calculate the calibration factors.
- */
+   Calculate the calibration factors.
+*/
 void HydroMonitorpHSensor::readCalibration() {
 
   // Retrieve the calibration data, and calculate the slope and intercept.
@@ -72,12 +71,12 @@ void HydroMonitorpHSensor::readCalibration() {
 #else
   EEPROM.get(PH_SENSOR_CALIBRATION_EEPROM, calibrationData);
 #endif
-  
+
   // Make sure only enabled datapoints are considered when calculating slope and intercept.
   uint32_t usedReadings[DATAPOINTS];
   float enabledValue[DATAPOINTS];
   uint8_t nPoints = 0;
-  for (int i=0; i<DATAPOINTS; i++) {
+  for (int i = 0; i < DATAPOINTS; i++) {
     if (calibrationData[i].enabled) {
       enabledValue[nPoints] = calibrationData[i].value;
       usedReadings[nPoints] = calibrationData[i].reading;
@@ -85,19 +84,18 @@ void HydroMonitorpHSensor::readCalibration() {
     }
   }
   core.leastSquares(enabledValue, usedReadings, nPoints, &calibratedSlope, &calibratedIntercept);
-  return;
 }
 
 /*
- * Read the pH value.
- */
+   Read the pH value.
+*/
 void HydroMonitorpHSensor::readSensor(bool readNow) {
   static uint32_t lastReadSensor = -REFRESH_SENSORS;
   if (millis() - lastReadSensor > REFRESH_SENSORS ||
       readNow) {
     lastReadSensor = millis();
     uint32_t reading = takeReading();
-    sensorData->pH = ((float)reading - calibratedIntercept)/calibratedSlope;
+    sensorData->pH = ((float)reading - calibratedIntercept) / calibratedSlope;
     if (sensorData->pH > 15) {    // Impossible value! Sensor not connected or calibration not done.
       sensorData->pH = -1;
     }
@@ -119,13 +117,12 @@ void HydroMonitorpHSensor::readSensor(bool readNow) {
       }
     }
   }
-  return;
 }
 
 /*
- * Read the pH value.
- * This version returns the raw, temperature corrected reading as int.
- */
+   Read the pH value.
+   This version returns the raw, temperature corrected reading as int.
+*/
 uint32_t HydroMonitorpHSensor::takeReading() {
   uint32_t reading;
   //TODO detect whether a sensor is present based on reading.
@@ -145,9 +142,9 @@ uint32_t HydroMonitorpHSensor::takeReading() {
 }
 
 /*
- * The sensor settings as html.
- */
-void HydroMonitorpHSensor::settingsHtml(ESP8266WebServer *server) {
+   The sensor settings as html.
+*/
+void HydroMonitorpHSensor::settingsHtml(ESP8266WebServer * server) {
   server->sendContent_P(PSTR("\
       <tr>\n\
         <th colspan=\"2\">pH Sensor settings.</th>\n\
@@ -158,16 +155,16 @@ void HydroMonitorpHSensor::settingsHtml(ESP8266WebServer *server) {
 }
 
 /*
- * The sensor settings as JSON.
- */
-bool HydroMonitorpHSensor::settingsJSON(ESP8266WebServer* server) {
+   The sensor settings as JSON.
+*/
+bool HydroMonitorpHSensor::settingsJSON(ESP8266WebServer * server) {
   return false; // None.
 }
 
 /*
- * The sensor settings as html.
- */
-void HydroMonitorpHSensor::dataHtml(ESP8266WebServer *server) {
+   The sensor settings as html.
+*/
+void HydroMonitorpHSensor::dataHtml(ESP8266WebServer * server) {
   server->sendContent_P(PSTR("<tr>\n\
     <td>pH of the solution</td>\n\
     <td>"));
@@ -185,46 +182,46 @@ void HydroMonitorpHSensor::dataHtml(ESP8266WebServer *server) {
 }
 
 /*
- * Get a list of past calibrations in html format.
- */
-void HydroMonitorpHSensor::getCalibrationHtml(ESP8266WebServer *server) {
+   Get a list of past calibrations in html format.
+*/
+void HydroMonitorpHSensor::getCalibrationHtml(ESP8266WebServer * server) {
   core.calibrationHtml(server, "pH Sensor", "/calibrate_ph_action", calibrationData);
 }
 
 /*
- * Get a list of past calibrations in json format.
- */
-void HydroMonitorpHSensor::getCalibration(ESP8266WebServer *server) {
+   Get a list of past calibrations in json format.
+*/
+void HydroMonitorpHSensor::getCalibration(ESP8266WebServer * server) {
   core.calibrationData(server, calibrationData);
 }
 
-void HydroMonitorpHSensor::doCalibrationAction(ESP8266WebServer *server) {
- if (server->hasArg(F("calibrate"))) {
-   doCalibration(server);
- }
- else if (server->hasArg(F("delete"))) {
-   deleteCalibration(server);
- }
- else {
-   enableCalibration(server);
- }
+void HydroMonitorpHSensor::doCalibrationAction(ESP8266WebServer * server) {
+  if (server->hasArg(F("calibrate"))) {
+    doCalibration(server);
+  }
+  else if (server->hasArg(F("delete"))) {
+    deleteCalibration(server);
+  }
+  else {
+    enableCalibration(server);
+  }
 }
 
 /*
- * Handle the calibration of the sensor.
- */
-void HydroMonitorpHSensor::doCalibration(ESP8266WebServer *server) {
+   Handle the calibration of the sensor.
+*/
+void HydroMonitorpHSensor::doCalibration(ESP8266WebServer * server) {
   if (server->hasArg("value")) {
     String argVal = server->arg("value");
     if (argVal != "") { // if there's a value given, use this to create a calibration point.
       if (core.isNumeric(argVal)) {
         float val = argVal.toFloat();
         uint16_t res = takeReading();
-        
+
         // Find the first available data point where the value can be stored.
         // This is any data point where the timestamp = 0, regardless of it being
         // enabled or not.
-        for (uint8_t i=0; i<DATAPOINTS; i++) {
+        for (uint8_t i = 0; i < DATAPOINTS; i++) {
           if (calibrationData[i].timestamp == 0) {
             calibrationData[i].timestamp = now();
             calibrationData[i].value = val;
@@ -240,11 +237,11 @@ void HydroMonitorpHSensor::doCalibration(ESP8266WebServer *server) {
 }
 
 /*
- * Enable/disable calibration points.
- */
+   Enable/disable calibration points.
+*/
 
-void HydroMonitorpHSensor::enableCalibration(ESP8266WebServer *server) {
-  for (uint8_t i=0; i<DATAPOINTS; i++) {
+void HydroMonitorpHSensor::enableCalibration(ESP8266WebServer * server) {
+  for (uint8_t i = 0; i < DATAPOINTS; i++) {
     String key = "enable";
     key += i;
     calibrationData[i].enabled = server->hasArg(key);
@@ -253,9 +250,9 @@ void HydroMonitorpHSensor::enableCalibration(ESP8266WebServer *server) {
 }
 
 /*
- * Delete calibration points.
- */
-void HydroMonitorpHSensor::deleteCalibration(ESP8266WebServer *server) {
+   Delete calibration points.
+*/
+void HydroMonitorpHSensor::deleteCalibration(ESP8266WebServer * server) {
   if (server->hasArg("delete")) {
     String argVal = server->arg("delete");
     if (core.isNumeric(argVal)) {
@@ -269,8 +266,8 @@ void HydroMonitorpHSensor::deleteCalibration(ESP8266WebServer *server) {
       saveCalibrationData();
     }
   }
-}  
-  
+}
+
 void HydroMonitorpHSensor::saveCalibrationData() {
 
   // Store the calibration in EEPROM.
@@ -281,14 +278,12 @@ void HydroMonitorpHSensor::saveCalibrationData() {
 #endif
   // Re-read the calibration values and update the EC probe parameters.
   readCalibration();
-  return;
 }
 
 /*
- * Update the settings.
- */
-void HydroMonitorpHSensor::updateSettings(ESP8266WebServer* server) {
-  return;
+   Update the settings.
+*/
+void HydroMonitorpHSensor::updateSettings(ESP8266WebServer * server) {
 }
 #endif
 

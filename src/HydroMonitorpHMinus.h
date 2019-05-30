@@ -14,11 +14,11 @@
 class HydroMonitorpHMinus {
 
   public:
-  
+
     struct Settings {
       float pumpSpeed;
     };
-    
+
     HydroMonitorpHMinus(void);
 #ifdef PHMINUS_PIN
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*);
@@ -34,7 +34,7 @@ class HydroMonitorpHMinus {
     bool settingsJSON(ESP8266WebServer*);
     void measurePump(void);
     void updateSettings(ESP8266WebServer*);
-    
+
   private:
     Settings settings;
 #ifdef PHMINUS_PCF_PIN
@@ -52,7 +52,7 @@ class HydroMonitorpHMinus {
     uint32_t pHDelay;         // How long to wait before starting to adding more pH-minus.
     uint32_t lastGoodpH;      // When the last good pH was seen.
     uint32_t lastWarned;
-    
+
     // Various flags to keep track of what's going on.
     bool addpH;               // Flag that we have to start adding pH-minus.
     bool running;             // Flag that the pump is currently running.

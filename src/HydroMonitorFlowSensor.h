@@ -6,22 +6,22 @@
 #include <HydroMonitorLogging.h>
 #include <HydroMonitorSensorBase.h>
 
-class HydroMonitorFlowSensor: public HydroMonitorSensorBase 
+class HydroMonitorFlowSensor: public HydroMonitorSensorBase
 {
   public:
-  
+
     struct Settings {
     };
-    
+
     HydroMonitorFlowSensor(void);
-    
+
     // Functions as required for all sensors.
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging *logging);
     void readSensor(void);
     String dataHtml(void);            // Provides html code with the sensor data.
-    String settingsHtml(void); 
+    String settingsHtml(void);
     void updateSettings(String[], String[], uint8_t);
-    
+
   private:
     Settings settings;
     HydroMonitorCore core;

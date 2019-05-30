@@ -1,11 +1,11 @@
 /*
- * HydroMonitorWaterTempSensor.h
- * Library for the water temperature sensors: either an NTC or the MS5837 pressure sensor.
- *
- * (C) Wouter van Marle / City Hydroponics
- * www.cityhydroponics.hk
- */
- 
+   HydroMonitorWaterTempSensor.h
+   Library for the water temperature sensors: either an NTC or the MS5837 pressure sensor.
+
+   (C) Wouter van Marle / City Hydroponics
+   www.cityhydroponics.hk
+*/
+
 // ensure this library description is only included once
 #ifndef HYDROMONITORWATERTEMPSENSOR_h
 #define HYDROMONITORWATERTEMPSENSOR_h

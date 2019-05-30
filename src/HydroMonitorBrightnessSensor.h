@@ -1,11 +1,11 @@
 /*
- * HydroMonitorBrightnessSensor.h
- * Library for the TSL2561 brightness probe.
- *
- * (C) Wouter van Marle / City Hydroponics
- * www.cityhydroponics.hk
- */
- 
+   HydroMonitorBrightnessSensor.h
+   Library for the TSL2561 brightness probe.
+
+   (C) Wouter van Marle / City Hydroponics
+   www.cityhydroponics.hk
+*/
+
 #ifndef BRIGHTNESS_h
 #define BRIGHTNESS_h
 
@@ -26,7 +26,7 @@ class HydroMonitorBrightnessSensor: public HydroMonitorSensorBase
 
 {
   public:
-    
+
     struct Settings {
     };
 
@@ -36,7 +36,7 @@ class HydroMonitorBrightnessSensor: public HydroMonitorSensorBase
     void dataHtml(ESP8266WebServer*);            // Provides html code with the sensor data.
     void settingsHtml(ESP8266WebServer*);
     void updateSettings(String[], String[], uint8_t);
-    
+
   private:
     void setSettings(Settings);
     Settings settings;

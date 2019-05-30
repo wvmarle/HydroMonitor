@@ -1,20 +1,20 @@
 #include <HydroMonitorLogging.h>
 
 /*
- * Take care of database connectivity (expects networking to be enabled).
- */
+   Take care of database connectivity (expects networking to be enabled).
+*/
 
 
 /*
- * The constructor.
- */
+   The constructor.
+*/
 HydroMonitorLogging::HydroMonitorLogging() {
 
 }
 
 /*
- * Start the network services.
- */
+   Start the network services.
+*/
 void HydroMonitorLogging::begin(HydroMonitorCore::SensorData *sd) {
   sensorData = sd;
   if (LOGGING_EEPROM > 0)
@@ -23,7 +23,7 @@ void HydroMonitorLogging::begin(HydroMonitorCore::SensorData *sd) {
 #else
     EEPROM.get(LOGGING_EEPROM, settings);
 #endif
-  
+
   // Default settings, to be applied if the first byte is 255, which indicates the EEPROM
   // has never been written.
   if ((int)settings.hostname[0] == 255) {
@@ -44,7 +44,7 @@ void HydroMonitorLogging::begin(HydroMonitorCore::SensorData *sd) {
   initMessageLogFile();                                     // Do this first to be able to properly receive new messages.
   initDataLogFile();
 }
-  
+
 //*******************************************************************************************************************
 // Initialise the data logging.
 void HydroMonitorLogging::initDataLogFile() {
@@ -117,7 +117,7 @@ void HydroMonitorLogging::initMessageLogFile() {
         f.seek(i, SeekSet);
         status = f.read();                                  // Read the message status byte.
         f.seek(i + 16, SeekSet);                            // Set search pointer to start of the logged message - skipping the header bytes.
-        nBytes = f.readBytesUntil('\0', buff, MAX_MESSAGE_SIZE); // Get total size of the stored message.        
+        nBytes = f.readBytesUntil('\0', buff, MAX_MESSAGE_SIZE); // Get total size of the stored message.
         if ((status == RECORD_STORED || status == RECORD_TRANSMITTED) &&
             nBytes <= MAX_MESSAGE_SIZE) {                   // Record appears sound.
           nMessages++;                                      // Keep track of total number of messages we have stored.
@@ -149,7 +149,7 @@ void HydroMonitorLogging::initMessageLogFile() {
     messageTransmitComplete = false;
     Serial.println(F("We have messages to transmit."));
   }
-  f.close();  
+  f.close();
   writeTrace(F("HydroMonitorLogging: configured message logging facility."));
 }
 
@@ -161,8 +161,8 @@ void HydroMonitorLogging::addMessageToList(uint32_t msgIndex) {
 }
 
 /********************************************************************************************************************
- * Take care of the actual logging - transmission and timing of new entries.
- */
+   Take care of the actual logging - transmission and timing of new entries.
+*/
 void HydroMonitorLogging::logData() {
 
   // Every REFRESH_DATABASE milliseconds: log the sensor data, and try to transmit it to the database.
@@ -253,8 +253,8 @@ void HydroMonitorLogging::logData() {
 }
 
 /********************************************************************************************************************
- * Transmit a sensor data record to the server.
- */
+   Transmit a sensor data record to the server.
+*/
 void HydroMonitorLogging::transmitData() {
   File f = SPIFFS.open(dataLogFileName, "r+");              // Open log file for read/write.
 
@@ -278,14 +278,14 @@ void HydroMonitorLogging::transmitData() {
   Serial.println(size);
 #ifdef USE_WATERLEVEL_SENSOR
   sprintf_P(postData, PSTR("http://%s%s?username=%s&password=%s&ec=%4.2f&watertemp=%4.2f&waterlevel=%4.2f&ph=%4.2f&timestamp=%u"),
-                            settings.hostname, settings.hostpath, settings.username, settings.password, 
-                            dataEntry.EC, dataEntry.waterTemp, dataEntry.waterLevel, dataEntry.pH,
-                            timestamp);
+            settings.hostname, settings.hostpath, settings.username, settings.password,
+            dataEntry.EC, dataEntry.waterTemp, dataEntry.waterLevel, dataEntry.pH,
+            timestamp);
 #else
   sprintf_P(postData, PSTR("http://%s%s?username=%s&password=%s&ec=%4.2f&watertemp=%4.2f&waterlevel=%4.2f&ph=%4.2f&timestamp=%u"),
-                            settings.hostname, settings.hostpath, settings.username, settings.password, 
-                            dataEntry.EC, dataEntry.waterTemp, 0, dataEntry.pH,
-                            timestamp);
+            settings.hostname, settings.hostpath, settings.username, settings.password,
+            dataEntry.EC, dataEntry.waterTemp, 0, dataEntry.pH,
+            timestamp);
 #endif
 
   uint16_t httpCode = sendPostData(postData);
@@ -327,8 +327,8 @@ void HydroMonitorLogging::transmitData() {
 }
 
 /********************************************************************************************************************
- * Transmit a message record to the server.
- */
+   Transmit a message record to the server.
+*/
 void HydroMonitorLogging::transmitMessages() {
   File f = SPIFFS.open(messageLogFileName, "r+");           // Open log file for read/write.
   f.seek(messageToTransmit, SeekSet);                       // Set seek pointer to start of the next message.
@@ -365,23 +365,22 @@ void HydroMonitorLogging::transmitMessages() {
   }
   f.close();
   lastSent = millis();
-}  
+}
 
 /********************************************************************************************************************
- * Check a set of login credentials.
- *
- * Returns true if valid; false if invalid.
- */ 
+   Check a set of login credentials.
+
+   Returns true if valid; false if invalid.
+*/
 void HydroMonitorLogging::checkCredentials() {
   checkCredentials(settings.hostname, settings.hostpath, settings.username, settings.password);
-  return;
 }
 
 void HydroMonitorLogging::checkCredentials(char* host, char* path, char* un, char* pw) {
   hostValid = UNCHECKED;
   pathValid = UNCHECKED;
   loginValid = UNCHECKED;
-  
+
   if (WiFi.status() != WL_CONNECTED) {
     return;
   }
@@ -389,13 +388,13 @@ void HydroMonitorLogging::checkCredentials(char* host, char* path, char* un, cha
   uint16_t size = 35 + strlen(host) + strlen(path) + strlen(un) + strlen(pw);
   char postData[size];
   sprintf_P(postData, PSTR("http://%s%s?username=%s&password=%s&validate=1"),
-                           host, path, un, pw);
+            host, path, un, pw);
   uint16_t responseCode = sendPostData(postData);
   if (responseCode == 404) {
     hostValid = VALID;
     pathValid = INVALID;
-  }  
-  else if (responseCode == 403) { 
+  }
+  else if (responseCode == 403) {
     hostValid = VALID;
     pathValid = VALID;
     loginValid = INVALID;
@@ -408,8 +407,8 @@ void HydroMonitorLogging::checkCredentials(char* host, char* path, char* un, cha
 }
 
 /********************************************************************************************************************
- * Write log message to the local file.
- */
+   Write log message to the local file.
+*/
 void HydroMonitorLogging::writeLog(uint8_t loglevel) {
 
 #if defined(LOG_SERIAL) && defined(SERIAL)
@@ -428,7 +427,7 @@ void HydroMonitorLogging::writeLog(uint8_t loglevel) {
   f.write(timestamp >> 8) & 0xFF;
   f.write(timestamp >> 16) & 0xFF;
   f.write(timestamp >> 24);
-  
+
   for (uint8_t i = 0; i < 10; i++) {                        // Bytes 6-15: reserved.
     f.write(0xFF);
   }
@@ -468,8 +467,8 @@ void HydroMonitorLogging::writeLog(uint8_t loglevel) {
 }
 
 /********************************************************************************************************************
- * Trace level log messages.
- */
+   Trace level log messages.
+*/
 void HydroMonitorLogging::writeTrace(const char *str) {
   if (LOGLEVEL >= LOG_TRACE) {
     bufferMsg(str);
@@ -485,8 +484,8 @@ void HydroMonitorLogging::writeTrace(const __FlashStringHelper *str) {
 }
 
 /********************************************************************************************************************
- * Info level log messages.
- */
+   Info level log messages.
+*/
 void HydroMonitorLogging::writeInfo(const char *str) {
   if (LOGLEVEL >= LOG_INFO) {
     bufferMsg(str);
@@ -502,8 +501,8 @@ void HydroMonitorLogging::writeInfo(const __FlashStringHelper *str) {
 }
 
 /********************************************************************************************************************
- * Warning level log messages.
- */
+   Warning level log messages.
+*/
 void HydroMonitorLogging::writeWarning(const char *str) {
   if (LOGLEVEL >= LOG_WARNING) {
     bufferMsg(str);
@@ -519,8 +518,8 @@ void HydroMonitorLogging::writeWarning(const __FlashStringHelper *str) {
 }
 
 /********************************************************************************************************************
- * Error level log messages.
- */
+   Error level log messages.
+*/
 void HydroMonitorLogging::writeError(const char *str) {
   if (LOGLEVEL >= LOG_ERROR) {
     bufferMsg(str);
@@ -536,8 +535,8 @@ void HydroMonitorLogging::writeError(const __FlashStringHelper *str) {
 }
 
 /********************************************************************************************************************
- * Functions to copy the message from PROGMEM to RAM for easier handling.
- */
+   Functions to copy the message from PROGMEM to RAM for easier handling.
+*/
 void HydroMonitorLogging::bufferMsg_P(const char *str) {
   uint16_t size = strlen_P(str);
   if (size > MAX_MESSAGE_SIZE) {
@@ -561,8 +560,8 @@ void HydroMonitorLogging::bufferMsg(const char *str) {
 }
 
 /********************************************************************************************************************
- * The settings as HTML.
- */
+   The settings as HTML.
+*/
 void HydroMonitorLogging::settingsHtml(ESP8266WebServer *server) {
 
   server->sendContent_P(PSTR("\
@@ -631,8 +630,8 @@ void HydroMonitorLogging::settingsHtml(ESP8266WebServer *server) {
 }
 
 /********************************************************************************************************************
- * The settings as JSON.
- */
+   The settings as JSON.
+*/
 bool HydroMonitorLogging::settingsJSON(ESP8266WebServer* server) {
 
   server->sendContent_P(PSTR("  \"logging\": {\n"
@@ -661,14 +660,14 @@ bool HydroMonitorLogging::settingsJSON(ESP8266WebServer* server) {
 }
 
 /********************************************************************************************************************
- * Update the settings.
- */
+   Update the settings.
+*/
 void HydroMonitorLogging::updateSettings(ESP8266WebServer* server) {
   char hostname[101];
   char hostpath[151];
   char username[33];
   char password[33];
-  for (uint8_t i=0; i<server->args(); i++) {
+  for (uint8_t i = 0; i < server->args(); i++) {
     if (server->argName(i) == "database_hostname") {
       if (server->arg(i).length() <= 100) {
         server->arg(i).toCharArray(hostname, 100);
@@ -695,14 +694,14 @@ void HydroMonitorLogging::updateSettings(ESP8266WebServer* server) {
     }
   }
 
-  // If nothing changed, just keep the original settings as is.  
+  // If nothing changed, just keep the original settings as is.
   if (strcmp(settings.hostname, hostname) == 0
       && strcmp(settings.hostpath, hostpath) == 0
-      && strcmp(settings.username, username) == 0 
+      && strcmp(settings.username, username) == 0
       && strcmp(settings.password, password) == 0) {
     return;
   }
-  
+
   // Store new login data in the settings.
   strcpy(settings.hostname, hostname);
   strcpy(settings.hostpath, hostpath);
@@ -718,24 +717,24 @@ void HydroMonitorLogging::updateSettings(ESP8266WebServer* server) {
 #else
     EEPROM.put(LOGGING_EEPROM, settings);
     EEPROM.commit();
-#endif    
+#endif
   }
 }
 
 /********************************************************************************************************************
- * Send out a GET request to post data.
- */
+   Send out a GET request to post data.
+*/
 uint16_t HydroMonitorLogging::sendPostData(char* postData) {
 
-//  return 500;                                               // Disable the transmission of logging data for now.
-  
+  //  return 500;                                               // Disable the transmission of logging data for now.
 
-//  std::unique_ptr<BearSSL::WiFiClientSecure>client(new BearSSL::WiFiClientSecure);
-//  client.setInsecure();                                    // Do not check for https fingerprints (insecure: allows MiM attacks).
 
-//  WiFiClientSecure client;
-//  client.setInsecure();                                     // Do not check for https fingerprints (insecure: allows MiM attacks).
-//  HTTPClient https;
+  //  std::unique_ptr<BearSSL::WiFiClientSecure>client(new BearSSL::WiFiClientSecure);
+  //  client.setInsecure();                                    // Do not check for https fingerprints (insecure: allows MiM attacks).
+
+  //  WiFiClientSecure client;
+  //  client.setInsecure();                                     // Do not check for https fingerprints (insecure: allows MiM attacks).
+  //  HTTPClient https;
 
   WiFiClient client;
   HTTPClient http;
@@ -755,7 +754,7 @@ uint16_t HydroMonitorLogging::sendPostData(char* postData) {
       if (responseCode == HTTP_CODE_OK || responseCode == HTTP_CODE_MOVED_PERMANENTLY) { // File found at server
         String payload = http.getString();
       }
-    } 
+    }
   }
   http.end();
   client.stop();
@@ -764,16 +763,16 @@ uint16_t HydroMonitorLogging::sendPostData(char* postData) {
   Serial.print(F(" Time taken: "));
   Serial.print(millis() - startTransmission);
   Serial.println(F(" ms."));
-  return responseCode;    
-}  
+  return responseCode;
+}
 
 /********************************************************************************************************************
- * When calling this function:
- * status: contains the message number requested (0 = latest, 49 = oldest); returns the message type (log level).
- * timestamp: returns the message's time stamp.
- * message: returns the actual message.
- * The function returns a reference to message for convenience.
- */
+   When calling this function:
+   status: contains the message number requested (0 = latest, 49 = oldest); returns the message type (log level).
+   timestamp: returns the message's time stamp.
+   message: returns the actual message.
+   The function returns a reference to message for convenience.
+*/
 void HydroMonitorLogging::getLogMessage(uint8_t* status, uint32_t* timestamp) {
   if (*status > 49) {                                       // We don't have that many messages available...
     status = 0;
@@ -794,8 +793,8 @@ void HydroMonitorLogging::getLogMessage(uint8_t* status, uint32_t* timestamp) {
 
 
 /********************************************************************************************************************
- * Read the latest 50 messages and transmit them as JSON object.
- */
+   Read the latest 50 messages and transmit them as JSON object.
+*/
 void HydroMonitorLogging::messagesJSON(ESP8266WebServer* server) {
   server->sendContent_P(PSTR("{\"messagelog\":\n"
                              "  {\n"));

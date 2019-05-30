@@ -41,9 +41,10 @@ class HydroMonitorTemperatureSensor: public HydroMonitorSensorBase
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging *logging, BME280*);  // Use the BMP280 or BME280 sensor.
 #endif
     void readSensor(void);
-    String dataHtml(void);            // Provides html code with the sensor data.
-    String settingsHtml(void);
-    void updateSettings(String[], String[], uint8_t);
+    void dataHtml(ESP8266WebServer*);            // Provides html code with the sensor data.
+    void settingsHtml(ESP8266WebServer*);
+    void settingsJSON(ESP8266WebServer*);
+    void updateSettings(ESP8266WebServer*);
 
   private:
     Settings settings;

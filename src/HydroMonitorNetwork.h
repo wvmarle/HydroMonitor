@@ -1,7 +1,7 @@
 /*
- * HydroMonitorNetwork
- *
- */
+   HydroMonitorNetwork
+
+*/
 
 #ifndef HYDROMONITORNETWORK_H
 #define HYDROMONITORNETWORK_H
@@ -54,10 +54,10 @@ class HydroMonitorNetwork
     void settingsHtml(ESP8266WebServer*);
     bool settingsJSON(ESP8266WebServer*);
     void updateSettings(ESP8266WebServer*);
-	
-    
+
+
   private:
-   
+
     // For the internal time keeping and NTP connectivity.
     uint32_t sendNTPpacket(IPAddress&);
     void connectInit();
@@ -68,10 +68,9 @@ class HydroMonitorNetwork
     WiFiUDP udp;                          // A UDP instance to let us send and receive packets over UDP
     uint32_t epoch;
 
-//    WiFiClientSecure client;
     Settings settings;
     ESP8266WebServer *server;
-    
+
     uint32_t startTime;
     uint32_t updateTime;
     HydroMonitorCore core;

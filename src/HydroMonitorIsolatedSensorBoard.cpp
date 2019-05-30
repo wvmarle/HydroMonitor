@@ -2,12 +2,12 @@
 
 #ifdef USE_ISOLATED_SENSOR_BOARD
 
-HydroMonitorIsolatedSensorBoard::HydroMonitorIsolatedSensorBoard () { 
+HydroMonitorIsolatedSensorBoard::HydroMonitorIsolatedSensorBoard () {
 }
 
 /*
- * Set up the sensor.
- */
+   Set up the sensor.
+*/
 void HydroMonitorIsolatedSensorBoard::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, SoftwareSerial *s) {
   logging = l;
   logging->writeTrace(F("HydroMonitorIsolatedSensorBoard: configured isolated sensor board."));
@@ -22,13 +22,12 @@ void HydroMonitorIsolatedSensorBoard::begin(HydroMonitorCore::SensorData *sd, Hy
   }
   readingState = READING_IDLE;
   count = 0;
-  return;
 }
 
 /*
- * Take a measurement from the sensor.
- * As this is a Serial input this one should be called frequently.
- */ 
+   Take a measurement from the sensor.
+   As this is a Serial input this one should be called frequently.
+*/
 void HydroMonitorIsolatedSensorBoard::readSensor(bool readNow) {
   if (sensorSerial->available()) {
     char c = sensorSerial->read();
@@ -39,7 +38,7 @@ void HydroMonitorIsolatedSensorBoard::readSensor(bool readNow) {
           readingState = READING_VALUE;
         }
         break;
-      
+
       case READING_VALUE:                                   // Wait for the next character: this should tell which value we're going to get.
         count = 0;
         if (c == 'T') {                                     // T for temperature (in deg C *10).
@@ -52,7 +51,7 @@ void HydroMonitorIsolatedSensorBoard::readSensor(bool readNow) {
           readingState = READING_PH;
         }
         break;
-      
+
       case READING_TEMPERATURE:                             // We expect a number from 0 to 1000 (0 deg C to 100.0 deg C)
         if (c >= '0' && c <= '9') {
           buffer[count] = c;
@@ -79,7 +78,7 @@ void HydroMonitorIsolatedSensorBoard::readSensor(bool readNow) {
           readingState = READING_IDLE;                      // An invalid character was received; wait for the next communcication to start.
         }
         break;
-      
+
       case READING_EC:
         if (c >= '0' && c <= '9') {
           buffer[count] = c;
@@ -104,7 +103,7 @@ void HydroMonitorIsolatedSensorBoard::readSensor(bool readNow) {
           readingState = READING_IDLE;                      // An invalid character was received; wait for the next communcication to start.
         }
         break;
-      
+
       case READING_PH:
         if (c >= '0' && c <= '9') {
           buffer[count] = c;
@@ -130,31 +129,31 @@ void HydroMonitorIsolatedSensorBoard::readSensor(bool readNow) {
         }
         break;
     }
-  }  
+  }
 }
 
 /*
- * The sensor settings as html.
- */
+   The sensor settings as html.
+*/
 void HydroMonitorIsolatedSensorBoard::settingsHtml(ESP8266WebServer *server) {
 }
 
 /*
- * The sensor data as JSON.
- */
+   The sensor data as JSON.
+*/
 bool HydroMonitorIsolatedSensorBoard::settingsJSON(ESP8266WebServer *server) {
   return false;                                             // none.
 }
 
 /*
- * The sensor data as html.
- */
+   The sensor data as html.
+*/
 void HydroMonitorIsolatedSensorBoard::dataHtml(ESP8266WebServer *server) {
 }
 
 /*
- * Update the settings for this sensor, if any.
- */
+   Update the settings for this sensor, if any.
+*/
 void HydroMonitorIsolatedSensorBoard::updateSettings(ESP8266WebServer* server) {
 }
 #endif

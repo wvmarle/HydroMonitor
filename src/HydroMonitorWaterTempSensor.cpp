@@ -1,35 +1,35 @@
 /*
- * Measure the water temperature through NTC or MS5837 sensor.
- */
+   Measure the water temperature through NTC or MS5837 sensor.
+*/
 #include <HydroMonitorWaterTempSensor.h>
 
 #ifdef USE_WATERTEMPERATURE_SENSOR
- 
+
 HydroMonitorWaterTempSensor::HydroMonitorWaterTempSensor () {
   lastWarned = millis() - WARNING_INTERVAL;
 }
 
 /*
- * Configure the sensor.
- */
+   Configure the sensor.
+*/
 #ifdef USE_NTC
 #ifdef NTC_ADS_PIN
 void HydroMonitorWaterTempSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, Adafruit_ADS1115 *ads) {
   ads1115 = ads;
   l->writeTrace(F("HydroMonitorWaterTempSensor: configured NTC probe on ADS port expander."));
-  
+
 #elif defined(NTC_PIN)
-void HydroMonitorWaterTempSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l) {
+void HydroMonitorWaterTempSensor::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l) {
   l->writeTrace(F("HydroMonitorWaterTempSensor: configured NTC probe."));
 #endif
 
 #elif defined(USE_MS5837)
-void HydroMonitorWaterTempSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, MS5837 *ms) {
+void HydroMonitorWaterTempSensor::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l, MS5837 * ms) {
   ms5837 = ms;
   l->writeTrace(F("HydroMonitorWaterTempSensor: configured MS5837 sensor."));
 
 #elif defined(USE_DS18B20)
-  void HydroMonitorWaterTempSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, DallasTemperature *ds, OneWire *oneWire) {
+void HydroMonitorWaterTempSensor::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l, DallasTemperature * ds, OneWire * oneWire) {
   ds18b20 = ds;
   ds18b20->begin();
   ds18b20->setWaitForConversion(false);
@@ -39,10 +39,10 @@ void HydroMonitorWaterTempSensor::begin(HydroMonitorCore::SensorData *sd, HydroM
   }
   else {
     l->writeError(F("WaterTempSensor 10: no DS18B20 temperature sensor found."));
-  }  
-  
+  }
+
 #elif defined(USE_ISOLATED_SENSOR_BOARD)
-void HydroMonitorWaterTempSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l) {
+void HydroMonitorWaterTempSensor::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l) {
   l->writeTrace(F("HydroMonitorWaterTempSensor: configured isolated sensor board."));
 #endif
 
@@ -54,24 +54,23 @@ void HydroMonitorWaterTempSensor::begin(HydroMonitorCore::SensorData *sd, HydroM
 #else
     EEPROM.get(WATERTEMPERATURE_SENSOR_EEPROM, settings);
 #endif
-  return;
 }
 
 /*
- * Get a reading from the sensor.
- */
+   Get a reading from the sensor.
+*/
 void HydroMonitorWaterTempSensor::readSensor(bool readNow) {
-  
-////////////////////////////////////////////////////////////
-// Code for reading the temperature using an NTC probe.
-#ifdef USE_NTC 
+
+  ////////////////////////////////////////////////////////////
+  // Code for reading the temperature using an NTC probe.
+#ifdef USE_NTC
   static uint32_t lastReadSensor = -REFRESH_SENSORS;
   if (millis() - lastReadSensor > REFRESH_SENSORS ||
       readNow) {
     lastReadSensor = millis();
     uint32_t reading = 0;
-  
-  // Check whether the NTC sensor is present.
+
+    // Check whether the NTC sensor is present.
 #ifdef NTC_ADS_PIN
     reading = ads1115->readADC_SingleEnded(NTC_ADS_PIN);
 #elif defined(NTC_PIN)
@@ -79,7 +78,7 @@ void HydroMonitorWaterTempSensor::readSensor(bool readNow) {
 #else
 #error no ntc pin defined.
 #endif
-    if (reading < 0.03*ADCMAX || reading > 0.97*ADCMAX) {
+    if (reading < 0.03 * ADCMAX || reading > 0.97 * ADCMAX) {
       return;
     }
 
@@ -92,14 +91,14 @@ void HydroMonitorWaterTempSensor::readSensor(bool readNow) {
       delay(10);
       yield();
     }
-    
+
     //Calculate temperature using the Beta Factor equation
-//  reading = reading >> NTCSAMPLES;
+    //  reading = reading >> NTCSAMPLES;
     sensorData->waterTemp = 1.0 / (log (NTCSERIESRESISTOR / ((ADCMAX / (reading >> NTCSAMPLES) - 1) * THERMISTORNOMINAL)) / BCOEFFICIENT + 1.0 / (TEMPERATURENOMINAL + 273.15)) - 273.15;
   }
-  
-////////////////////////////////////////////////////////////
-// Code for reading the temperature using the MS5837 underwater pressure and temperature sensor.
+
+  ////////////////////////////////////////////////////////////
+  // Code for reading the temperature using the MS5837 underwater pressure and temperature sensor.
 #elif defined(USE_MS5837)
   static uint32_t lastReadSensor = -REFRESH_SENSORS;
   if (millis() - lastReadSensor > REFRESH_SENSORS ||
@@ -108,8 +107,8 @@ void HydroMonitorWaterTempSensor::readSensor(bool readNow) {
     sensorData->waterTemp = ms5837->readTemperature();
   }
 
-////////////////////////////////////////////////////////////
-// Code for reading the temperature using the DS18B20 digital temperature sensor.
+  ////////////////////////////////////////////////////////////
+  // Code for reading the temperature using the DS18B20 digital temperature sensor.
 #elif defined(USE_DS18B20)
   static uint32_t lastReadSensor = -REFRESH_SENSORS;
   static bool conversionInProgress;
@@ -136,21 +135,19 @@ void HydroMonitorWaterTempSensor::readSensor(bool readNow) {
     }
   }
 
-////////////////////////////////////////////////////////////
-// Code for if we get the temperature from the isolated sensor board.
+  ////////////////////////////////////////////////////////////
+  // Code for if we get the temperature from the isolated sensor board.
 #elif defined(USE_ISOLATED_SENSOR_BOARD)
   // Nothing to do here.
 #endif
-    if (millis() - lastWarned > WARNING_INTERVAL && 
-        (sensorData->waterTemp < 5 || sensorData->waterTemp > 70)) {
-      lastWarned = millis();
-      char message[120];
-      sprintf_P(message, PSTR("WaterTempSensor 01: unusual temperature value measured: %2.1f °C. Check water temperature sensor."), 
-                sensorData->waterTemp);
-      logging->writeWarning(message);
-    }
-
-  return;
+  if (millis() - lastWarned > WARNING_INTERVAL &&
+      (sensorData->waterTemp < 5 || sensorData->waterTemp > 70)) {
+    lastWarned = millis();
+    char message[120];
+    sprintf_P(message, PSTR("WaterTempSensor 01: unusual temperature value measured: %2.1f °C. Check water temperature sensor."),
+              sensorData->waterTemp);
+    logging->writeWarning(message);
+  }
 }
 
 #ifdef USE_DS18B20
@@ -170,27 +167,26 @@ void HydroMonitorWaterTempSensor::startConversion() {
 #endif
 
 /*
- * The settings as html.
- */
-void HydroMonitorWaterTempSensor::settingsHtml(ESP8266WebServer* server) {
-  return;
+   The settings as html.
+*/
+void HydroMonitorWaterTempSensor::settingsHtml(ESP8266WebServer * server) {
 }
 
 /*
- * The settings as JSON.
- */
-bool HydroMonitorWaterTempSensor::settingsJSON(ESP8266WebServer* server) {
+   The settings as JSON.
+*/
+bool HydroMonitorWaterTempSensor::settingsJSON(ESP8266WebServer * server) {
   return false; // none.
 }
 
 /*
- * The sensor data as html.
- */
-void HydroMonitorWaterTempSensor::dataHtml(ESP8266WebServer* server) {
+   The sensor data as html.
+*/
+void HydroMonitorWaterTempSensor::dataHtml(ESP8266WebServer * server) {
   char buff[10];
   server->sendContent_P(PSTR("<tr>\n\
     <td>Water temperature</td>\n\
-    <td>"));  
+    <td>"));
   if (sensorData->waterTemp < 0) {
     server->sendContent_P(PSTR("Sensor not connected.</td>\n\
   </tr>"));
@@ -204,10 +200,9 @@ void HydroMonitorWaterTempSensor::dataHtml(ESP8266WebServer* server) {
 }
 
 /*
- * Process the settings from the key/value pairs.
- */
- void HydroMonitorWaterTempSensor::updateSettings(ESP8266WebServer* server) {
-  return;
+   Process the settings from the key/value pairs.
+*/
+void HydroMonitorWaterTempSensor::updateSettings(ESP8266WebServer * server) {
 }
 #endif
 

@@ -1,19 +1,19 @@
 /*
- * HydroMonitorReservoir
- *
- * Manages the water reservoir level through a solenoid valve and with the help of the water level sensor.
- *
- */
+   HydroMonitorReservoir
+
+   Manages the water reservoir level through a solenoid valve and with the help of the water level sensor.
+
+*/
 
 
 /*
-#ifdef USE_RESERVOIR
- 
-#ifndef USE_WATERLEVEL_SENSOR
-#error Can't handle the reservoir filler without water level sensor.
-#endif
+  #ifdef USE_RESERVOIR
+
+  #ifndef USE_WATERLEVEL_SENSOR
+  #error Can't handle the reservoir filler without water level sensor.
+  #endif
 */
- 
+
 #ifndef HYDROMONITORRESERVOIR_H
 #define HYDROMONITORRESERVOIR_H
 
@@ -36,12 +36,12 @@
 class HydroMonitorReservoir {
 
   public:
-  
+
     struct Settings {
       uint8_t maxFill;
       uint8_t minFill;
     };
-    
+
     HydroMonitorReservoir(void);                            // The constructor.
 #ifdef USE_WATERLEVEL_SENSOR                                // If we use the water level sensor, this set of constructors.
 #ifdef RESERVOIR_MCP_PIN                                    // Check which pin type is defined.
@@ -67,7 +67,7 @@ class HydroMonitorReservoir {
     void doReservoir(void);
     String settingsHtml(void);
     void updateSettings(String[], String[], uint8_t);
-    
+
   private:
 #ifdef USE_WATERLEVEL_SENSOR
     HydroMonitorWaterLevelSensor *waterLevelSensor;
@@ -92,10 +92,10 @@ class HydroMonitorReservoir {
     uint32_t reservoirEmptyTime;
     uint32_t lastWarned = -WARNING_INTERVAL;
     uint32_t lastBeep;
-    
+
     bool oldBeep;
     bool beep;
-    
+
     void openValve(void);
     void closeValve(void);
     Settings settings;
@@ -109,7 +109,7 @@ class HydroMonitorReservoir {
     bool isWeeklyTopUp;
 #endif
     bool floatswitchTriggered;
-    
+
     const uint32_t BEEP_FREQUENCY = 2000;
     const uint32_t BEEP_DURATION = 200;
 

@@ -7,10 +7,10 @@
 #endif
 
 /*
- * Add fertiliser to the system as needed, based on the current EC value.
- *
- * Constructor.
- */
+   Add fertiliser to the system as needed, based on the current EC value.
+
+   Constructor.
+*/
 HydroMonitorFertiliser::HydroMonitorFertiliser() {
   runBTime = 0;
   runATime = 0;
@@ -22,8 +22,8 @@ HydroMonitorFertiliser::HydroMonitorFertiliser() {
 }
 
 /*
- * Configure the module.
- */
+   Configure the module.
+*/
 #ifdef FERTILISER_A_MCP_PIN
 void HydroMonitorFertiliser::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, Adafruit_MCP23008 *mcp23008) {
   mcp = mcp23008;
@@ -34,7 +34,7 @@ void HydroMonitorFertiliser::begin(HydroMonitorCore::SensorData *sd, HydroMonito
   l->writeTrace(F("HydroMonitorFertiliser: set up fertiliser pumps on MCP23008 port expander."));
 
 #elif defined(FERTILISER_A_MCP17_PIN)
-void HydroMonitorFertiliser::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, Adafruit_MCP23017 *mcp23017) {
+void HydroMonitorFertiliser::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l, Adafruit_MCP23017 * mcp23017) {
   mcp = mcp23017;
   pumpA = FERTILISER_A_MCP17_PIN;
   pumpB = FERTILISER_B_MCP17_PIN;
@@ -43,7 +43,7 @@ void HydroMonitorFertiliser::begin(HydroMonitorCore::SensorData *sd, HydroMonito
   l->writeTrace(F("HydroMonitorFertiliser: set up fertiliser pumps on MCP23017 port expander."));
 
 #elif defined(FERTILISER_A_PCF_PIN)
-void HydroMonitorFertiliser::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, PCF857x *pcf) {
+void HydroMonitorFertiliser::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l, PCF857x * pcf) {
   pcf8574 = pcf;
   pumpA = FERTILISER_A_PCF_PIN;
   pumpB = FERTILISER_B_PCF_PIN;
@@ -52,7 +52,7 @@ void HydroMonitorFertiliser::begin(HydroMonitorCore::SensorData *sd, HydroMonito
   l->writeTrace(F("HydroMonitorFertiliser: set up fertiliser pumps on PCF8574 port expander."));
 
 #elif defined(FERTILISER_A_PIN)
-void HydroMonitorFertiliser::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l) {
+void HydroMonitorFertiliser::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l) {
   pumpA = FERTILISER_A_PIN;
   pumpB = FERTILISER_B_PIN;
   pinMode(pumpA, OUTPUT);
@@ -86,18 +86,18 @@ void HydroMonitorFertiliser::begin(HydroMonitorCore::SensorData *sd, HydroMonito
 }
 
 /*
- * The fertiliser handling.
- * This has to be called frequently, to prevent delays in the switching.
- *
- * Step 1: check whether we've recently added fertiliser. If so, return instantly.
- * Step 2: check whether we have to start adding B,
- *    if not: check whether we are adding B and if so, whether it's enough,
- *    if not: check whether we have to start adding A,
- *    if not: check whether we are adding A and if so, whether it's enough,
- *    if not: check whether the current EC is higher than 5% below the target EC,
- *    if not: check whether the last time we had high enough EC was more than 10 minutes ago,
- *            and if so, set the flags to start adding fertiliser, and calculate how much.
- */
+   The fertiliser handling.
+   This has to be called frequently, to prevent delays in the switching.
+
+   Step 1: check whether we've recently added fertiliser. If so, return instantly.
+   Step 2: check whether we have to start adding B,
+      if not: check whether we are adding B and if so, whether it's enough,
+      if not: check whether we have to start adding A,
+      if not: check whether we are adding A and if so, whether it's enough,
+      if not: check whether the current EC is higher than 5% below the target EC,
+      if not: check whether the last time we had high enough EC was more than 10 minutes ago,
+              and if so, set the flags to start adding fertiliser, and calculate how much.
+*/
 void HydroMonitorFertiliser::doFertiliser() {
 
   // If we're measuring the pumps, let them run for 60 seconds, then switch off.
@@ -131,9 +131,9 @@ void HydroMonitorFertiliser::doFertiliser() {
   }
 
   else if (bitRead(sensorData->systemStatus, STATUS_RESERVOIR_LEVEL_LOW) || // Don't start adding fertiliser if the reservoir level is low,
-           bitRead(sensorData->systemStatus, STATUS_DRAINING_RESERVOIR) ||       // the reservoir is being drained,
-           bitRead(sensorData->systemStatus, STATUS_MAINTENANCE) ||              // the system is in maintenance mode, or
-           bitRead(sensorData->systemStatus, STATUS_DRAINAGE_NEEDED)) {          // drainage has been requested.
+           bitRead(sensorData->systemStatus, STATUS_DRAINING_RESERVOIR) ||  // the reservoir is being drained,
+           bitRead(sensorData->systemStatus, STATUS_MAINTENANCE) ||         // the system is in maintenance mode, or
+           bitRead(sensorData->systemStatus, STATUS_DRAINAGE_NEEDED)) {     // drainage has been requested.
     if (aRunning) {                                         // If they're running, switch off the pumps.
       aRunning = false;
       switchPumpOff(pumpA);
@@ -226,7 +226,7 @@ void HydroMonitorFertiliser::doFertiliser() {
 #endif
 
   if (lastTimeAdded > 0 &&
-    sensorData->EC > 0) {
+      sensorData->EC > 0) {
     if (millis() - lastTimeAdded < 30 * 60 * 1000 &&          // Monitor EC for 30 minutes after last time added; it should be going up now.
         sensorData->EC > originalEC + 0.07) {
       originalEC = 0;
@@ -239,8 +239,8 @@ void HydroMonitorFertiliser::doFertiliser() {
 }
 
 /*
- * Swich pump p on.
- */
+   Swich pump p on.
+*/
 void HydroMonitorFertiliser::switchPumpOn(uint8_t p) {
 #ifdef FERTILISER_A_PIN
   digitalWrite(p, HIGH);
@@ -249,12 +249,11 @@ void HydroMonitorFertiliser::switchPumpOn(uint8_t p) {
 #elif defined(FERTILISER_A_MCP_PIN) || defined(FERTILISER_A_MCP17_PIN)
   mcp->digitalWrite(p, HIGH);
 #endif
-  return;
-}  
-    
+}
+
 /*
- * Swich pump p off.
- */
+   Swich pump p off.
+*/
 void HydroMonitorFertiliser::switchPumpOff(uint8_t p) {
 #ifdef FERTILISER_A_PIN
   digitalWrite(p, LOW);
@@ -263,13 +262,12 @@ void HydroMonitorFertiliser::switchPumpOff(uint8_t p) {
 #elif defined(FERTILISER_A_MCP_PIN) || defined(FERTILISER_A_MCP17_PIN)
   mcp->digitalWrite(p, LOW);
 #endif
-  return;
-}  
+}
 
 
 /*
- * Start running pump A for 60 seconds to measure the flow.
- */
+   Start running pump A for 60 seconds to measure the flow.
+*/
 void HydroMonitorFertiliser::measurePumpA() {
   if (!(aRunning || bRunning)) {
     logging->writeTrace(F("HydroMonitorFertiliser: switching on pump A."));
@@ -281,8 +279,8 @@ void HydroMonitorFertiliser::measurePumpA() {
 }
 
 /*
- * Start running pump B for 60 seconds to measure the flow.
- */
+   Start running pump B for 60 seconds to measure the flow.
+*/
 void HydroMonitorFertiliser::measurePumpB() {
   if ( !(aRunning || bRunning)) {
     logging->writeTrace(F("HydroMonitorFertiliser: switching on pump B."));
@@ -294,9 +292,9 @@ void HydroMonitorFertiliser::measurePumpB() {
 }
 
 /*
- * The html code for the sensor specific settings.
- */
-void HydroMonitorFertiliser::settingsHtml(ESP8266WebServer *server) {
+   The html code for the sensor specific settings.
+*/
+void HydroMonitorFertiliser::settingsHtml(ESP8266WebServer * server) {
   char buff[10];
   server->sendContent_P(PSTR("\
       <tr>\n\
@@ -317,9 +315,9 @@ void HydroMonitorFertiliser::settingsHtml(ESP8266WebServer *server) {
 }
 
 /*
- * The JSON code for the sensor specific settings.
- */
-bool HydroMonitorFertiliser::settingsJSON(ESP8266WebServer *server) {
+   The JSON code for the sensor specific settings.
+*/
+bool HydroMonitorFertiliser::settingsJSON(ESP8266WebServer * server) {
   char buff[10];
   server->sendContent_P(PSTR("  \"fertiliser\": {\n"
                              "    \"pump_a_speed\":\""));
@@ -335,10 +333,10 @@ bool HydroMonitorFertiliser::settingsJSON(ESP8266WebServer *server) {
 }
 
 /*
- * Update the settings for this sensor, if any.
- */
-void HydroMonitorFertiliser::updateSettings(ESP8266WebServer *server) {
-  for (uint8_t i=0; i<server->args(); i++) {
+   Update the settings for this sensor, if any.
+*/
+void HydroMonitorFertiliser::updateSettings(ESP8266WebServer * server) {
+  for (uint8_t i = 0; i < server->args(); i++) {
     if (server->argName(i) == F("fertiliser_pumpaspeed")) {
       if (core.isNumeric(server->arg(i))) {
         float val = server->arg(i).toFloat();
@@ -361,7 +359,6 @@ void HydroMonitorFertiliser::updateSettings(ESP8266WebServer *server) {
   EEPROM.commit();
 #endif
   logging->writeTrace(F("HydroMonitorFertiliser: updated settings."));
-  return;
 }
 
 #endif

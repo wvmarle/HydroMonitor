@@ -13,13 +13,13 @@
 #include <HydroMonitorLogging.h>
 #include <HydroMonitorSensorBase.h>
 
-class HydroMonitorpHSensor: public HydroMonitorSensorBase 
+class HydroMonitorpHSensor: public HydroMonitorSensorBase
 {
   public:
-  
+
     struct Settings {
     };
-    
+
     HydroMonitorpHSensor(void);
 #ifdef PH_SENSOR_PIN
 #ifdef PH_POS_MCP_PIN
@@ -36,8 +36,8 @@ class HydroMonitorpHSensor: public HydroMonitorSensorBase
 #endif
     void readSensor(bool readNow = false);
     void dataHtml(ESP8266WebServer*);            // Provides html code with the sensor data.
-    void settingsHtml(ESP8266WebServer*); 
-    bool settingsJSON(ESP8266WebServer*); 
+    void settingsHtml(ESP8266WebServer*);
+    bool settingsJSON(ESP8266WebServer*);
     void getCalibrationHtml(ESP8266WebServer*);
     void updateSettings(ESP8266WebServer*);
 
@@ -46,7 +46,7 @@ class HydroMonitorpHSensor: public HydroMonitorSensorBase
     void deleteCalibration(ESP8266WebServer*);
     void enableCalibration(ESP8266WebServer*);
     void doCalibrationAction(ESP8266WebServer*);
-    
+
   private:
     uint32_t takeReading(void);
 #ifdef PH_SENSOR_ADS_PIN
@@ -58,7 +58,7 @@ class HydroMonitorpHSensor: public HydroMonitorSensorBase
     Settings settings;
     void readCalibration();
     void saveCalibrationData();
-  
+
     float calibratedSlope;
     float calibratedIntercept;
     Datapoint calibrationData[DATAPOINTS];

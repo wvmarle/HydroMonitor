@@ -2,17 +2,17 @@
 
 #ifdef USE_BRIGHTNESS_SENSOR
 /*
- * Measure the ambient light brightness.
- */ 
+   Measure the ambient light brightness.
+*/
 HydroMonitorBrightnessSensor::HydroMonitorBrightnessSensor () {
   brightnessSensorPresent = false;
 }
 
 /*
- * Configure the sensor.
- */
+   Configure the sensor.
+*/
 void HydroMonitorBrightnessSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l) {
-  
+
 #if defined(USE_TSL2561)
   tsl = TSL2561(TSL2561_ADDR_FLOAT, 12345);
   l->writeTrace(F("HydroMonitorBrightnessSensor: configured TSL2561 sensor."));
@@ -20,7 +20,7 @@ void HydroMonitorBrightnessSensor::begin(HydroMonitorCore::SensorData *sd, Hydro
   tsl = TSL2591();
   l->writeTrace(F("HydroMonitorBrightnessSensor: configured TSL2591 sensor."));
 #endif
-  
+
   logging = l;
   sensorData = sd;
   if (BRIGHTNESS_SENSOR_EEPROM > 0)
@@ -29,12 +29,12 @@ void HydroMonitorBrightnessSensor::begin(HydroMonitorCore::SensorData *sd, Hydro
 }
 
 /*
- * Take a measurement from the sensor.
- *
- * Returns the current lux value, or -1 if sensor is not found.
- */
-void HydroMonitorBrightnessSensor::readSensor() { 
-  
+   Take a measurement from the sensor.
+
+   Returns the current lux value, or -1 if sensor is not found.
+*/
+void HydroMonitorBrightnessSensor::readSensor() {
+
   // Check whether the sensor is connected and initialised.
   if (!brightnessSensorPresent) {
 
@@ -52,7 +52,7 @@ void HydroMonitorBrightnessSensor::readSensor() {
   if (brightnessSensorPresent) {
 
 #if defined(USE_TSL2561)
-    sensors_event_t event; 
+    sensors_event_t event;
     tsl.getEvent(&event);       // Get sensor event.
     sensorData->brightness = event.light;   // Read the current value from the sensor.
     if (sensorData->brightness == 65536) {  // The sensor is either saturated or has been disconnected.
@@ -67,15 +67,15 @@ void HydroMonitorBrightnessSensor::readSensor() {
 }
 
 /*
- * The html code for the sensor specific settings.
- */
+   The html code for the sensor specific settings.
+*/
 void HydroMonitorBrightnessSensor::settingsHtml(ESP8266WebServer *server) {
   return;
 }
 
 /*
- * The html code for the sensor data.
- */
+   The html code for the sensor data.
+*/
 void HydroMonitorBrightnessSensor::dataHtml(ESP8266WebServer *server) {
   server.sendContent_P(F("<tr>\n\
     <td>Brightness</td>\n\
@@ -83,17 +83,17 @@ void HydroMonitorBrightnessSensor::dataHtml(ESP8266WebServer *server) {
   if (sensorData->brightness < 0) {
     server.sendContent_P(F("Sensor not connected.</td>\n\
   </tr>"));
+  }
   else {
     server.sendContent(sensorData->brightness);
     server.sendContent_P(F(" lux.</td>\n\
   </tr>"));
   }
-  return html;
 }
 
 /*
- * Update the settings for this sensor, if any.
- */
+   Update the settings for this sensor, if any.
+*/
 void HydroMonitorBrightnessSensor::updateSettings(String keys[], String values[], uint8_t nArgs) {
   return;
 }

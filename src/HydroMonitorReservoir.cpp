@@ -23,9 +23,9 @@ void HydroMonitorReservoir::begin(HydroMonitorCore::SensorData *sd, HydroMonitor
   mcp->pinMode(RESERVOIR_MCP17_PIN, INPUT);
   l->writeTrace(F("HydroMonitorReservoir: configured reservoir refill on MCP23017 port expander."));
 
-/*
-   Set up the solenoid, connected to a MCP23008 port expander.
-*/
+  /*
+     Set up the solenoid, connected to a MCP23008 port expander.
+  */
 #elif defined(RESERVOIR_MCP_PIN)
 void HydroMonitorReservoir::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l, Adafruit_MCP23008 * mcp23008, HydroMonitorWaterLevelSensor * sens) {
   mcp = mcp23008;
@@ -60,9 +60,9 @@ void HydroMonitorReservoir::begin(HydroMonitorCore::SensorData *sd, HydroMonitor
   mcp->pinMode(RESERVOIR_MCP17_PIN, INPUT);
   l->writeTrace(F("HydroMonitorReservoir: configured reservoir refill on MCP23017 port expander."));
 
-/*
-   Set up the solenoid, connected to a MCP23008 port expander.
-*/
+  /*
+     Set up the solenoid, connected to a MCP23008 port expander.
+  */
 #elif defined(RESERVOIR_MCP_PIN)
 void HydroMonitorReservoir::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l, Adafruit_MCP23008 * mcp23008) {
   mcp = mcp23008;
@@ -167,7 +167,7 @@ void HydroMonitorReservoir::doReservoir() {
   if (bitRead(sensorData->systemStatus, STATUS_DRAINING_RESERVOIR) ||
       bitRead(sensorData->systemStatus, STATUS_WATERING) || // System is doing something that prevents us from filling the reservoir,
       bitRead(sensorData->systemStatus, STATUS_DOOR_OPEN) ||
-      bitRead(sensorData->systemStatus, STATUS_MAINTENANCE) || 
+      bitRead(sensorData->systemStatus, STATUS_MAINTENANCE) ||
       floatswitchTriggered) {                               // or it's too full already.
     if (bitRead(sensorData->systemStatus, STATUS_FILLING_RESERVOIR)) { // If we are currently adding water; stop this.
       closeValve();
@@ -176,8 +176,8 @@ void HydroMonitorReservoir::doReservoir() {
 
 #ifdef USE_WATERLEVEL_SENSOR                                // Water level based reservoir level management.
   else if (sensorData->waterLevel < 0                       // Water level sensor not connected, or out of range,
-      && millis() - reservoirEmptyTime > 30 * 1000          // and we're empty for >half a minute,
-      && initialFillingDone == false) {                     // and we didn't try adding some water yet:
+           && millis() - reservoirEmptyTime > 30 * 1000          // and we're empty for >half a minute,
+           && initialFillingDone == false) {                     // and we didn't try adding some water yet:
     initialFillingDone = true;                              // Mark that we started trying.
     initialFillingInProgress = true;                        // It's in progress.
     openValve();
@@ -215,7 +215,7 @@ void HydroMonitorReservoir::doReservoir() {
       }
     }
     else {
-      if (sensorData->waterLevel > settings.minFill &&      
+      if (sensorData->waterLevel > settings.minFill &&
           bitRead(sensorData->systemStatus, STATUS_FILLING_RESERVOIR) == false) {
 
         // As long as the water level is above the set minimum and we're not adding water now,
@@ -247,7 +247,7 @@ void HydroMonitorReservoir::doReservoir() {
   if (sensorData->waterLevel > settings.maxFill + 5 &&
       millis() - startAddWater < 5 * 60 * 1000) {
     logging->writeError(F("Reservoir 12: water level >5% over maxFill within 5 minutes of starting to fill the reservoir. Suspected problem with the filling system."));
-  }  
+  }
   if (sensorData->waterLevel > 100) {                       // Very full reservoir; should have been drained already.
     if (millis() - lastWarned > WARNING_INTERVAL) {
       lastWarned = millis();
@@ -274,9 +274,9 @@ void HydroMonitorReservoir::doReservoir() {
   else if (bitRead(sensorData->systemStatus, STATUS_FILLING_RESERVOIR)) { // Reservoir is being filled.
     if ((isWeeklyTopUp && millis() - startAddWater > 3 * 60 * 1000) || // Weekly top-up for 3 minutes, or
         millis() - startAddWater > 20 * 60 * 1000) {        // 20 minutes for a complete fill.
-    closeValve();
-    bitClear(sensorData->systemStatus, STATUS_RESERVOIR_LEVEL_LOW); // It's for sure filled up now.
-    logging->writeInfo(F("HydroMonitorReservoir: finished adding water, closing the valve."));
+      closeValve();
+      bitClear(sensorData->systemStatus, STATUS_RESERVOIR_LEVEL_LOW); // It's for sure filled up now.
+      logging->writeInfo(F("HydroMonitorReservoir: finished adding water, closing the valve."));
     }
   }
 #endif

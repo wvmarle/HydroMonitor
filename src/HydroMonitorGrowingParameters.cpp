@@ -1,14 +1,14 @@
 #include <HydroMonitorGrowingParameters.h>
 
 /*
- * Constructor.
- */
+   Constructor.
+*/
 HydroMonitorGrowingParameters::HydroMonitorGrowingParameters() {
 }
 
 /*
- * Configure the module.
- */
+   Configure the module.
+*/
 void HydroMonitorGrowingParameters::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l) {
   sensorData = sd;
   logging = l;
@@ -25,7 +25,7 @@ void HydroMonitorGrowingParameters::begin(HydroMonitorCore::SensorData *sd, Hydr
     settings.fertiliserConcentration = 200;
     settings.solutionVolume = 100;
     settings.targetEC = 1;
-    settings.pHMinusConcentration = 0.05;  // ml of pH-minus per litre of solution for a 1 pH point change.
+    settings.pHMinusConcentration = 0.05;                   // ml of pH-minus per litre of solution for a 1 pH point change.
     settings.targetpH = 7;
     strcpy(settings.systemName, "HydroMonitor");
     settings.timezone = 0;
@@ -38,12 +38,11 @@ void HydroMonitorGrowingParameters::begin(HydroMonitorCore::SensorData *sd, Hydr
   }
   updateSensorData();
   logging->writeInfo(F("HydroMonitorGrowingParameters: set up all the growing parameters."));
-  return;
 }
 
 /*
- * The html code for the sensor specific settings.
- */
+   The html code for the sensor specific settings.
+*/
 void HydroMonitorGrowingParameters::settingsHtml(ESP8266WebServer *server) {
   char buff[10];
   server->sendContent_P(PSTR("\
@@ -98,8 +97,8 @@ void HydroMonitorGrowingParameters::settingsHtml(ESP8266WebServer *server) {
 }
 
 /*
- * The JSON code for the sensor specific settings.
- */
+   The JSON code for the sensor specific settings.
+*/
 void HydroMonitorGrowingParameters::settingsJSON(ESP8266WebServer *server) {
   char buff[10];
   server->sendContent_P(PSTR("  \"parameters\": {\n"
@@ -125,7 +124,7 @@ void HydroMonitorGrowingParameters::settingsJSON(ESP8266WebServer *server) {
 #endif
   server->sendContent_P(PSTR("\",\n"
                              "    \"system_name\":\""));
-                             
+
   Serial.print(F("systemName: \""));
   Serial.print(settings.systemName);
   Serial.println(F("\""));
@@ -141,10 +140,10 @@ void HydroMonitorGrowingParameters::settingsJSON(ESP8266WebServer *server) {
 }
 
 /*
- * Update the settings for this sensor, if any.
- */
+   Update the settings for this sensor, if any.
+*/
 void HydroMonitorGrowingParameters::updateSettings(ESP8266WebServer* server) {
-  for (uint8_t i=0; i<server->args(); i++) {
+  for (uint8_t i = 0; i < server->args(); i++) {
     if (server->argName(i) == F("parameter_solutionvolume")) {
       if (core.isNumeric(server->arg(i))) {
         uint16_t val = server->arg(i).toInt();
@@ -197,12 +196,11 @@ void HydroMonitorGrowingParameters::updateSettings(ESP8266WebServer* server) {
 #endif
   updateSensorData();
   logging->writeTrace(F("HydroMonitorGrowingParameters: updated settings."));
-  return;
 }
 
 /*
   Copy all the parameters into the sensorData struct, so it can be shared by other modules.
- */
+*/
 void HydroMonitorGrowingParameters::updateSensorData() {
 
 #ifdef USE_EC_SENSOR
