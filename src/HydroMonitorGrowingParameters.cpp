@@ -99,7 +99,7 @@ void HydroMonitorGrowingParameters::settingsHtml(ESP8266WebServer *server) {
 /*
    The JSON code for the sensor specific settings.
 */
-void HydroMonitorGrowingParameters::settingsJSON(ESP8266WebServer *server) {
+bool HydroMonitorGrowingParameters::settingsJSON(ESP8266WebServer *server) {
   char buff[10];
   server->sendContent_P(PSTR("  \"parameters\": {\n"
                              "    \"volume\":\""));
@@ -137,6 +137,7 @@ void HydroMonitorGrowingParameters::settingsJSON(ESP8266WebServer *server) {
   server->sendContent(buff);
   server->sendContent_P(PSTR("\"\n"
                              "  }"));
+  return true;
 }
 
 /*

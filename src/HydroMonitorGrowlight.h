@@ -43,13 +43,12 @@ class HydroMonitorGrowlight
 #elif defined(GROWLIGHT_MCP_PIN)
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, Adafruit_MCP23008*);
 #endif
-    void checkGrowlight();                                  // Switches the growlight on/off based on given lux value,
-    //                                                         taking time delay and on/off hours into account.
+    void checkGrowlight();                                  // Switches the growlight on/off based on given lux value, taking time delay and on/off hours into account.
     void on(void);                                          // Switches the growlight on, regardless of lux level or time of day. Disables automatic control.
     void off(void);                                         // Switches the growlight off, regardless of lux level or time of day.  Disables automatic control.
     void automatic(void);                                   // Set grow light to automatic control.
-    void settingsJSON(ESP8266WebServer *);                  // Provides html code with the sensor data.
-    void settingsHtml(ESP8266WebServer *);
+    bool settingsJSON(ESP8266WebServer *);                  // Provides json code with the sensor data.
+    void settingsHtml(ESP8266WebServer *);                  // Provides html code with the sensor data.
     void updateSettings(String[], String[], uint8_t);
 
   private:
