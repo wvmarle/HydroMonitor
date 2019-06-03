@@ -222,4 +222,4 @@ bool HydroMonitorNetwork::settingsJSON(ESP8266WebServer* server) {
    Update the settings.
 */
 void HydroMonitorNetwork::updateSettings(ESP8266WebServer* server) {
-
+}

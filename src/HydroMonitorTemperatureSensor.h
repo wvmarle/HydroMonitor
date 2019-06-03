@@ -43,7 +43,7 @@ class HydroMonitorTemperatureSensor: public HydroMonitorSensorBase
     void readSensor(void);
     void dataHtml(ESP8266WebServer*);            // Provides html code with the sensor data.
     void settingsHtml(ESP8266WebServer*);
-    void settingsJSON(ESP8266WebServer*);
+    bool settingsJSON(ESP8266WebServer*);
     void updateSettings(ESP8266WebServer*);
 
   private:

@@ -79,7 +79,8 @@ void HydroMonitorTemperatureSensor::readSensor() {
 void HydroMonitorTemperatureSensor::settingsHtml(ESP8266WebServer * server) {
 }
 
-void HydroMonitorTemperatureSensor::settingsJSON(ESP8266WebServer * server) {
+bool HydroMonitorTemperatureSensor::settingsJSON(ESP8266WebServer * server) {
+  return false;
 }
 
 /*
