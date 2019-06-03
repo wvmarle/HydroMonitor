@@ -284,7 +284,7 @@ void HydroMonitorGrowlight::settingsHtml(ESP8266WebServer * server) {
 /*
    The sensor settings as JSON.
 */
-void HydroMonitorGrowlight::settingsJSON(ESP8266WebServer * server) {
+bool HydroMonitorGrowlight::settingsJSON(ESP8266WebServer * server) {
   server->sendContent_P(PSTR("  \"growlight\": {\n"
                              "    \"growlight_switch_brightness\":\""));
   server->sendContent(settings.switchBrightness);
@@ -305,6 +305,7 @@ void HydroMonitorGrowlight::settingsJSON(ESP8266WebServer * server) {
   server->sendContent(settings.offMinute);
   server->sendContent_P(PSTR("\"\n"
                              "  }"));
+  return true;
 }
 
 /*

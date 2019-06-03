@@ -24,7 +24,7 @@ class HydroMonitorGrowingParameters {
     // The various functions to set up and control this module.
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*);
     void settingsHtml(ESP8266WebServer*);
-    void settingsJSON(ESP8266WebServer*);
+    bool settingsJSON(ESP8266WebServer*);
     void updateSettings(ESP8266WebServer*);
 
     // The getters. Variables are set in updateSettings.

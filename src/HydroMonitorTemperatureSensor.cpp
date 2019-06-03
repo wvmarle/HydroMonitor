@@ -2,7 +2,6 @@
 #include <Arduino.h>
 
 #ifdef USE_TEMPERATURE_SENSOR
-
 /*
    Measure the air temperature.
    Constructor.
