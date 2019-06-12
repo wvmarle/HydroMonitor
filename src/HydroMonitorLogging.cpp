@@ -272,7 +272,7 @@ void HydroMonitorLogging::transmitData() {
   uint32_t timestamp;
   memcpy(&timestamp, buff + 1, 4);                          // Skip the record's byte 0, the status byte.
   memcpy(&dataEntry, buff + 16, dataRecordSize);            // Skip the record's 16-byte header.
-  uint16_t size = 120 + strlen(settings.hostname) + strlen(settings.hostpath) + strlen(settings.username) + strlen(settings.password);
+  uint16_t size = 150 + strlen(settings.hostname) + strlen(settings.hostpath) + strlen(settings.username) + strlen(settings.password);
   char postData[size];
   Serial.print(F("Sensor data postData buffer size: "));
   Serial.println(size);
@@ -298,7 +298,7 @@ void HydroMonitorLogging::transmitData() {
       dataTransmitComplete = true;
       Serial.println(F("Sensor data transmission completed."));
     }
-    else if (f.size() > dataRecordToTransmit * fileRecordSize) { // This should never happen, yet it does...
+    else if (f.size() < dataRecordToTransmit * fileRecordSize) { // This should never happen, yet it does...
       Serial.println(F("Data record file corrupt; creating a new one."));
       Serial.print(F("Data file size: "));
       Serial.print(f.size());
@@ -357,6 +357,18 @@ void HydroMonitorLogging::transmitMessages() {
     if (f.size() == messageToTransmit) {                    // We reached the end of the file - transmission completed.
       messageTransmitComplete = true;
       Serial.println(F("Message transmission completed."));
+    }
+    else if (f.size() < messageToTransmit) {                // This should never happen, yet it does...
+      Serial.println(F("Message record file corrupt; creating a new one."));
+      Serial.print(F("Message file size: "));
+      Serial.print(f.size());
+      Serial.print(F(", expected size: "));
+      Serial.println(messageToTransmit);
+      f.close();
+      SPIFFS.remove(messageLogFileName);
+      f = SPIFFS.open(messageLogFileName, "w");                // create a new one.
+      f.close();
+      messageToTransmit = 0;
     }
   }
   else {                                                    // Connection failed: try again later.

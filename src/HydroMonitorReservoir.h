@@ -110,7 +110,7 @@ class HydroMonitorReservoir {
 #endif
     bool floatswitchTriggered;
 
-    const uint32_t BEEP_FREQUENCY = 2000;
+    const uint32_t BEEP_FREQUENCY = 500;
     const uint32_t BEEP_DURATION = 200;
 
 };
