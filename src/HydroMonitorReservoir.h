@@ -65,7 +65,8 @@ class HydroMonitorReservoir {
 #endif                                                      // #endif of the pin definitions.
 #endif                                                      // #endif of USE_WATERLEVEL_SENSOR
     void doReservoir(void);
-    String settingsHtml(void);
+    void settingsHtml(ESP8266WebServer *);
+    bool settingsJSON(ESP8266WebServer*);
     void updateSettings(String[], String[], uint8_t);
 
   private:

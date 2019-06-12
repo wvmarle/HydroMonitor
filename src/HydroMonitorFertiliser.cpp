@@ -196,14 +196,9 @@ void HydroMonitorFertiliser::doFertiliser() {
     // Flag that we want to add fertilisers - both, of course.
     addA = true;
     addB = true;
-    float addVolume = 0.1 * 1000 * sensorData->solutionVolume / sensorData->fertiliserConcentration; // The amount of fertiliser in ml to be added of 0.1 mS/cm worth of EC.
-    if (sensorData->EC > sensorData->targetEC - 0.1) {      // If the EC we measure is more than 0.1 mS/cm lower than the target volume, add a full shot of fertiliser.
-      if (sensorData->EC > sensorData->targetEC - 1) {      // But don't add more than 1 mS/cm worth of fertiliser in one go.
-        addVolume *= 1 * 10;
-      }
-      else {
-        addVolume *= (sensorData->targetEC - sensorData->EC) * 10;
-      }
+    float addVolume = 1000.0 * sensorData->solutionVolume / sensorData->fertiliserConcentration; // The amount of fertiliser in ml to be added for 1 mS/cm worth of EC.
+    if (sensorData->targetEC - sensorData->EC < 1) {        // If the required increase in EC is less than 1 mS/cm,
+      addVolume *= (sensorData->targetEC - sensorData->EC); // correct addVolume accordingly.
     }
     logging->writeTrace(F("HydroMonitorFertiliser: 10 minutes of too low EC; have to start adding fertiliser."));
     char buff[70];
@@ -216,8 +211,8 @@ void HydroMonitorFertiliser::doFertiliser() {
   }
 
 #ifdef USE_DRAINAGE_PUMP
-  // Start draining the reservoir after ten minutes of continuous too high EC.
-  else if (sensorData->EC > sensorData->targetEC &&
+  // Start draining the reservoir after ten minutes of continuously too high EC.
+  else if (sensorData->EC > (sensorData->targetEC + 0.2) &&
            millis() - lastGoodEC > 10 * 60 * 1000) {
     logging->writeTrace(F("HydroMonitorFertiliser: 10 minutes of too high EC; completely refresh the reservoir."));
     logging->writeInfo(F("HydroMonitorFertiliser: refreshing reservoir to be able to reduce the EC value."));
@@ -227,9 +222,10 @@ void HydroMonitorFertiliser::doFertiliser() {
 
   if (lastTimeAdded > 0 &&
       sensorData->EC > 0) {
-    if (millis() - lastTimeAdded < 30 * 60 * 1000 &&          // Monitor EC for 30 minutes after last time added; it should be going up now.
-        sensorData->EC > originalEC + 0.07) {
-      originalEC = 0;
+    if (millis() - lastTimeAdded < 30 * 60 * 1000) {        // Monitor EC for 30 minutes after last time added; it should be going up now.
+      if (sensorData->EC > originalEC + 0.07) {
+        originalEC = 0;
+      }
     }
     else if (originalEC > 0 && millis() - lastWarned > WARNING_INTERVAL) {
       logging->writeWarning(F("Fertiliser 01: fertiliser did not go up as expected after running the pumps. Fertiliser bottles may be empty."));

@@ -176,8 +176,8 @@ void HydroMonitorReservoir::doReservoir() {
 
 #ifdef USE_WATERLEVEL_SENSOR                                // Water level based reservoir level management.
   else if (sensorData->waterLevel < 0                       // Water level sensor not connected, or out of range,
-           && millis() - reservoirEmptyTime > 30 * 1000          // and we're empty for >half a minute,
-           && initialFillingDone == false) {                     // and we didn't try adding some water yet:
+           && millis() - reservoirEmptyTime > 30 * 1000     // and we're empty for >half a minute,
+           && initialFillingDone == false) {                // and we didn't try adding some water yet:
     initialFillingDone = true;                              // Mark that we started trying.
     initialFillingInProgress = true;                        // It's in progress.
     openValve();
@@ -301,7 +301,6 @@ void HydroMonitorReservoir::openValve() {
   mcp->digitalWrite(RESERVOIR_MCP17_PIN, HIGH);
 #endif
   bitSet(sensorData->systemStatus, STATUS_FILLING_RESERVOIR);
-  return;
 }
 
 void HydroMonitorReservoir::closeValve() {
@@ -319,28 +318,49 @@ void HydroMonitorReservoir::closeValve() {
   mcp->pinMode(RESERVOIR_MCP17_PIN, INPUT);
 #endif
   bitClear(sensorData->systemStatus, STATUS_FILLING_RESERVOIR);
-  return;
 }
 
 /*
    The settings as html.
 */
-String HydroMonitorReservoir::settingsHtml() {
-  String html = F("\
+void HydroMonitorReservoir::settingsHtml(ESP8266WebServer * server) {
+#ifdef USE_WATERLEVEL_SENSOR
+  server->sendContent_P(PSTR("\
       <tr>\n\
         <th colspan=\"2\">Reservoir levels.</th>\n\
       </tr><tr>\n\
         <td>Minimum fill level:</td>\n\
-        <td><input type=\"number\" step=\"1\" name=\"reservoir_minfill\" value=\"");
-  html += String(settings.minFill);
-  html += F("\"> %.</td>\n\
+        <td><input type=\"number\" step=\"1\" name=\"reservoir_minfill\" value=\""));
+  char buff[5];
+  server->sendContent(itoa(buff, settings.minFill, 10);
+  server->sendContent_P(PSTR("\"> %.</td>\n\
       </tr><tr>\n\
         <td>Maximum fill level:</td>\n\
-        <td><input type=\"number\" step=\"1\" name=\"reservoir_maxfill\" value=\"");
-  html += String(settings.maxFill);
-  html += F("\"> %.</td>\n\
-      </tr>\n");
-  return html;
+        <td><input type=\"number\" step=\"1\" name=\"reservoir_maxfill\" value=\""));
+  server->sendContent(itoa(buff, settings.maxFill, 10);
+  server->sendContent_P(PSTR("\"> %.</td>\n\
+      </tr>\n"));
+#endif
+}
+
+/*
+   The sensor settings as JSON.
+*/
+bool HydroMonitorReservoir::settingsJSON(ESP8266WebServer * server) {
+#ifdef USE_WATERLEVEL_SENSOR
+  server->sendContent_P(PSTR("  \"reservoir\":\ {\n"
+                             "    \"reservoir_minfill\":\""));
+  char buff[5];
+  server->sendContent(itoa(buff, settings.minFill, 10);
+  server->sendContent_P(PSTR("\",\n"
+                             "    \"reservoir_maxfill\":\""));
+  server->sendContent(itoa(buff, settings.maxFill, 10);
+  server->sendContent_P(PSTR("\"\n"
+                             "  }"));
+  return true;
+#else
+  return false;
+#endif
 }
 
 /*
@@ -369,6 +389,5 @@ void HydroMonitorReservoir::updateSettings(String keys[], String values[], uint8
   EEPROM.put(RESERVOIR_EEPROM, settings);
   EEPROM.commit();
 #endif
-  return;
 }
 #endif
