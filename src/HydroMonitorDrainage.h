@@ -83,10 +83,8 @@ class HydroMonitorDrainage
       DRAINAGE_MAINTENANCE_RUN,
       DRAINAGE_MAINTENANCE_RUNNING,
 
-#ifdef USE_WATERLEVEL_SENSOR
       DRAINAGE_DRAIN_EXCESS,
       DRAINAGE_DRAIN_EXCESS_RUNNING,
-#endif
     };
     DrainageStates drainageState;
     uint32_t drainageCompletedTime;
@@ -96,5 +94,4 @@ class HydroMonitorDrainage
 #endif
     uint32_t lastDrainageRun;
 };
-
 #endif

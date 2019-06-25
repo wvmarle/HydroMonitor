@@ -85,7 +85,7 @@ void HydroMonitorDrainage::doDrainage() {
   if (bitRead(sensorData->systemStatus, STATUS_DRAINAGE_NEEDED)) { // Immediate drainage has been requested.
     bitClear(sensorData->systemStatus, STATUS_DRAINAGE_NEEDED);
     if (drainageState == DRAINAGE_IDLE) {
-      drainageState = DRAINAGE_AUTOMATIC_DRAINING_START;
+      drainageState = DRAINAGE_DRAIN_EXCESS;
       logging->writeInfo(F("HydroMonitorDrainage: immediate drainage requested."));
       settings.latestDrainage = now();
     }
@@ -249,13 +249,13 @@ void HydroMonitorDrainage::doDrainage() {
       }
       break;
 
-#ifdef USE_WATERLEVEL_SENSOR
     case DRAINAGE_DRAIN_EXCESS:
       switchPumpOn();
       drainageState = DRAINAGE_DRAIN_EXCESS_RUNNING;
       break;
 
     case DRAINAGE_DRAIN_EXCESS_RUNNING:
+#ifdef USE_WATERLEVEL_SENSOR
       if (sensorData->waterLevel < 90) {
         lastDrainageRun = millis();
         drainageState = DRAINAGE_IDLE;
@@ -269,8 +269,17 @@ void HydroMonitorDrainage::doDrainage() {
           lastWarned = millis();
         }
       }
-      break;
+#else
+      if (millis() - drainageStart > (uint32_t)20 * 60 * 1000) {
+        lastDrainageRun = millis();
+        drainageState = DRAINAGE_IDLE;
+        bitClear(sensorData->systemStatus, STATUS_MAINTENANCE);
+        switchPumpOff();
+        logging->writeTrace(F("HydroMonitorDrainage: reservoir emergency drainage complete."));
+        bitSet(sensorData->systemStatus, STATUS_RESERVOIR_DRAINED); // Allow refilling of the reservoir when we're done.
+      }
 #endif
+      break;
   }
 }
 
