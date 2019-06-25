@@ -23,11 +23,11 @@
 #include <HydroMonitorWaterLevelSensor.h>
 #endif
 
-#ifdef RESERVOIR_MCP_PIN
+#ifdef WATER_INLET_MCP_PIN
 #include <Adafruit_MCP23008.h>
-#elif defined(RESERVOIR_MCP17_PIN)
+#elif defined(WATER_INLET_MCP17_PIN)
 #include <Adafruit_MCP23017.h>
-#elif defined(RESERVOIR_PCF_PIN)
+#elif defined(WATER_INLET_PCF_PIN)
 #include <pcf8574_esp.h>
 #endif
 
@@ -44,40 +44,40 @@ class HydroMonitorReservoir {
 
     HydroMonitorReservoir(void);                            // The constructor.
 #ifdef USE_WATERLEVEL_SENSOR                                // If we use the water level sensor, this set of constructors.
-#ifdef RESERVOIR_MCP_PIN                                    // Check which pin type is defined.
+#ifdef WATER_INLET_MCP_PIN                                    // Check which pin type is defined.
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, Adafruit_MCP23008*, HydroMonitorWaterLevelSensor*);
-#elif defined(RESERVOIR_MCP17_PIN)
+#elif defined(WATER_INLET_MCP17_PIN)
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, Adafruit_MCP23017*, HydroMonitorWaterLevelSensor*);
-#elif defined(RESERVOIR_PCF_PIN)
+#elif defined(WATER_INLET_PCF_PIN)
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, PCF857x*, HydroMonitorWaterLevelSensor*);
-#elif defined(RESERVOIR_PIN)
+#elif defined(WATER_INLET_PIN)
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, HydroMonitorWaterLevelSensor*);
 #endif                                                      // #endif of the pin definitions.
 #else                                                       // Not using the water level sensor.
-#ifdef RESERVOIR_MCP_PIN                                    // Check which pin type is defined.
+#ifdef WATER_INLET_MCP_PIN                                    // Check which pin type is defined.
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, Adafruit_MCP23008*);
-#elif defined(RESERVOIR_MCP17_PIN)
+#elif defined(WATER_INLET_MCP17_PIN)
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, Adafruit_MCP23017*);
-#elif defined(RESERVOIR_PCF_PIN)
+#elif defined(WATER_INLET_PCF_PIN)
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, PCF857x*);
-#elif defined(RESERVOIR_PIN)
+#elif defined(WATER_INLET_PIN)
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*);
 #endif                                                      // #endif of the pin definitions.
 #endif                                                      // #endif of USE_WATERLEVEL_SENSOR
     void doReservoir(void);
     void settingsHtml(ESP8266WebServer *);
     bool settingsJSON(ESP8266WebServer*);
-    void updateSettings(String[], String[], uint8_t);
+    void updateSettings(ESP8266WebServer *);
 
   private:
 #ifdef USE_WATERLEVEL_SENSOR
     HydroMonitorWaterLevelSensor *waterLevelSensor;
 #endif
-#ifdef RESERVOIR_MCP_PIN
+#ifdef WATER_INLET_MCP_PIN
     Adafruit_MCP23008 *mcp;
-#elif defined(RESERVOIR_MCP17_PIN)
+#elif defined(WATER_INLET_MCP17_PIN)
     Adafruit_MCP23017 *mcp;
-#elif defined(RESERVOIR_PCF_PIN)
+#elif defined(WATER_INLET_PCF_PIN)
     PCF857x *pcf8574;
 #endif
 

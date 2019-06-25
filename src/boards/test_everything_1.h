@@ -70,6 +70,6 @@
 #define USE_FACTORY_RESET
 
 #define USE_RESERVOIR
-#define RESERVOIR_PIN
+#define WATER_INLET_PIN
 
 #endif

@@ -56,7 +56,7 @@
 #define ADCMAX 3388
 
 #define USE_RESERVOIR
-#define RESERVOIR_MCP_PIN
+#define WATER_INLET_MCP_PIN
 
 #endif
 

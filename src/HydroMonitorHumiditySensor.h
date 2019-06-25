@@ -12,7 +12,7 @@
 #include <HydroMonitorLogging.h>
 #include <HydroMonitorSensorBase.h>
 
-#ifdef DHT22_PIN
+#ifdef USE_DHT22
 #include <DHT22.h>
 #endif
 #ifdef USE_BME280
@@ -30,21 +30,22 @@ class HydroMonitorHumiditySensor: public HydroMonitorSensorBase
     HydroMonitorHumiditySensor(void);
 
     // The functions required for all sensors.
-#ifdef DHT22_PIN
+#ifdef USE_DHT22
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging *logging, DHT22*);
 #endif
 #ifdef USE_BME280
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging *logging, BME280*);
 #endif
-    void readSensor(void);
+    void readSensor(bool readNow = false);
     float calcDewpoint(float, float);
     float calcDewpoint(void);
     void dataHtml(ESP8266WebServer *);                      // Provides html code with the sensor data.
-    void settingsHtml(ESP8266WebServer *);
-    void updateSettings(String[], String[], uint8_t);
+    void settingsHtml(ESP8266WebServer * server);
+    bool settingsJSON(ESP8266WebServer * server);
+    void updateSettings(ESP8266WebServer * server);
 
   private:
-#ifdef DHT22_PIN
+#ifdef USE_DHT22
     DHT22 *dht22;
 #endif
 #ifdef USE_BME280

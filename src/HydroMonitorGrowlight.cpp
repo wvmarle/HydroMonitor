@@ -25,6 +25,15 @@ void HydroMonitorGrowlight::begin(HydroMonitorCore::SensorData * sd, HydroMonito
   l->writeTrace(F("HydroMonitorGrowlight: set up growing light on MCP port expander."));
 
   /*
+     Set up the module - growing light connected to the MCP23017 port expander.
+  */
+#elif defined(GROWLIGHT_MCP17_PIN)
+void HydroMonitorGrowlight::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l, Adafruit_MCP23017 * mcp) {
+  mcp23017 = mcp;
+  mcp23017->pinMode(GROWLIGHT_MCP17_PIN, OUTPUT);
+  l->writeTrace(F("HydroMonitorGrowlight: set up growing light on MCP17 port expander."));
+
+  /*
      Set up the module - growing light connected to a GPIO pin.
   */
 #elif defined(GROWLIGHT_PIN)
@@ -173,8 +182,7 @@ void HydroMonitorGrowlight::switchLightOff() {
   sensorData->growlight = false;
   digitalWrite(GROWLIGHT_PIN, LOW);
 }
-#endif
-#ifdef GROWLIGHT_PCF_PIN
+#elif defined(GROWLIGHT_PCF_PIN)
 void HydroMonitorGrowlight::switchLightOn() {
   sensorData->growlight = true;
   pcf8574->write(GROWLIGHT_PCF_PIN, LOW);
@@ -184,8 +192,7 @@ void HydroMonitorGrowlight::switchLightOff() {
   sensorData->growlight = false;
   pcf8574->write(GROWLIGHT_PCF_PIN, HIGH);
 }
-#endif
-#ifdef GROWLIGHT_MCP_PIN
+#elif defined(GROWLIGHT_MCP_PIN)
 void HydroMonitorGrowlight::switchLightOn() {
   sensorData->growlight = true;
   mcp23008->digitalWrite(GROWLIGHT_MCP_PIN, HIGH);
@@ -195,12 +202,23 @@ void HydroMonitorGrowlight::switchLightOff() {
   sensorData->growlight = false;
   mcp23008->digitalWrite(GROWLIGHT_MCP_PIN, LOW);
 }
+#elif defined(GROWLIGHT_MCP17_PIN)
+void HydroMonitorGrowlight::switchLightOn() {
+  sensorData->growlight = true;
+  mcp23017->digitalWrite(GROWLIGHT_MCP17_PIN, HIGH);
+}
+
+void HydroMonitorGrowlight::switchLightOff() {
+  sensorData->growlight = false;
+  mcp23017->digitalWrite(GROWLIGHT_MCP17_PIN, LOW);
+}
 #endif
 
 /*
    The sensor settings as html.
 */
 void HydroMonitorGrowlight::settingsHtml(ESP8266WebServer * server) {
+  char buff[10];
   server->sendContent_P(PSTR("\
         <tr>\n\
           <th colspan=\"2\">Grow Light Settings.</th>\n\
@@ -209,7 +227,7 @@ void HydroMonitorGrowlight::settingsHtml(ESP8266WebServer * server) {
             Brightness to switch on the growlight:\n\
           </td><td>\n\
             <input type=\"number\"  step=\"1\"name=\"growlight_switch_brightness\" min=\"0\" max=\"65535\" value=\""));
-  server->sendContent(settings.switchBrightness);
+  server->sendContent(itoa(settings.switchBrightness, buff, 10));
   server->sendContent_P(PSTR("\> lux.\n\
           </td>\n\
         </tr><tr>\n\
@@ -217,7 +235,7 @@ void HydroMonitorGrowlight::settingsHtml(ESP8266WebServer * server) {
             Time delay before the growlight is switched on/off:\n\
           </td><td>\n\
             <input type=\"number\" step=\"1\" name=\"growlight_switch_delay\" min=\"0\" size=\"6\" value=\""));
-  server->sendContent(settings.switchDelay);
+  server->sendContent(itoa(settings.switchDelay, buff, 10));
   server->sendContent_P(PSTR("\"> seconds.\n\
           </td>\n\
         </tr><tr>\n\
@@ -225,10 +243,10 @@ void HydroMonitorGrowlight::settingsHtml(ESP8266WebServer * server) {
             Time after which the growlight may be swiched on:\n\
           </td><td>\n\
             <input type=\"number\" step=\"1\" name=\"growlight_on_hour\" min=\"0\" max=\"23\" size=\"2\" value=\""));
-  server->sendContent(settings.onHour);
+  server->sendContent(itoa(settings.onHour, buff, 10));
   server->sendContent_P(PSTR("\"> :\n\
             <input type=\"number\" step=\"1\" name=\"growlight_on_minute\" min=\"0\" max=\"59\" size=\"2\" value=\""));
-  server->sendContent(settings.onMinute);
+  server->sendContent(itoa(settings.onMinute, buff, 10));
   server->sendContent_P(PSTR("\">\n\
           </td>\n\
         </tr><tr>\n\
@@ -236,10 +254,10 @@ void HydroMonitorGrowlight::settingsHtml(ESP8266WebServer * server) {
             Time after which the growlight must be swiched off:\n\
           </td><td>\n\
             <input type=\"number\" step=\"1\" name=\"growlight_off_hour\" min=\"0\" max=\"23\" size=\"2\" value=\""));
-  server->sendContent(settings.offHour);
+  server->sendContent(itoa(settings.offHour, buff, 10));
   server->sendContent_P(PSTR("\"> :\n\
             <input type=\"number\" step=\"1\" name=\"growlight_off_minute\" min=\"0\" max=\"59\" size=\"2\" value=\""));
-  server->sendContent(settings.offMinute);
+  server->sendContent(itoa(settings.offMinute, buff, 10));
   server->sendContent_P(PSTR("\">\
           </td>\n\
         </tr><tr>\n\
@@ -262,7 +280,7 @@ void HydroMonitorGrowlight::settingsHtml(ESP8266WebServer * server) {
     server->sendContent_P(PSTR("manual, "));
   }
   else {
-    server->sendContent_P(PSTR("automatic, ");
+    server->sendContent_P(PSTR("automatic, "));
   }
   if (sensorData->growlight) {
     server->sendContent_P(PSTR("on."));
@@ -285,24 +303,25 @@ void HydroMonitorGrowlight::settingsHtml(ESP8266WebServer * server) {
    The sensor settings as JSON.
 */
 bool HydroMonitorGrowlight::settingsJSON(ESP8266WebServer * server) {
+  char buff[10];
   server->sendContent_P(PSTR("  \"growlight\": {\n"
                              "    \"growlight_switch_brightness\":\""));
-  server->sendContent(settings.switchBrightness);
+  server->sendContent(itoa(settings.switchBrightness, buff, 10));
   server->sendContent_P(PSTR("\",\n"
                              "    \"growlight_switch_delay\":\""));
-  server->sendContent(settings.switchDelay);
+  server->sendContent(itoa(settings.switchDelay, buff, 10));
   server->sendContent_P(PSTR("\",\n"
                              "    \"growlight_on_hour\":\""));
-  server->sendContent(settings.onHour);
+  server->sendContent(itoa(settings.onHour, buff, 10));
   server->sendContent_P(PSTR("\",\n"
                              "    \"growlight_on_minute\":\""));
-  server->sendContent(settings.onMinute);
+  server->sendContent(itoa(settings.onMinute, buff, 10));
   server->sendContent_P(PSTR("\",\n"
                              "    \"growlight_off_hour\":\""));
-  server->sendContent(settings.offHour);
+  server->sendContent(itoa(settings.offHour, buff, 10));
   server->sendContent_P(PSTR("\",\n"
                              "    \"growlight_off_minute\":\""));
-  server->sendContent(settings.offMinute);
+  server->sendContent(itoa(settings.offMinute, buff, 10));
   server->sendContent_P(PSTR("\"\n"
                              "  }"));
   return true;
@@ -311,61 +330,72 @@ bool HydroMonitorGrowlight::settingsJSON(ESP8266WebServer * server) {
 /*
    Update the settings for this sensor, if any.
 */
-void HydroMonitorGrowlight::updateSettings(String keys[], String values[], uint8_t nArgs) {
-  for (uint8_t i = 0; i < nArgs; i++) {
-    if (keys[i] == "growlight_switch_brightness") {
-      if (core.isNumeric(values[i])) {
-        uint32_t val = values[i].toInt();
-        if (val < 65536) settings.switchBrightness = val;
+void HydroMonitorGrowlight::updateSettings(ESP8266WebServer *server) {
+  for (uint8_t i = 0; i < server->args(); i++) {
+    if (server->argName(i) == "growlight_switch_brightness") {
+      if (core.isNumeric(server->arg(i))) {
+        uint8_t val = server->arg(i).toInt();
+        if (val < 65536) {
+          settings.switchBrightness = val;
+        }
       }
-      continue;
     }
-    if (keys[i] == "growlight_switch_delay") {
-      if (core.isNumeric(values[i])) {
-        uint16_t val = values[i].toInt();
-        if (val > 0) settings.switchDelay = val;
+    else if (server->argName(i) == "growlight_switch_delay") {
+      if (core.isNumeric(server->arg(i))) {
+        uint8_t val = server->arg(i).toInt();
+        settings.switchDelay = val;
       }
-      continue;
+    }    
+    else if (server->argName(i) == "growlight_on_hour") {
+      if (core.isNumeric(server->arg(i))) {
+        uint8_t val = server->arg(i).toInt();
+        if (val < 24) {
+          settings.onHour = val;
+        }
+      }
     }
-    if (keys[i] == "growlight_on_hour") {
-      if (core.isNumeric(values[i])) {
-        uint8_t val = values[i].toInt();
-        if (val <= 23) settings.onHour = val;
+    else if (server->argName(i) == "growlight_on_minute") {
+      if (core.isNumeric(server->arg(i))) {
+        uint8_t val = server->arg(i).toInt();
+        if (val < 60) {
+          settings.onMinute = val;
+        }
       }
-      continue;
     }
-    if (keys[i] == "growlight_on_minute") {
-      if (core.isNumeric(values[i])) {
-        uint8_t val = values[i].toInt();
-        if (val <= 59) settings.onMinute = val;
+    else if (server->argName(i) == "growlight_off_hour") {
+      if (core.isNumeric(server->arg(i))) {
+        uint8_t val = server->arg(i).toInt();
+        if (val < 24) {
+          settings.offHour = val;
+        }
       }
-      continue;
     }
-    if (keys[i] == "growlight_off_hour") {
-      if (core.isNumeric(values[i])) {
-        uint8_t val = values[i].toInt();
-        if (val <= 23) settings.offHour = val;
+    else if (server->argName(i) == "growlight_off_minute") {
+      if (core.isNumeric(server->arg(i))) {
+        uint8_t val = server->arg(i).toInt();
+        if (val < 60) {
+          settings.offMinute = val;
+        }
       }
-      continue;
     }
-    if (keys[i] == "growlight_off_minute") {
-      if (core.isNumeric(values[i])) {
-        uint8_t val = values[i].toInt();
-        if (val >= 0 && val <= 59) settings.offMinute = val;
+    else if (server->argName(i) == "growlight_daylight_automatic") {
+      if (core.isNumeric(server->arg(i))) {
+        uint8_t val = server->arg(i).toInt();
+        if (val == 0) {
+          settings.daylightAutomatic = false;
+        }
+        else {
+          settings.daylightAutomatic = true;
+        }
       }
-      continue;
-    }
-    if (keys[i] == "growlight_daylight_automatic") {
-      if (core.isNumeric(values[i])) {
-        uint8_t val = values[i].toInt();
-        if (val == 0) settings.daylightAutomatic = false;
-        else settings.daylightAutomatic = true;
-      }
-      continue;
     }
   }
-  EEPROM.put(GROWLIGHT_EEPROM, settings);
+#ifdef USE_24LC256_EEPROM
+  sensorData->EEPROM->put(RESERVOIR_EEPROM, settings);
+#else
+  EEPROM.put(RESERVOIR_EEPROM, settings);
   EEPROM.commit();
+#endif
 }
 #endif
 

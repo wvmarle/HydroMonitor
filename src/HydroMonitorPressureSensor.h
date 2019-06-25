@@ -33,10 +33,11 @@ class HydroMonitorPressureSensor: public HydroMonitorSensorBase
 #elif defined(USE_BMP280) || defined(USE_BME280)
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, BME280*);
 #endif
-    void readSensor(void);
+    void readSensor(bool readNow = false);
     void dataHtml(ESP8266WebServer * server);               // Provides html code with the sensor data.
     void settingsHtml(ESP8266WebServer * server);
-    void updateSettings(String[], String[], uint8_t);
+    bool settingsJSON(ESP8266WebServer * server);
+    void updateSettings(ESP8266WebServer * server);
 
   private:
 #ifdef USE_BMP180
@@ -48,7 +49,7 @@ class HydroMonitorPressureSensor: public HydroMonitorSensorBase
     HydroMonitorCore core;
     HydroMonitorCore::SensorData *sensorData;
     HydroMonitorLogging *logging;
-};
+};  
 
 #endif
 

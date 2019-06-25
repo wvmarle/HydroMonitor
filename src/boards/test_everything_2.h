@@ -61,7 +61,7 @@
 #define USE_ADS1115
 
 #define USE_RESERVOIR
-#define RESERVOIR_PCF_PIN
+#define WATER_INLET_PCF_PIN
 
 #endif
 

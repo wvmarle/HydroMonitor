@@ -32,10 +32,11 @@ class HydroMonitorBrightnessSensor: public HydroMonitorSensorBase
 
     HydroMonitorBrightnessSensor(void);
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*);
-    void readSensor(void);
+    void readSensor(bool readNow = false);
     void dataHtml(ESP8266WebServer*);            // Provides html code with the sensor data.
-    void settingsHtml(ESP8266WebServer*);
-    void updateSettings(String[], String[], uint8_t);
+    void settingsHtml(ESP8266WebServer * server);
+    bool settingsJSON(ESP8266WebServer * server);
+    void updateSettings(ESP8266WebServer * server);
 
   private:
     void setSettings(Settings);
