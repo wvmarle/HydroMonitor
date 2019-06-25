@@ -36,7 +36,7 @@
 #define AUX1_MCP17_PIN          0
 #define LEVEL_LIMIT_MCP17_PIN   1
 #define DRAINAGE_MCP17_PIN      2
-#define RESERVOIR_MCP17_PIN     3
+#define WATER_INLET_MCP17_PIN     3
 #define PHMINUS_MCP17_PIN       4
 #define FERTILISER_B_MCP17_PIN  5
 #define FERTILISER_A_MCP17_PIN  6
