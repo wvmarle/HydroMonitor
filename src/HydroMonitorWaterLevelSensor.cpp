@@ -265,7 +265,7 @@ void HydroMonitorWaterLevelSensor::setZero() {
    Measure water level using the DS1603L ultrasound sensor.
 */
 #elif defined(USE_DS1603L)
-void HydroMonitorWaterLevelSensor::readSensor(bool readNow = true) {
+void HydroMonitorWaterLevelSensor::readSensor(bool readNow) {
 
   // Get the water level in cm.
   // Sensor returns the value in mm as uint16_t, we divide this by 10 to get to cm.
@@ -290,7 +290,7 @@ void HydroMonitorWaterLevelSensor::readSensor(bool readNow = true) {
    Measure water level using the MPXV5004 or MP3V5004 (or similar) pressure sensor.
 */
 #elif defined(USE_MPXV5004)
-void HydroMonitorWaterLevelSensor::readSensor(bool readNow = true) {
+void HydroMonitorWaterLevelSensor::readSensor(bool readNow) {
   static uint32_t lastReadSensor = -REFRESH_SENSORS;
   if (millis() - lastReadSensor > REFRESH_SENSORS ||
       readNow) {
@@ -338,7 +338,7 @@ void HydroMonitorWaterLevelSensor::setMax() {
    Measure the water level using three float switches (giving high, medium and low level).
 */
 #elif defined (USE_FLOATSWITCHES)
-void HydroMonitorWaterLevelSensor::readSensor(bool readNow = true) {
+void HydroMonitorWaterLevelSensor::readSensor(bool readNow) {
   static uint32_t lastReadSensor = -REFRESH_SENSORS;
   if (millis() - lastReadSensor > REFRESH_SENSORS ||
       readNow) {
@@ -431,7 +431,6 @@ void HydroMonitorWaterLevelSensor::settingsHtml(ESP8266WebServer * server) {
   server->sendContent_P(PSTR("</tr>\n"));
 }
 
-
 /*
    The settings as JSON.
 */
@@ -471,14 +470,16 @@ void HydroMonitorWaterLevelSensor::dataHtml(ESP8266WebServer * server) {
 }
 
 /*
-   Process the settings from the key/value pairs.
+  Update the settings.
 */
 void HydroMonitorWaterLevelSensor::updateSettings(ESP8266WebServer * server) {
   for (uint8_t i = 0; i < server->args(); i++) {
     if (server->argName(i) == "waterlevel_reservoirheight") {
       if (core.isNumeric(server->arg(i))) {
         float val = server->arg(i).toFloat();
-        if (val > 0 && val <= 200) settings.reservoirHeight = val;
+        if (val > 0 && val <= 200) {
+          settings.reservoirHeight = val;
+        }
       }
     }
   }

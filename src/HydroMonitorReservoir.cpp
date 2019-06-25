@@ -17,36 +17,36 @@ HydroMonitorReservoir::HydroMonitorReservoir() {
    Set up the solenoid, connected to a MCP23017 port expander.
 */
 #ifdef USE_WATERLEVEL_SENSOR
-#ifdef RESERVOIR_MCP17_PIN
+#ifdef WATER_INLET_MCP17_PIN
 void HydroMonitorReservoir::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, Adafruit_MCP23017* mcp23017, HydroMonitorWaterLevelSensor* sens) {
   mcp = mcp23017;
-  mcp->pinMode(RESERVOIR_MCP17_PIN, INPUT);
+  mcp->pinMode(WATER_INLET_MCP17_PIN, INPUT);
   l->writeTrace(F("HydroMonitorReservoir: configured reservoir refill on MCP23017 port expander."));
 
   /*
      Set up the solenoid, connected to a MCP23008 port expander.
   */
-#elif defined(RESERVOIR_MCP_PIN)
+#elif defined(WATER_INLET_MCP_PIN)
 void HydroMonitorReservoir::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l, Adafruit_MCP23008 * mcp23008, HydroMonitorWaterLevelSensor * sens) {
   mcp = mcp23008;
-  mcp->pinMode(RESERVOIR_MCP_PIN, INPUT);
+  mcp->pinMode(WATER_INLET_MCP_PIN, INPUT);
   l->writeTrace(F("HydroMonitorReservoir: configured reservoir refill on MCP23008 port expander."));
 
   /*
      Set up the solenoid, connected to a PCF8574 port expander.
   */
-#elif defined(RESERVOIR_PCF_PIN)
+#elif defined(WATER_INLET_PCF_PIN)
 void HydroMonitorReservoir::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l, PCF857x * pcf, HydroMonitorWaterLevelSensor * sens) {
   pcf8574 = pcf;
-  pcf8574->pinMode(RESERVOIR_PCF_PIN, INPUT);
+  pcf8574->pinMode(WATER_INLET_PCF_PIN, INPUT);
   l->writeTrace(F("HydroMonitorReservoir: configured reservoir refill on PCF8574 port expander."));
 
   /*
      Set up the solenoid, connected to a GPIO port.
   */
-#elif defined(RESERVOIR_PIN)
+#elif defined(WATER_INLET_PIN)
 void HydroMonitorReservoir::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l, HydroMonitorWaterLevelSensor * sens) {
-  pinMode(RESERVOIR_PIN, INPUT);
+  pinMode(WATER_INLET_PIN, INPUT);
   l->writeTrace(F("HydroMonitorReservoir: configured reservoir refill."));
 #endif
   waterLevelSensor = sens;
@@ -54,36 +54,36 @@ void HydroMonitorReservoir::begin(HydroMonitorCore::SensorData * sd, HydroMonito
   initialFillingDone = false;
   lastGoodFill = millis();
 #else                                                       // Not using a waterlevel sensor.
-#ifdef RESERVOIR_MCP17_PIN
+#ifdef WATER_INLET_MCP17_PIN
 void HydroMonitorReservoir::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, Adafruit_MCP23017* mcp23017) {
   mcp = mcp23017;
-  mcp->pinMode(RESERVOIR_MCP17_PIN, INPUT);
+  mcp->pinMode(WATER_INLET_MCP17_PIN, INPUT);
   l->writeTrace(F("HydroMonitorReservoir: configured reservoir refill on MCP23017 port expander."));
 
   /*
      Set up the solenoid, connected to a MCP23008 port expander.
   */
-#elif defined(RESERVOIR_MCP_PIN)
+#elif defined(WATER_INLET_MCP_PIN)
 void HydroMonitorReservoir::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l, Adafruit_MCP23008 * mcp23008) {
   mcp = mcp23008;
-  mcp->pinMode(RESERVOIR_MCP_PIN, INPUT);
+  mcp->pinMode(WATER_INLET_MCP_PIN, INPUT);
   l->writeTrace(F("HydroMonitorReservoir: configured reservoir refill on MCP23008 port expander."));
 
   /*
      Set up the solenoid, connected to a PCF8574 port expander.
   */
-#elif defined(RESERVOIR_PCF_PIN)
+#elif defined(WATER_INLET_PCF_PIN)
 void HydroMonitorReservoir::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l, PCF857x * pcf) {
   pcf8574 = pcf;
-  pcf8574->pinMode(RESERVOIR_PCF_PIN, INPUT);
+  pcf8574->pinMode(WATER_INLET_PCF_PIN, INPUT);
   l->writeTrace(F("HydroMonitorReservoir: configured reservoir refill on PCF8574 port expander."));
 
   /*
      Set up the solenoid, connected to a GPIO port.
   */
-#elif defined(RESERVOIR_PIN)
+#elif defined(WATER_INLET_PIN)
 void HydroMonitorReservoir::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l) {
-  pinMode(RESERVOIR_PIN, INPUT);
+  pinMode(WATER_INLET_PIN, INPUT);
   l->writeTrace(F("HydroMonitorReservoir: configured reservoir refill."));
 #endif
   bitSet(sd->systemStatus, STATUS_RESERVOIR_DRAINED); // We don't know the reservoir level: assume empty & start filling.
@@ -128,7 +128,7 @@ void HydroMonitorReservoir::doReservoir() {
     }
   }
   else {
-    if (mcp->digitalRead(RESERVOIR_MCP17_PIN) == HIGH) {    // It should be pulled low, unless triggered.
+    if (mcp->digitalRead(WATER_INLET_MCP17_PIN) == HIGH) {    // It should be pulled low, unless triggered.
       floatswitchTriggered = true;
     }
   }
@@ -183,13 +183,13 @@ void HydroMonitorReservoir::doReservoir() {
     openValve();
     startAddWater = millis();
     lastLevelCheck = millis();
-    waterLevelSensor->readSensor(readNow = true);
+    waterLevelSensor->readSensor(true);
     logging->writeTrace(F("HydroMonitorReservoir: No water level detected for half a minute, opening water inlet valve for 30 seconds to try and get the water level sensor to react."));
   }
   else if (initialFillingInProgress) {                      // We're trying to add some water to the reservoir.
     if (millis() - lastLevelCheck > 500) {                  // Check the sensor every 0.5 seconds.
       lastLevelCheck += 500;
-      waterLevelSensor->readSensor(readNow = true);
+      waterLevelSensor->readSensor(true);
     }
     if (millis() - startAddWater > 30 * 1000                // After 30 seconds, or:
         || sensorData->waterLevel > 0) {                    // if we actually have a reading, we can stop this.
@@ -202,7 +202,7 @@ void HydroMonitorReservoir::doReservoir() {
     if (bitRead(sensorData->systemStatus, STATUS_FILLING_RESERVOIR)) { // Reservoir is being filled.
       if (millis() - lastLevelCheck > 500) {                // Measure the reservoir fill every 0.5 seconds.
         lastLevelCheck += 500;
-        waterLevelSensor->readSensor(readNow = true);
+        waterLevelSensor->readSensor(true);
       }
       if (sensorData->waterLevel > settings.maxFill) {      // If we have enough water in the reservoir, close the valve.
         closeValve();
@@ -287,35 +287,35 @@ void HydroMonitorReservoir::doReservoir() {
    Also set the pin to INPUT resp. OUTPUT mode: this to allow for reading the float switch, if used.
 */
 void HydroMonitorReservoir::openValve() {
-#ifdef RESERVOIR_PIN
-  pinMode(RESERVOIR_PIN, OUTPUT);
-  digitalWrite(RESERVOIR_PIN, HIGH);
-#elif defined(RESERVOIR_PCF_PIN)
-  pcf8574->pinMode(RESERVOIR_PCF_PIN, OUTPUT);
-  pcf8574->write(RESERVOIR_PCF_PIN, LOW);
-#elif defined(RESERVOIR_MCP_PIN)
-  mcp->pinMode(RESERVOIR_MCP_PIN, OUTPUT);
-  mcp->digitalWrite(RESERVOIR_MCP_PIN, HIGH);
-#elif defined(RESERVOIR_MCP17_PIN)
-  mcp->pinMode(RESERVOIR_MCP17_PIN, OUTPUT);
-  mcp->digitalWrite(RESERVOIR_MCP17_PIN, HIGH);
+#ifdef WATER_INLET_PIN
+  pinMode(WATER_INLET_PIN, OUTPUT);
+  digitalWrite(WATER_INLET_PIN, HIGH);
+#elif defined(WATER_INLET_PCF_PIN)
+  pcf8574->pinMode(WATER_INLET_PCF_PIN, OUTPUT);
+  pcf8574->write(WATER_INLET_PCF_PIN, LOW);
+#elif defined(WATER_INLET_MCP_PIN)
+  mcp->pinMode(WATER_INLET_MCP_PIN, OUTPUT);
+  mcp->digitalWrite(WATER_INLET_MCP_PIN, HIGH);
+#elif defined(WATER_INLET_MCP17_PIN)
+  mcp->pinMode(WATER_INLET_MCP17_PIN, OUTPUT);
+  mcp->digitalWrite(WATER_INLET_MCP17_PIN, HIGH);
 #endif
   bitSet(sensorData->systemStatus, STATUS_FILLING_RESERVOIR);
 }
 
 void HydroMonitorReservoir::closeValve() {
-#ifdef RESERVOIR_PIN
-  digitalWrite(RESERVOIR_PIN, LOW);
-  pinMode(RESERVOIR_PIN, INPUT);
-#elif defined(RESERVOIR_PCF_PIN)
-  pcf8574->write(RESERVOIR_PCF_PIN, HIGH);
-  pcf8574->pinMode(RESERVOIR_PCF_PIN, INPUT);
-#elif defined(RESERVOIR_MCP_PIN)
-  mcp->digitalWrite(RESERVOIR_MCP_PIN, LOW);
-  mcp->pinMode(RESERVOIR_MCP_PIN, INPUT);
-#elif defined(RESERVOIR_MCP17_PIN)
-  mcp->digitalWrite(RESERVOIR_MCP17_PIN, LOW);
-  mcp->pinMode(RESERVOIR_MCP17_PIN, INPUT);
+#ifdef WATER_INLET_PIN
+  digitalWrite(WATER_INLET_PIN, LOW);
+  pinMode(WATER_INLET_PIN, INPUT);
+#elif defined(WATER_INLET_PCF_PIN)
+  pcf8574->write(WATER_INLET_PCF_PIN, HIGH);
+  pcf8574->pinMode(WATER_INLET_PCF_PIN, INPUT);
+#elif defined(WATER_INLET_MCP_PIN)
+  mcp->digitalWrite(WATER_INLET_MCP_PIN, LOW);
+  mcp->pinMode(WATER_INLET_MCP_PIN, INPUT);
+#elif defined(WATER_INLET_MCP17_PIN)
+  mcp->digitalWrite(WATER_INLET_MCP17_PIN, LOW);
+  mcp->pinMode(WATER_INLET_MCP17_PIN, INPUT);
 #endif
   bitClear(sensorData->systemStatus, STATUS_FILLING_RESERVOIR);
 }
@@ -332,12 +332,12 @@ void HydroMonitorReservoir::settingsHtml(ESP8266WebServer * server) {
         <td>Minimum fill level:</td>\n\
         <td><input type=\"number\" step=\"1\" name=\"reservoir_minfill\" value=\""));
   char buff[5];
-  server->sendContent(itoa(buff, settings.minFill, 10);
+  server->sendContent(itoa(settings.minFill, buff, 10));
   server->sendContent_P(PSTR("\"> %.</td>\n\
       </tr><tr>\n\
         <td>Maximum fill level:</td>\n\
         <td><input type=\"number\" step=\"1\" name=\"reservoir_maxfill\" value=\""));
-  server->sendContent(itoa(buff, settings.maxFill, 10);
+  server->sendContent(itoa(settings.maxFill, buff, 10));
   server->sendContent_P(PSTR("\"> %.</td>\n\
       </tr>\n"));
 #endif
@@ -351,10 +351,10 @@ bool HydroMonitorReservoir::settingsJSON(ESP8266WebServer * server) {
   server->sendContent_P(PSTR("  \"reservoir\":\ {\n"
                              "    \"reservoir_minfill\":\""));
   char buff[5];
-  server->sendContent(itoa(buff, settings.minFill, 10);
+  server->sendContent(itoa(settings.minFill, buff, 10));
   server->sendContent_P(PSTR("\",\n"
                              "    \"reservoir_maxfill\":\""));
-  server->sendContent(itoa(buff, settings.maxFill, 10);
+  server->sendContent(itoa(settings.maxFill, buff, 10));
   server->sendContent_P(PSTR("\"\n"
                              "  }"));
   return true;
@@ -366,20 +366,26 @@ bool HydroMonitorReservoir::settingsJSON(ESP8266WebServer * server) {
 /*
    Process the settings from the key/value pairs.
 */
-void HydroMonitorReservoir::updateSettings(String keys[], String values[], uint8_t nArgs) {
-  for (uint8_t i = 0; i < nArgs; i++) {
-    if (keys[i] == "reservoir_minfill") {
-      if (core.isNumeric(values[i])) {
-        uint8_t val = values[i].toInt();
-        if (val <= 99) settings.minFill = val; // maxLevel must be larger, so 100% is not allowed.
+void HydroMonitorReservoir::updateSettings(ESP8266WebServer * server) {
+  for (uint8_t i = 0; i < server->args(); i++) {
+    if (server->argName(i) == "reservoir_minfill") {
+      if (core.isNumeric(server->arg(i))) {
+        uint8_t val = server->arg(i).toInt();
+        if (val <= 99) {
+          settings.minFill = val;
+        }
       }
     }
-  }
-  for (uint8_t i = 0; i < nArgs; i++) {
-    if (keys[i] == "reservoir_minfill") {
-      if (core.isNumeric(values[i])) {
-        uint8_t val = values[i].toInt();
-        if (val > settings.minFill && val <= 100) settings.minFill = val;
+    if (server->argName(i) == "reservoir_maxfill") {
+      if (core.isNumeric(server->arg(i))) {
+        uint8_t val = server->arg(i).toInt();
+        if (val <= 99) {
+          if (val > settings.minFill)
+            settings.maxFill = val;
+        }
+        else {
+          settings.maxFill = settings.minFill + 1;
+        }
       }
     }
   }

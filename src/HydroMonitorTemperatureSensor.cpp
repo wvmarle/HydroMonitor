@@ -13,7 +13,7 @@ HydroMonitorTemperatureSensor::HydroMonitorTemperatureSensor () {
 /*
    Configure the sensor as DHT22.
 */
-#ifdef DHT22_PIN
+#ifdef USE_DHT22
 void HydroMonitorTemperatureSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, DHT22 *dht) {
   dht22 = dht;
   logging = l;
@@ -54,21 +54,25 @@ void HydroMonitorTemperatureSensor::begin(HydroMonitorCore::SensorData * sd, Hyd
 /*
    Take a measurement from the sensor.
 */
-void HydroMonitorTemperatureSensor::readSensor() {
+void HydroMonitorTemperatureSensor::readSensor(bool readNow) {
+  static uint32_t lastReadSensor = -REFRESH_SENSORS;
+  if (millis() - lastReadSensor > REFRESH_SENSORS ||
+      readNow) {
 #if defined(USE_BMP280) || defined(USE_BME280)
-  sensorData->temperature = (float)bmp280->readTemperature();
+    sensorData->temperature = (float)bmp280->readTemperature();
 #elif defined(USE_BMP180)
-  sensorData->temperature = (float)bmp180->readTemperature();
+    sensorData->temperature = (float)bmp180->readTemperature();
 #elif defined(USE_DHT22)
-  sensorData->temperature = (float)dht22->readTemperature();
+    sensorData->temperature = (float)dht22->readTemperature();
 #endif
-  if ((sensorData->temperature > 0 && sensorData->temperature < 10) ||
-      sensorData->temperature > 60 &&
-      millis() - lastWarned > WARNING_INTERVAL) {
-    buff[128];
-    sprintf_P(buff, PSTR("HydroMonitorTemperatureSensor: unusual temperature of %2.2f°C measured."), sensorData->temperature)
-    logging.writeWarning(buff);
-    lastWarned = millis();
+    if ((sensorData->temperature > 0 && sensorData->temperature < 10) ||
+        sensorData->temperature > 60 &&
+        millis() - lastWarned > WARNING_INTERVAL) {
+      char buff[128];
+      sprintf_P(buff, PSTR("HydroMonitorTemperatureSensor: unusual temperature of %2.2f°C measured."), sensorData->temperature);
+      logging->writeWarning(buff);
+      lastWarned = millis();
+    }
   }
 }
 

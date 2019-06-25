@@ -15,11 +15,7 @@ HydroMonitorpHSensor::HydroMonitorpHSensor() {
    This function is for when the connector is connected to an external ADS1115 ADC.
 */
 #ifdef PH_SENSOR_ADS_PIN
-#ifdef PH_POS_MCP_PIN
-void HydroMonitorpHSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, Adafruit_ADS1115 *ads, Adafruit_MCP23008 *mcp) {
-#else
 void HydroMonitorpHSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, Adafruit_ADS1115 *ads) {
-#endif
   ads1115 = ads;
   l->writeTrace(F("HydroMonitorpHSensor: configured pH sensor on ADS port expander."));
 
@@ -27,29 +23,12 @@ void HydroMonitorpHSensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorL
      Setup the sensor.
      This function is for when the connector is connected to the internal ADC.
   */
-#elif defined(PH_SENSOR_PIN)
-#ifdef PH_POS_MCP_PIN
-void HydroMonitorpHSensor::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l, Adafruit_MCP23008 * mcp) {
-#else
+#elif defined(PH_SENSOR_PIN) || defined(USE_ISOLATED_SENSOR_BOARD)
 void HydroMonitorpHSensor::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l) {
-#endif
   l->writeTrace(F("HydroMonitorpHSensor: configured pH sensor."));
 #endif
   sensorData = sd;
   logging = l;
-
-#ifdef PH_POS_MCP_PIN
-  mcp23008 = mcp;
-  mcp23008->pinMode(PH_POS_MCP_PIN, OUTPUT);
-  mcp23008->pinMode(PH_GND_MCP_PIN, OUTPUT);
-  mcp23008->digitalWrite(PH_POS_MCP_PIN, HIGH);
-  mcp23008->digitalWrite(PH_GND_MCP_PIN, LOW);
-#elif defined (PH_POS_PIN)
-  pinMode(PH_POS_PIN, OUTPUT);
-  pinMode(PH_GND_PIN, OUTPUT);
-  digitalWrite(PH_POS_PIN, HIGH);
-  digitalWrite(PH_GND_PIN, LOW);
-#endif
   if (PH_SENSOR_EEPROM > 0)
 #ifdef USE_24LC256_EEPROM
     sensorData->EEPROM->get(PH_SENSOR_EEPROM, settings);

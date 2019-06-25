@@ -12,7 +12,7 @@
 #include <HydroMonitorLogging.h>
 #include <HydroMonitorSensorBase.h>
 
-#ifdef DHT22_PIN
+#ifdef USE_DHT22
 #include <DHT22.h>
 #endif
 #ifdef USE_BMP180
@@ -32,7 +32,7 @@ class HydroMonitorTemperatureSensor: public HydroMonitorSensorBase
     HydroMonitorTemperatureSensor(void);
     
     // The functions required for all sensors.
-#ifdef DHT22_PIN
+#ifdef USE_DHT22
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging *logging, DHT22*);   // Use the DHT22 sensor.
 #endif
 #ifdef USE_BMP180
@@ -40,7 +40,7 @@ class HydroMonitorTemperatureSensor: public HydroMonitorSensorBase
 #elif defined(USE_BMP280) || defined(USE_BME280)
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging *logging, BME280*);  // Use the BMP280 or BME280 sensor.
 #endif
-    void readSensor(void);
+    void readSensor(bool readNow = false);
     void dataHtml(ESP8266WebServer*);            // Provides html code with the sensor data.
     void settingsHtml(ESP8266WebServer*);
     bool settingsJSON(ESP8266WebServer*);
@@ -48,7 +48,7 @@ class HydroMonitorTemperatureSensor: public HydroMonitorSensorBase
 
   private:
     Settings settings;
-#ifdef DHT22_PIN
+#ifdef USE_DHT22
     DHT22 *dht22;
 #endif
 #ifdef USE_BMP180

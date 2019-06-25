@@ -14,6 +14,8 @@
 #include <pcf8574_esp.h>
 #elif defined(GROWLIGHT_MCP_PIN)
 #include <Adafruit_MCP23008.h>
+#elif defined(GROWLIGHT_MCP17_PIN)
+#include <Adafruit_MCP23017.h>
 #endif
 #include <TimeLib.h>
 #include <HydroMonitorLogging.h>
@@ -42,6 +44,8 @@ class HydroMonitorGrowlight
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, PCF857x*);
 #elif defined(GROWLIGHT_MCP_PIN)
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, Adafruit_MCP23008*);
+#elif defined(GROWLIGHT_MCP17_PIN)
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, Adafruit_MCP23017*);
 #endif
     void checkGrowlight();                                  // Switches the growlight on/off based on given lux value, taking time delay and on/off hours into account.
     void on(void);                                          // Switches the growlight on, regardless of lux level or time of day. Disables automatic control.
@@ -49,7 +53,7 @@ class HydroMonitorGrowlight
     void automatic(void);                                   // Set grow light to automatic control.
     bool settingsJSON(ESP8266WebServer *);                  // Provides json code with the sensor data.
     void settingsHtml(ESP8266WebServer *);                  // Provides html code with the sensor data.
-    void updateSettings(String[], String[], uint8_t);
+    void updateSettings(ESP8266WebServer *);
 
   private:
 
@@ -58,6 +62,8 @@ class HydroMonitorGrowlight
     PCF857x *pcf8574;
 #elif defined(GROWLIGHT_MCP_PIN)
     Adafruit_MCP23008 *mcp23008;
+#elif defined(GROWLIGHT_MCP17_PIN)
+    Adafruit_MCP23017 *mcp23017;
 #endif
 
     // Timing related variables.

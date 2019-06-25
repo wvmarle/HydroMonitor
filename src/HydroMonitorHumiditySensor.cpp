@@ -13,7 +13,7 @@ HydroMonitorHumiditySensor::HydroMonitorHumiditySensor () {
 /*
    Configure the sensor as DHT22.
 */
-#ifdef DHT22_PIN
+#ifdef USE_DHT22
 void HydroMonitorHumiditySensor::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLogging *l, DHT22 *dht) {
   dht22 = dht;
   l->writeInfo(F("HydroMonitorHumiditySensor: configured DHT22 sensor."));
@@ -37,12 +37,16 @@ void HydroMonitorHumiditySensor::begin(HydroMonitorCore::SensorData * sd, HydroM
 /*
    Take a measurement from the sensor.
 */
-void HydroMonitorHumiditySensor::readSensor() {
+void HydroMonitorHumiditySensor::readSensor(bool readNow) {
+  static uint32_t lastReadSensor = -REFRESH_SENSORS;
+  if (millis() - lastReadSensor > REFRESH_SENSORS ||
+      readNow) {
 #ifdef USE_BME280
-  sensorData->humidity = (float)bme280->readHumidity();
-#elif defined(DHT22_PIN)
-  sensorData->humidity = (float)dht22->readHumidity();
+    sensorData->humidity = (float)bme280->readHumidity();
+#elif defined(USE_DHT22)
+    sensorData->humidity = (float)dht22->readHumidity();
 #endif
+  }
 }
 
 /*
@@ -67,7 +71,13 @@ float HydroMonitorHumiditySensor::calcDewpoint() {
    The sensor settings as html.
 */
 void HydroMonitorHumiditySensor::settingsHtml(ESP8266WebServer * server) {
-  return "";
+}
+
+/*
+   The settings as JSON.
+*/
+bool HydroMonitorHumiditySensor::settingsJSON(ESP8266WebServer *server) {
+  return false;
 }
 
 /*
@@ -92,7 +102,7 @@ void HydroMonitorHumiditySensor::dataHtml(ESP8266WebServer * server) {
 /*
    Update the settings for this sensor, if any.
 */
-void HydroMonitorHumiditySensor::updateSettings(String keys[], String values[], uint8_t nArgs) {
+void HydroMonitorHumiditySensor::updateSettings(ESP8266WebServer *server) {
 }
 #endif
 

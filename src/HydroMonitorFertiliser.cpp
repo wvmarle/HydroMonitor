@@ -206,6 +206,8 @@ void HydroMonitorFertiliser::doFertiliser() {
     logging->writeInfo(buff);
     runATime = addVolume / settings.pumpASpeed * 60 * 1000; // the time in milliseconds pump A has to run.
     runBTime = addVolume / settings.pumpBSpeed * 60 * 1000; // the time in milliseconds pump B has to run.
+    sprintf_P(buff, PSTR("HydroMonitorFertiliser: going to run pump A for %lu ms and pump B for %lu ms."), runATime, runBTime);
+    logging->writeTrace(buff);
     lastTimeAdded = millis();                               // Time we last added any fertiliser - which is what we're going to do now.
     originalEC = sensorData->EC;                            // Try to detect whether the EC really came up as expected.
   }

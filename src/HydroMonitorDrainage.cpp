@@ -107,7 +107,7 @@ void HydroMonitorDrainage::doDrainage() {
        drainageState == DRAINAGE_MANUAL_DRAINING_RUNNING ||
        drainageState == DRAINAGE_DRAIN_EXCESS_RUNNING)) {
     lastLevelCheck += 500;
-    waterLevelSensor->readSensor(readNow = true);
+    waterLevelSensor->readSensor(true);
   }
 
   if (sensorData->waterLevel < 95) {                        // If level >95% it's too high and we have to drain some water now.

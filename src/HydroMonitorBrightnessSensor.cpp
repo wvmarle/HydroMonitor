@@ -23,9 +23,9 @@ void HydroMonitorBrightnessSensor::begin(HydroMonitorCore::SensorData *sd, Hydro
 
   logging = l;
   sensorData = sd;
-  if (BRIGHTNESS_SENSOR_EEPROM > 0)
+  if (BRIGHTNESS_SENSOR_EEPROM > 0) {
     EEPROM.get(BRIGHTNESS_SENSOR_EEPROM, settings);
-  return;
+  }
 }
 
 /*
@@ -33,60 +33,70 @@ void HydroMonitorBrightnessSensor::begin(HydroMonitorCore::SensorData *sd, Hydro
 
    Returns the current lux value, or -1 if sensor is not found.
 */
-void HydroMonitorBrightnessSensor::readSensor() {
+void HydroMonitorBrightnessSensor::readSensor(bool readNow) {
+  static uint32_t lastReadSensor = -REFRESH_SENSORS;
+  if (millis() - lastReadSensor > REFRESH_SENSORS ||
+      readNow) {
 
-  // Check whether the sensor is connected and initialised.
-  if (!brightnessSensorPresent) {
+    // Check whether the sensor is connected and initialised.
+    if (!brightnessSensorPresent) {
 
-    // Try whether we have one now, it never hurts to check.
-    brightnessSensorPresent = tsl.begin();
+      // Try whether we have one now, it never hurts to check.
+      brightnessSensorPresent = tsl.begin();
 
 #if defined(USE_TSL2561)
-    // If we just detected a sensor, set it up.
+      // If we just detected a sensor, set it up.
+      if (brightnessSensorPresent) {
+        tsl.enableAutoRange(true);
+        tsl.setIntegrationTime(TSL2561_INTEGRATIONTIME_101MS); // medium fast and medium resolution - good for us
+      }
+#endif
+    }
     if (brightnessSensorPresent) {
-      tsl.enableAutoRange(true);
-      tsl.setIntegrationTime(TSL2561_INTEGRATIONTIME_101MS); // medium fast and medium resolution - good for us
-    }
-#endif
-  }
-  if (brightnessSensorPresent) {
 
 #if defined(USE_TSL2561)
-    sensors_event_t event;
-    tsl.getEvent(&event);       // Get sensor event.
-    sensorData->brightness = event.light;   // Read the current value from the sensor.
-    if (sensorData->brightness == 65536) {  // The sensor is either saturated or has been disconnected.
-      brightnessSensorPresent = tsl.begin(); // this should return false if not connected.
-      if (!brightnessSensorPresent) sensorData->brightness = -1;
-    }
+      sensors_event_t event;
+      tsl.getEvent(&event);       // Get sensor event.
+      sensorData->brightness = event.light;   // Read the current value from the sensor.
+      if (sensorData->brightness == 65536) {  // The sensor is either saturated or has been disconnected.
+        brightnessSensorPresent = tsl.begin(); // this should return false if not connected.
+        if (!brightnessSensorPresent) sensorData->brightness = -1;
+      }
 #elif defined(USE_TSL2591)
-    sensorData->brightness = tsl.readSensor();
+      sensorData->brightness = tsl.readSensor();
 #endif
+    }
   }
-  return;
 }
 
 /*
    The html code for the sensor specific settings.
 */
 void HydroMonitorBrightnessSensor::settingsHtml(ESP8266WebServer *server) {
-  return;
+}
+
+/*
+   The settings as JSON.
+*/
+bool HydroMonitorBrightnessSensor::settingsJSON(ESP8266WebServer *server) {
+  return false;
 }
 
 /*
    The html code for the sensor data.
 */
 void HydroMonitorBrightnessSensor::dataHtml(ESP8266WebServer *server) {
-  server.sendContent_P(F("<tr>\n\
+  server->sendContent_P(PSTR("<tr>\n\
     <td>Brightness</td>\n\
     <td>"));
   if (sensorData->brightness < 0) {
-    server.sendContent_P(F("Sensor not connected.</td>\n\
+    server->sendContent_P(PSTR("Sensor not connected.</td>\n\
   </tr>"));
   }
   else {
-    server.sendContent(sensorData->brightness);
-    server.sendContent_P(F(" lux.</td>\n\
+    char buff[10];
+    server->sendContent(itoa(sensorData->brightness, buff, 10));
+    server->sendContent_P(PSTR(" lux.</td>\n\
   </tr>"));
   }
 }
@@ -94,8 +104,7 @@ void HydroMonitorBrightnessSensor::dataHtml(ESP8266WebServer *server) {
 /*
    Update the settings for this sensor, if any.
 */
-void HydroMonitorBrightnessSensor::updateSettings(String keys[], String values[], uint8_t nArgs) {
-  return;
+void HydroMonitorBrightnessSensor::updateSettings(ESP8266WebServer *server) {
 }
 #endif
 

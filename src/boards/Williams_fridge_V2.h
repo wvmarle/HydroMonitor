@@ -3,8 +3,8 @@
 
 // Defaults for this individual board.
 #define OTA_PASSWORD "esp"
-#define MYSQL_USERNAME "sql_username"             // MySQL user name. It's a string, so needs the quote marks.
-#define MYSQL_PASSWORD "sql_password"             // MySQL password. It's a string, so needs the quote marks.
+//#define MYSQL_USERNAME "sql_username"             // MySQL user name. It's a string, so needs the quote marks.
+//#define MYSQL_PASSWORD "sql_password"             // MySQL password. It's a string, so needs the quote marks.
 
 #define LOGGING_USERNAME "sql_username"           // MySQL user name. It's a string, so needs the quote marks.
 #define LOGGING_PASSWORD "sql_password"           // MySQL password. It's a string, so needs the quote marks.

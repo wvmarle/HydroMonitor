@@ -205,4 +205,3 @@ void HydroMonitorWaterTempSensor::dataHtml(ESP8266WebServer * server) {
 void HydroMonitorWaterTempSensor::updateSettings(ESP8266WebServer * server) {
 }
 #endif
-
