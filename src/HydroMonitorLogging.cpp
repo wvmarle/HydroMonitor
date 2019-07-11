@@ -466,12 +466,12 @@ void HydroMonitorLogging::writeLog(uint8_t loglevel) {
     fOld.seek(idx, SeekSet);                                // Start copying from here.
     while (idx < fOld.size() - MAX_MESSAGE_SIZE) {          // Copy MAX_MESSAGE_SIZE bytes at a time - that fits in buff - until less than that left in the file.
       fOld.readBytes(buff, MAX_MESSAGE_SIZE);
-      fNew.write(buff, MAX_MESSAGE_SIZE);
+      fNew.write((uint8_t*)buff, MAX_MESSAGE_SIZE);
       idx += MAX_MESSAGE_SIZE;
     }
     uint16_t lastBytes = fOld.size() - idx;                 // Calculate the remainder of bytes to copy.
     fOld.readBytes(buff, lastBytes);
-    fNew.write(buff, lastBytes);
+    fNew.write((uint8_t*)buff, lastBytes);
     fNew.close();
   }
   fOld.close();
