@@ -20,16 +20,19 @@
 //#define LOGLEVEL LOG_ERROR
 //#define LOGLEVEL LOG_OFF
 
-#define USE_EC_SENSOR
-#define USE_PH_SENSOR
-//#define USE_WATERLEVEL_SENSOR
-#define USE_WATERTEMPERATURE_SENSOR
+#define USE_EC_SENSOR                                       // Sensor #1
+#define USE_PH_SENSOR                                       // #2
+#define USE_WATERTEMPERATURE_SENSOR                         // #3
 #define USE_DS18B20
+#define USE_ISOLATED_SENSOR_BOARD                           // #4
+//#define USE_WATERLEVEL_SENSOR                               // #5
+
+#define N_SENSORS 4
+
 #define USE_FERTILISER
 #define USE_PHMINUS
 #define USE_RESERVOIR
 #define USE_DRAINAGE_PUMP
-#define USE_ISOLATED_SENSOR_BOARD
 
 #define LOG_MYSQL
 

@@ -140,6 +140,7 @@ void HydroMonitorWaterTempSensor::readSensor(bool readNow) {
 #elif defined(USE_ISOLATED_SENSOR_BOARD)
   // Nothing to do here.
 #endif
+
   if (millis() - lastWarned > WARNING_INTERVAL &&
       (sensorData->waterTemp < 5 || sensorData->waterTemp > 70)) {
     lastWarned = millis();
