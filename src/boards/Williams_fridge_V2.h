@@ -31,6 +31,8 @@
 #define USE_DRAINAGE_PUMP
 #define USE_ISOLATED_SENSOR_BOARD
 
+#define N_SENSORS 3
+
 #define LOG_MYSQL
 
 #define AUX1_MCP17_PIN          0
