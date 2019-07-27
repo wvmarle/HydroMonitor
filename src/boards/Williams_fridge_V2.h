@@ -34,8 +34,6 @@
 #define USE_RESERVOIR
 #define USE_DRAINAGE_PUMP
 
-#define N_SENSORS 3
-
 #define LOG_MYSQL
 
 #define AUX1_MCP17_PIN          0
