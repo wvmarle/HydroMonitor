@@ -14,7 +14,7 @@
 HydroMonitorFertiliser::HydroMonitorFertiliser() {
   runBTime = 0;
   runATime = 0;
-  fertiliserDelay = 30 * 60 * 1000; // Half an hour delay after adding fertiliser, to allow the system to mix properly.
+  fertiliserDelay = 12 * 60 * 60 * 1000; // 12 hours delay after adding fertiliser, to allow the system to mix properly.
   lastTimeAdded = -fertiliserDelay;
   addA = false;
   addB = false;
