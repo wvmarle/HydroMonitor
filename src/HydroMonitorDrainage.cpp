@@ -251,6 +251,7 @@ void HydroMonitorDrainage::doDrainage() {
 
     case DRAINAGE_DRAIN_EXCESS:
       switchPumpOn();
+      drainageStart = millis();
       drainageState = DRAINAGE_DRAIN_EXCESS_RUNNING;
       break;
 
