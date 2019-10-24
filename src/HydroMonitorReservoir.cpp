@@ -128,7 +128,7 @@ void HydroMonitorReservoir::doReservoir() {
     }
   }
   else {
-    if (mcp->digitalRead(WATER_INLET_MCP17_PIN) == HIGH) {    // It should be pulled low, unless triggered.
+    if (mcp->digitalRead(WATER_INLET_MCP17_PIN) == HIGH) {  // It should be pulled low, unless the float switch is triggered.
       floatswitchTriggered = true;
     }
   }

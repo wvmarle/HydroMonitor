@@ -88,6 +88,7 @@ void HydroMonitorDrainage::doDrainage() {
       drainageState = DRAINAGE_DRAIN_EXCESS;
       logging->writeInfo(F("HydroMonitorDrainage: immediate drainage requested."));
       settings.latestDrainage = now();
+      drainageStart = millis();    
     }
   }
   if (now() > 1546300800) {                                 // If we have a sensible time already,
