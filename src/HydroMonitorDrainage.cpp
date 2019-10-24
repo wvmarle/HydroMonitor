@@ -252,6 +252,7 @@ void HydroMonitorDrainage::doDrainage() {
 
     case DRAINAGE_DRAIN_EXCESS:
       switchPumpOn();
+      drainageStart = millis();
       drainageState = DRAINAGE_DRAIN_EXCESS_RUNNING;
       break;
 
@@ -271,7 +272,7 @@ void HydroMonitorDrainage::doDrainage() {
         }
       }
 #else
-      if (millis() - drainageStart > (uint32_t)20 * 60 * 1000) {
+      if (millis() - drainageStart > (uint32_t)8 * 60 * 1000) {
         lastDrainageRun = millis();
         drainageState = DRAINAGE_IDLE;
         bitClear(sensorData->systemStatus, STATUS_MAINTENANCE);
