@@ -201,7 +201,7 @@ void HydroMonitorFertiliser::doFertiliser() {
       addVolume *= (sensorData->targetEC - sensorData->EC); // correct addVolume accordingly.
     }
     logging->writeTrace(F("HydroMonitorFertiliser: 10 minutes of too low EC; have to start adding fertiliser."));
-    char buff[70];
+    char buff[90];
     sprintf_P(buff, PSTR("HydroMonitorFertiliser: adding %3.1f ml of fertiliser solution."), addVolume);
     logging->writeInfo(buff);
     runATime = addVolume / settings.pumpASpeed * 60 * 1000; // the time in milliseconds pump A has to run.
