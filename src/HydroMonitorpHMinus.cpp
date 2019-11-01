@@ -144,8 +144,8 @@ void HydroMonitorpHMinus::dopH() {
   // Check whether we have a pH value that's less than 0.2 points above target value,
   // or whether the current EC itself is too low.
   // Keep the time we saw this good value.
-  else if (sensorData->pH - sensorData->targetpH < 0.2 ||
-           sensorData->EC - sensorData->targetEC < 0.1) {
+  else if (sensorData->pH - sensorData->targetpH < 0.2 ||   // Measured pH is less than 0.2 points higher than the target.
+           sensorData->EC - sensorData->targetEC < -0.3) {  // Measured EC is more than 0.3 points lower than the target.
     lastGoodpH = millis();
     return;
   }
@@ -153,8 +153,11 @@ void HydroMonitorpHMinus::dopH() {
   // If more than 10 minutes since lastGoodpH, add 0.2 pH points worth of pH-minus.
   else if (millis() - lastGoodpH > 10 * 60 * 1000) {
     float addVolume = 0.2 * sensorData->solutionVolume * sensorData->pHMinusConcentration; // The amount of fertiliser in ml to be added.
-    runTime = addVolume / settings.pumpSpeed * 60 * 1000;   // the time in milliseconds pump A has to run.
+    runTime = (addVolume / settings.pumpSpeed) * 60 * 1000; // the time in milliseconds pump A has to run.
     logging->writeTrace(F("HydroMonitorpHMinus: 10 minutes of too high pH; start adding pH-minus."));
+    char buff[90];
+    sprintf_P(buff, PSTR("HydroMonitorpHMinus: running pump for %i ms to add %3.1f ml of pH- solution."), runTime, addVolume);
+    logging->writeInfo(buff);
     switchPumpOn();                                         // Start the pump.
     running = true;                                         // Flag it's running.
     startTime = millis();                                   // Keep track of since when it's running.

@@ -24,7 +24,7 @@ class HydroMonitorPressureSensor: public HydroMonitorSensorBase
   public:
 
     struct Settings {
-      int16_t altitude;
+      float altitude;
     };
 
     HydroMonitorPressureSensor(void);
