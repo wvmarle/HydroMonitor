@@ -56,7 +56,7 @@ void HydroMonitorPressureSensor::settingsHtml(ESP8266WebServer * server) {
         <td>Elevation:</td>\n\
         <td><input type=\"number\" step=\"0.1\" name=\"pressure_altitude\" value=\""));
   char buff[10];
-  sprintf_P(buff, PSTR("%6.1f"), settings.altitude);
+  sprintf_P(buff, PSTR("%.1f"), settings.altitude);
   server->sendContent(buff);
   server->sendContent_P(PSTR("\"> meters above sealevel.</td>\n\
       </tr>\n"));

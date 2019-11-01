@@ -32,7 +32,7 @@
 #define USE_FERTILISER
 #define USE_PHMINUS
 #define USE_RESERVOIR
-#define USE_DRAINAGE_PUMP
+#define USE_DRAINAGE
 
 #define LOG_MYSQL
 

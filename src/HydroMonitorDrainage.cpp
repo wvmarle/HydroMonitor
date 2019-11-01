@@ -1,6 +1,6 @@
 #include <HydroMonitorDrainage.h>
 
-#ifdef USE_DRAINAGE_PUMP
+#ifdef USE_DRAINAGE
 
 /*
    The constructor.
@@ -9,7 +9,7 @@ HydroMonitorDrainage::HydroMonitorDrainage() {
 }
 
 /*
-   Set up the drainage pump.
+   Set up the drainage system.
 */
 #ifdef USE_WATERLEVEL_SENSOR
 #ifdef DRAINAGE_MCP17_PIN         // Connected to MCP23017 port expander.
