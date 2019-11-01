@@ -83,15 +83,14 @@ void HydroMonitorpHSensor::readSensor(bool readNow) {
     if (millis() - lastWarned > WARNING_INTERVAL) {
       if (sensorData->pH > 9 || sensorData->pH < 4) {
         lastWarned = millis();
-        char message[110];
+        char message[70];
         sprintf_P(message, PSTR("pHSensor 01: unusual pH level measured: %2.2f. Check sensor."), sensorData->pH);
         logging->writeWarning(message);
       }
       else if (sensorData->pH > sensorData->targetpH + 1) {
         lastWarned = millis();
-        char message[120];
-        sprintf_P(message, PSTR("pHSensor 02: pH level is too high; correction with pH adjuster is urgently needed.\n"
-                                "Target set: %2.2f, current pH: %2.2f."), sensorData->targetpH, sensorData->pH);
+        char message[140];
+        sprintf_P(message, PSTR("pHSensor 02: pH level is too high; correction with pH adjuster is urgently needed. Target set: %2.2f, current pH: %2.2f."), sensorData->targetpH, sensorData->pH);
         logging->writeWarning(message);
       }
     }

@@ -344,7 +344,7 @@ void HydroMonitorLogging::transmitMessages() {
   char aLoglevel[2];
   itoa(loglevel, aLoglevel, 10);
   char aTimestamp[12];
-  itoa(timestamp, aTimestamp, 10);
+  ultoa(timestamp, aTimestamp, 10);
   Serial.print(F("Message postData buffer size: "));
   Serial.println(size);
   sprintf_P(postData, PSTR("http://%s%s?username=%s&password=%s&loglevel=%s&message=%s&timestamp=%s"),

@@ -324,7 +324,6 @@ bool HydroMonitorGrowlight::settingsJSON(ESP8266WebServer * server) {
   server->sendContent(itoa(settings.offMinute, buff, 10));
   server->sendContent_P(PSTR("\"\n"
                              "  }"));
-  return true;
 }
 
 /*

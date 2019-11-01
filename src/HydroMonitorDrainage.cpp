@@ -322,7 +322,7 @@ bool HydroMonitorDrainage::settingsJSON(ESP8266WebServer * server) {
   server->sendContent_P(PSTR("  \"drainage\":\ {\n"
                              "    \"next_refresh\":\""));
   char buff[12];
-  server->sendContent(itoa(settings.latestDrainage + (uint32_t)settings.drainageInterval * 24 * 60 * 60, buff, 10));
+  server->sendContent(ultoa(settings.latestDrainage + (uint32_t)settings.drainageInterval * 24 * 60 * 60, buff, 10));
   server->sendContent_P(PSTR("\",\n"
                              "    \"drainage_interval\":\""));
   server->sendContent(itoa(settings.drainageInterval, buff, 10));

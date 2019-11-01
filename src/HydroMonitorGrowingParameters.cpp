@@ -137,7 +137,6 @@ bool HydroMonitorGrowingParameters::settingsJSON(ESP8266WebServer *server) {
   server->sendContent(buff);
   server->sendContent_P(PSTR("\"\n"
                              "  }"));
-  return true;
 }
 
 /*

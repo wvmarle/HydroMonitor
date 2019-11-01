@@ -380,9 +380,8 @@ void HydroMonitorWaterLevelSensor::warning() {
   // Send warning if it's been long enough ago & fill is <40%.
   if (millis() - lastWarned > WARNING_INTERVAL && sensorData->waterLevel >= 0 && sensorData->waterLevel < 20) {
     lastWarned += WARNING_INTERVAL;
-    char message[115];
-    snprintf_P(message, 115, PSTR("WaterLevelSensor 01: the reservoir is almost empty, and is in urgent need of a refill.\n"
-                                  "Current reservoir fill level:  %.1f %%."), sensorData->waterLevel);
+    char message[140];
+    sprintf_P(message, PSTR("WaterLevelSensor 01: the reservoir is almost empty, and is in urgent need of a refill. Current reservoir fill level:  %.1f %%."), sensorData->waterLevel);
     logging->writeWarning(message);
   }
 }

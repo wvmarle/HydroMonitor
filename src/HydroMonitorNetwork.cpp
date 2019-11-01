@@ -170,14 +170,14 @@ bool HydroMonitorNetwork::doNtpUpdateCheck() {
 */
 void HydroMonitorNetwork::htmlPageHeader(ESP8266WebServer *server, bool refresh) {
 
-  char buffer[10];
+  char buff[12];
   server->sendContent_P(PSTR("\
 <!DOCTYPE html>\n\
 <html><head>\n"));
   if (refresh) {
     server->sendContent_P(PSTR("\
     <meta http-equiv=\"refresh\" content=\""));
-    server->sendContent(itoa(REFRESH, buffer, 10));
+    server->sendContent(itoa(REFRESH, buff, 10));
     server->sendContent_P(PSTR("\">\n"));
   }
   server->sendContent_P(PSTR("\

@@ -92,7 +92,7 @@ void HydroMonitorECSensor::readSensor(bool readNow) {
       // Send warning if it's been long enough ago & EC is >30% below target.
       if (millis() - lastWarned > WARNING_INTERVAL && sensorData->EC < 0.7 * sensorData->targetEC) {
         lastWarned = millis();
-        char message[120];
+        char message[140];
         sprintf_P(message, PSTR("ECSensor 01: EC level is too low; additional fertiliser is urgently needed. Target set: %2.2f mS/cm, current EC: %2.2f mS/cm."),
                   sensorData->targetEC, sensorData->EC);
         logging->writeWarning(message);
@@ -307,7 +307,7 @@ bool HydroMonitorECSensor::settingsJSON(ESP8266WebServer *server) {
    The sensor data as html.
 */
 void HydroMonitorECSensor::dataHtml(ESP8266WebServer *server) {
-  char buff[10];
+  char buff[12];
   server->sendContent_P(PSTR("<tr>\n\
     <td>Water conductivity</td>\n\
     <td>"));
@@ -337,7 +337,7 @@ void HydroMonitorECSensor::dataHtml(ESP8266WebServer *server) {
         server->sendContent_P(PSTR("\n\
   <tr>\n\
     <td>Amount of fertiliser to be added:</td><td>"));
-        server->sendContent(itoa((sensorData->targetEC - sensorData->EC) * 1000 * sensorData->solutionVolume / sensorData->fertiliserConcentration, buff, 10));
+        server->sendContent(ultoa((sensorData->targetEC - sensorData->EC) * 1000 * sensorData->solutionVolume / sensorData->fertiliserConcentration, buff, 10));
         server->sendContent_P(PSTR("ml of each A and B.</td>\n\
   </tr>"));
       }

@@ -68,7 +68,7 @@ void HydroMonitorTemperatureSensor::readSensor(bool readNow) {
     if ((sensorData->temperature > 0 && sensorData->temperature < 10) ||
         sensorData->temperature > 60 &&
         millis() - lastWarned > WARNING_INTERVAL) {
-      char buff[128];
+      char buff[90];
       sprintf_P(buff, PSTR("HydroMonitorTemperatureSensor: unusual temperature of %2.2f°C measured."), sensorData->temperature);
       logging->writeWarning(buff);
       lastWarned = millis();

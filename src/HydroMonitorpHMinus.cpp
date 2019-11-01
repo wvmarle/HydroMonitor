@@ -155,7 +155,7 @@ void HydroMonitorpHMinus::dopH() {
     float addVolume = 0.2 * sensorData->solutionVolume * sensorData->pHMinusConcentration; // The amount of fertiliser in ml to be added.
     runTime = (addVolume / settings.pumpSpeed) * 60 * 1000; // the time in milliseconds pump A has to run.
     logging->writeTrace(F("HydroMonitorpHMinus: 10 minutes of too high pH; start adding pH-minus."));
-    char buff[90];
+    char buff[100];
     sprintf_P(buff, PSTR("HydroMonitorpHMinus: running pump for %i ms to add %3.1f ml of pH- solution."), runTime, addVolume);
     logging->writeInfo(buff);
     switchPumpOn();                                         // Start the pump.

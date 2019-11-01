@@ -252,7 +252,7 @@ void HydroMonitorReservoir::doReservoir() {
   if (sensorData->waterLevel > 100) {                       // Very full reservoir; should have been drained already.
     if (millis() - lastWarned > WARNING_INTERVAL) {
       lastWarned = millis();
-      char buff[70];
+      char buff[80];
       sprintf_P(buff, PSTR("HydroMonitorReservoir: water level too high: current level %3.1f%."), sensorData->waterLevel);
       logging->writeWarning(buff);
     }

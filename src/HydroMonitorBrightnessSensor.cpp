@@ -94,8 +94,8 @@ void HydroMonitorBrightnessSensor::dataHtml(ESP8266WebServer *server) {
   </tr>"));
   }
   else {
-    char buff[10];
-    server->sendContent(itoa(sensorData->brightness, buff, 10));
+    char buff[12];
+    server->sendContent(ultoa(sensorData->brightness, buff, 10));
     server->sendContent_P(PSTR(" lux.</td>\n\
   </tr>"));
   }
