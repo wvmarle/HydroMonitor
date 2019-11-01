@@ -93,8 +93,7 @@ void HydroMonitorECSensor::readSensor(bool readNow) {
       if (millis() - lastWarned > WARNING_INTERVAL && sensorData->EC < 0.7 * sensorData->targetEC) {
         lastWarned = millis();
         char message[120];
-        sprintf_P(message, PSTR("ECSensor 01: EC level is too low; additional fertiliser is urgently needed.\n"
-                                "Target set: %2.2f mS/cm, current EC: %2.2f mS/cm."),
+        sprintf_P(message, PSTR("ECSensor 01: EC level is too low; additional fertiliser is urgently needed. Target set: %2.2f mS/cm, current EC: %2.2f mS/cm."),
                   sensorData->targetEC, sensorData->EC);
         logging->writeWarning(message);
       }

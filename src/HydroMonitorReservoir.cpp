@@ -133,13 +133,14 @@ void HydroMonitorReservoir::doReservoir() {
     }
   }
   if (floatswitchTriggered) {
+    Serial.println(F("Float switch triggered."));
 #ifndef USE_WATERLEVEL_SENSOR
-//    if (millis() - lastClear > 3000) {                      // 3-second delay to thwart spurious triggers, which appear to happen.
+    if (millis() - lastClear > 1000) {                      // 1-second delay to thwart spurious triggers, which appear to happen.
       bitSet(sensorData->systemStatus, STATUS_DRAINAGE_NEEDED); // Trigger drainage - if not using water level sensor, and retrigger until it's resolved.
-//    }
+    }
 #endif
     if (millis() - lastBeep > BEEP_FREQUENCY) {
-      lastBeep += BEEP_FREQUENCY;
+      lastBeep = millis();
     }
     if (millis() - lastBeep < BEEP_DURATION) {
       beep = true;
