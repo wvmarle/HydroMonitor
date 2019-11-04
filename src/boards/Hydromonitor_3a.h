@@ -44,6 +44,9 @@
  - I2C 5V spare.
  - I2C 3.3V spare.
  */
+ 
+#define N_SENSORS 9
+
 
 #define USE_MCP23017
 #define MCP_23017_ENABLE_PIN 14
@@ -68,20 +71,19 @@
 #define WATER_INLET_MCP17_PIN 0
 #define LEVEL_LIMIT_MCP17_PIN 1
 
-/*
+#define USE_CIRCULATION
+#define CIRCULATION_MCP17_PIN 3 // Output "Ventilation"
+
 #define USE_WATERLEVEL_SENSOR
 #define USE_MPXV5004
 #define MPXV5004_PIN A0
-#define USE_BUBBLER
-#define BUBBLER_MCP17_PIN 12
-*/
+//#define USE_BUBBLER
+//#define BUBBLER_MCP17_PIN 12
 
 #define USE_EC_SENSOR
 #define USE_PH_SENSOR
 #define USE_WATERTEMPERATURE_SENSOR
 #define USE_ISOLATED_SENSOR_BOARD
-
-#define N_SENSORS 8
 
 #define ISOLATED_SENSOR_BOARD_RX_PIN 12
 

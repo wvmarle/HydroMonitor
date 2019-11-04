@@ -52,6 +52,8 @@ void HydroMonitorECSensor::readCalibration() {
   sensorData->EEPROM->get(EC_SENSOR_CALIBRATION_EEPROM, calibrationData); // Read the data.
 #else
   EEPROM.get(EC_SENSOR_CALIBRATION_EEPROM, calibrationData); // Read the data.
+  Serial.print(F("Read EC calibration data from EEPROM address"));
+  Serial.println(EC_SENSOR_CALIBRATION_EEPROM);
 #endif
 
   // The discharge time is linear with 1/EC, so we have to take the reciprocals.
@@ -450,6 +452,7 @@ void HydroMonitorECSensor::saveCalibrationData() {
   sensorData->EEPROM->put(EC_SENSOR_CALIBRATION_EEPROM, calibrationData);
 #else
   EEPROM.put(EC_SENSOR_CALIBRATION_EEPROM, calibrationData);
+  EEPROM.commit();
 #endif
 
   // Re-read the calibration values and update the EC probe parameters.

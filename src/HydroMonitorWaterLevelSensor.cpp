@@ -291,6 +291,7 @@ void HydroMonitorWaterLevelSensor::readSensor(bool readNow) {
 */
 #elif defined(USE_MPXV5004)
 void HydroMonitorWaterLevelSensor::readSensor(bool readNow) {
+
   static uint32_t lastReadSensor = -REFRESH_SENSORS;
   if (millis() - lastReadSensor > REFRESH_SENSORS ||
       readNow) {

@@ -253,6 +253,7 @@ void HydroMonitorpHSensor::saveCalibrationData() {
   sensorData->EEPROM->put(PH_SENSOR_CALIBRATION_EEPROM, calibrationData);
 #else
   EEPROM.put(PH_SENSOR_CALIBRATION_EEPROM, calibrationData);
+  EEPROM.commit();
 #endif
   // Re-read the calibration values and update the EC probe parameters.
   readCalibration();

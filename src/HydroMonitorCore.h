@@ -88,6 +88,7 @@ const uint16_t ORP_SENSOR_EEPROM = 0;
 const uint16_t NETWORK_EEPROM = 0;
 const uint16_t FLOW_SENSOR_EEPROM = 0;
 const uint16_t ISOLATED_SENSOR_BOARD_EEPROM = 0;
+const uint16_t CIRCULATION_EEPROM = 0;
 
 // Byte 0 is simply skipped; starting at byte 1.
 const uint16_t WATERLEVEL_SENSOR_EEPROM = 1;                // 4 bytes
