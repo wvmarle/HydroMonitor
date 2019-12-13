@@ -46,6 +46,7 @@
  */
  
 #define N_SENSORS 9
+//#define N_SENSORS 8
 
 
 #define USE_MCP23017

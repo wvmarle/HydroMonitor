@@ -12,7 +12,7 @@
 */
 HydroMonitorpHMinus::HydroMonitorpHMinus() {
   runTime = 0;
-  pHDelay = 30 * 60 * 1000; // Half an hour delay after adding fertiliser, to allow the system to mix properly.
+  pHDelay = 30 * 60 * 1000ul; // Half an hour delay after adding fertiliser, to allow the system to mix properly.
   lastTimeAdded = -pHDelay; // When starting up, don't apply the delay.
   addpH = false;
   lastWarned = millis() - WARNING_INTERVAL;
@@ -92,7 +92,7 @@ void HydroMonitorpHMinus::dopH() {
 
   // If we're measuring the pump speed, switch it off after 60 seconds.
   if (measuring) {
-    if (millis() - startTime > 60 * 1000) {
+    if (millis() - startTime > 60 * 1000ul) {
       logging->writeTrace(F("HydroMonitorpHMinus: measuring pump finished."));
       switchPumpOff();
       measuring = false;
@@ -151,9 +151,9 @@ void HydroMonitorpHMinus::dopH() {
   }
 
   // If more than 10 minutes since lastGoodpH, add 0.2 pH points worth of pH-minus.
-  else if (millis() - lastGoodpH > 10 * 60 * 1000) {
+  else if (millis() - lastGoodpH > 10 * 60 * 1000ul) {
     float addVolume = 0.2 * sensorData->solutionVolume * sensorData->pHMinusConcentration; // The amount of fertiliser in ml to be added.
-    runTime = (addVolume / settings.pumpSpeed) * 60 * 1000; // the time in milliseconds pump A has to run.
+    runTime = (addVolume / settings.pumpSpeed) * 60 * 1000ul; // the time in milliseconds pump A has to run.
     logging->writeTrace(F("HydroMonitorpHMinus: 10 minutes of too high pH; start adding pH-minus."));
     char buff[100];
     sprintf_P(buff, PSTR("HydroMonitorpHMinus: running pump for %i ms to add %3.1f ml of pH- solution."), runTime, addVolume);
@@ -164,7 +164,7 @@ void HydroMonitorpHMinus::dopH() {
     originalpH = sensorData->pH;
   }
 
-  if (millis() - startTime  < 30 * 60 * 1000) {             // Monitor pH for 30 minutes after last time added; it should be going up now.
+  if (millis() - startTime  < 30 * 60 * 1000ul) {             // Monitor pH for 30 minutes after last time added; it should be going up now.
     if (sensorData->pH < originalpH - 0.1) {
       originalpH = 14;
     }

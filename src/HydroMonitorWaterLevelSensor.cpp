@@ -118,10 +118,17 @@ void HydroMonitorWaterLevelSensor::begin(HydroMonitorCore::SensorData * sd, Hydr
 
   // Check whether any reasonable settings have been set, if not apply defaults.
   // Note: for some sensors the reservoir heights are in cm, for others it's the ADC reading.
-  if (settings.reservoirHeight < 1 || settings.reservoirHeight > 1024) {
+#ifdef USE_MPXV5004
+  if (settings.reservoirHeight < 250 || settings.reservoirHeight > 1024) {
+    l->writeTrace(F("HydroMonitorWaterLevelSensor: applying default settings."));
+    settings.reservoirHeight = 650;
+    settings.zeroLevel = 300;
+#else
+  if (settings.reservoirHeight < 1 || settings.reservoirHeight > 120) {
     l->writeTrace(F("HydroMonitorWaterLevelSensor: applying default settings."));
     settings.reservoirHeight = 30;
     settings.zeroLevel = 0;
+#endif
 #ifdef USE_24LC256_EEPROM
     sensorData->EEPROM->put(WATERLEVEL_SENSOR_EEPROM, settings);
 #else
@@ -298,8 +305,8 @@ void HydroMonitorWaterLevelSensor::readSensor(bool readNow) {
     lastReadSensor = millis();
     uint16_t reading = analogRead(MPXV5004_PIN);
     float waterLevel = 100.0 * (reading - settings.zeroLevel) / (settings.reservoirHeight - settings.zeroLevel);
-    if (isnan(waterLevel)) {
-      waterLevel = -1;
+    if (isnan(waterLevel) || isinf(waterLevel) || waterLevel > 200) { // NaN, infinity or >200% fill: something is not configured correctly, or at all.
+      waterLevel = -1;                                      // Return -1 to indicate we don't have a valid reading from the sensor.
     }
     sensorData->waterLevel = waterLevel;
     bitWrite(sensorData->systemStatus, STATUS_RESERVOIR_LEVEL_LOW, sensorData->waterLevel < 40);

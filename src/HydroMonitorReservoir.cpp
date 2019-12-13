@@ -135,7 +135,7 @@ void HydroMonitorReservoir::doReservoir() {
   if (floatswitchTriggered) {
     Serial.println(F("Float switch triggered."));
 #ifndef USE_WATERLEVEL_SENSOR
-    if (millis() - lastClear > 1000) {                      // 1-second delay to thwart spurious triggers, which appear to happen.
+    if (millis() - lastClear > 1000ul) {                    // 1-second delay to thwart spurious triggers, which appear to happen.
       bitSet(sensorData->systemStatus, STATUS_DRAINAGE_NEEDED); // Trigger drainage - if not using water level sensor, and retrigger until it's resolved.
     }
 #endif
@@ -177,7 +177,7 @@ void HydroMonitorReservoir::doReservoir() {
 
 #ifdef USE_WATERLEVEL_SENSOR                                // Water level based reservoir level management.
   else if (sensorData->waterLevel < 0                       // Water level sensor not connected, or out of range,
-           && millis() - reservoirEmptyTime > 30 * 1000     // and we're empty for >half a minute,
+           && millis() - reservoirEmptyTime > 30 * 1000ul   // and we're empty for >half a minute,
            && initialFillingDone == false) {                // and we didn't try adding some water yet:
     initialFillingDone = true;                              // Mark that we started trying.
     initialFillingInProgress = true;                        // It's in progress.
@@ -192,7 +192,7 @@ void HydroMonitorReservoir::doReservoir() {
       lastLevelCheck += 500;
       waterLevelSensor->readSensor(true);
     }
-    if (millis() - startAddWater > 30 * 1000                // After 30 seconds, or:
+    if (millis() - startAddWater > 30 * 1000ul              // After 30 seconds, or:
         || sensorData->waterLevel > 0) {                    // if we actually have a reading, we can stop this.
       initialFillingInProgress = false;
       closeValve();
@@ -209,10 +209,10 @@ void HydroMonitorReservoir::doReservoir() {
         closeValve();
         logging->writeTrace(F("HydroMonitorReservoir: water level high enough, closing the valve."));
       }
-      if (millis() - startAddWater > 3 * 60 * 1000) {       // As extra safety measure: close the valve after 3 minutes, regardless of what the water level sensor says.
+      if (millis() - startAddWater > 3 * 60 * 1000ul) {     // As extra safety measure: close the valve after 3 minutes, regardless of what the water level sensor says.
         closeValve();
         logging->writeWarning(F("HydroMonitorReservoir: added water for 3 minutes, high level not reached, timeout: closing the valve."));
-        lastGoodFill = millis() + 60 * 60 * 1000;           // Call it a good fill, and set the time an hour in the future: no trying to fill before that time.
+        lastGoodFill = millis() + 60 * 60 * 1000ul;         // Call it a good fill, and set the time an hour in the future: no trying to fill before that time.
       }
     }
     else {
@@ -224,13 +224,13 @@ void HydroMonitorReservoir::doReservoir() {
         lastGoodFill = millis();
         initialFillingDone = true;                          // We're good.
       }
-      else if (millis() - startAddWater < 30 * 60 * 1000) { // Less than 30 minutes after filling we're low already? That's odd!
+      else if (millis() - startAddWater < 30 * 60 * 1000ul) { // Less than 30 minutes after filling we're low already? That's odd!
         if (millis() - lastWarned > WARNING_INTERVAL) {
           lastWarned = millis();
           logging->writeError(F("Reservoir 11: shortly after the reservoir was topped up, water level dropped below the minimum already."));
         }
       }
-      else if (millis() - lastGoodFill > 1 * 60 * 1000 &&   // If water too low for more than 1 minute,
+      else if (millis() - lastGoodFill > 1 * 60 * 1000ul && // If water too low for more than 1 minute,
                sensorData->waterLevel > 0) {                // and the water sensor actually gives a reading, start filling.
         logging->writeTrace(F("HydroMonitorReservoir: water level too low for 1 minute, opening the valve."));
         logging->writeInfo(F("HydroMonitorReservoir: adding water to the reservoir."));
@@ -246,7 +246,7 @@ void HydroMonitorReservoir::doReservoir() {
     reservoirEmptyTime = millis();                          // when the draining is completed.
   }
   if (sensorData->waterLevel > settings.maxFill + 5 &&
-      millis() - startAddWater < 5 * 60 * 1000) {
+      millis() - startAddWater < 5 * 60 * 1000ul) {
     logging->writeError(F("Reservoir 12: water level >5% over maxFill within 5 minutes of starting to fill the reservoir. Suspected problem with the filling system."));
   }
   if (sensorData->waterLevel > 100) {                       // Very full reservoir; should have been drained already.
@@ -265,7 +265,7 @@ void HydroMonitorReservoir::doReservoir() {
     isWeeklyTopUp = false;
     logging->writeTrace(F("HydroMonitorReservoir: Reservoir empty after draining; filling with water."));
   }
-  else if (millis() - startAddWater > 7 * 24 * 60 * 60 * 1000) { // Every 7 days: do a reservoir top-up.
+  else if (millis() - startAddWater > 7 * 24 * 60 * 60 * 1000ul) { // Every 7 days: do a reservoir top-up.
     openValve();
     bitClear(sensorData->systemStatus, STATUS_RESERVOIR_DRAINED); // We're filling, so not drained any more. Clear the flag.
     startAddWater = millis();
@@ -273,8 +273,8 @@ void HydroMonitorReservoir::doReservoir() {
     logging->writeTrace(F("HydroMonitorReservoir: Doing weekly reservoir top-up."));
   }
   else if (bitRead(sensorData->systemStatus, STATUS_FILLING_RESERVOIR)) { // Reservoir is being filled.
-    if ((isWeeklyTopUp && millis() - startAddWater > 3 * 60 * 1000) || // Weekly top-up for 3 minutes, or
-        millis() - startAddWater > 20 * 60 * 1000) {        // 20 minutes for a complete fill.
+    if ((isWeeklyTopUp && millis() - startAddWater > 3 * 60 * 1000ul) || // Weekly top-up for 3 minutes, or
+        millis() - startAddWater > 20 * 60 * 1000ul) {      // 20 minutes for a complete fill.
       closeValve();
       bitClear(sensorData->systemStatus, STATUS_RESERVOIR_LEVEL_LOW); // It's for sure filled up now.
       logging->writeInfo(F("HydroMonitorReservoir: finished adding water, closing the valve."));

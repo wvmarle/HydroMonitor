@@ -31,7 +31,9 @@ void HydroMonitorIsolatedSensorBoard::begin(HydroMonitorCore::SensorData *sd, Hy
 void HydroMonitorIsolatedSensorBoard::readSensor(bool readNow) {
   if (sensorSerial->available()) {
     char c = sensorSerial->read();
+#ifdef DEBUG
     Serial.print(c);
+#endif
     switch (readingState) {
       case READING_IDLE:                                    // Wait for the start tag for reading. Ignore any other characters at this point.
         if (c == '<') {                                     // Start tag - start reading the first value.
@@ -70,11 +72,14 @@ void HydroMonitorIsolatedSensorBoard::readSensor(bool readNow) {
           }
           else {                                            // It was an end tag.
             readingState = READING_IDLE;                    // Wait for the next communication.
+            lastCompleteReading = millis();                 // Record we had a complete read.
           }
         }
         else {
+#ifdef DEBUG
           Serial.print(F("Invalid character reading temperature, value: "));
           Serial.println((uint8_t) c);
+#endif
           readingState = READING_IDLE;                      // An invalid character was received; wait for the next communcication to start.
         }
         break;
@@ -95,11 +100,14 @@ void HydroMonitorIsolatedSensorBoard::readSensor(bool readNow) {
           }
           else {                                            // It was an end tag.
             readingState = READING_IDLE;                    // Wait for the next communication.
+            lastCompleteReading = millis();                 // Record we had a complete read.
           }
         }
         else {
+#ifdef DEBUG
           Serial.print(F("Invalid character reading EC, value: "));
           Serial.println((uint8_t) c);
+#endif
           readingState = READING_IDLE;                      // An invalid character was received; wait for the next communcication to start.
         }
         break;
@@ -120,17 +128,26 @@ void HydroMonitorIsolatedSensorBoard::readSensor(bool readNow) {
           }
           else {                                            // It was an end tag.
             readingState = READING_IDLE;                    // Wait for the next communication.
+            lastCompleteReading = millis();                 // Record we had a complete read.
           }
         }
         else {
           readingState = READING_IDLE;                      // An invalid character was received; wait for the next communcication to start.
+#ifdef DEBUG
           Serial.print(F("Invalid character reading pH, value: "));
           Serial.println((uint8_t) c);
+#endif
         }
         break;
     }
   }
+  if (millis() - lastCompleteReading > 5000) {              // 5 seconds since latest complete reading: sensor disconnected.
+    sensorData->waterTemp = -1;
+    sensorData->ecReading = 0;
+    sensorData->phReading = 0;
+  }
 }
+
 
 /*
    The sensor settings as html.

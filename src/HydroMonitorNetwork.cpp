@@ -74,13 +74,13 @@ void HydroMonitorNetwork::ntpUpdateInit() {
 bool HydroMonitorNetwork::ntpCheck() {
 
   // Timeout after 30 seconds.
-  if (millis() - startTime > 30 * 1000) {
+  if (millis() - startTime > 30 * 1000ul) {
     logging->writeTrace(F("HydroMonitorNetwork: NTP timeout."));
     return false;
   }
 
   // Re-request every 5 seconds.
-  if (millis() - updateTime > 5 * 1000) {
+  if (millis() - updateTime > 5 * 1000ul) {
     logging->writeTrace(F("HydroMonitorNetwork: Re-requesting the time from NTP server."));
     udp.stop();
     yield();

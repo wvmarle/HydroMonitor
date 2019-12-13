@@ -318,7 +318,12 @@ void HydroMonitorECSensor::dataHtml(ESP8266WebServer *server) {
   </tr>"));
   }
   else {
-    if (sensorData->targetEC > 0) {                         // A target is set - colour accordingly.
+  #ifdef USE_ISOLATED_SENSOR_BOARD
+    server->sendContent_P(PSTR("("));
+    server->sendContent(ultoa(sensorData->ecReading, buff, 10));
+    server->sendContent_P(PSTR(") "));
+  #endif
+    if (sensorData->targetEC > 0) {                       // A target is set - colour accordingly.
       if (sensorData->EC > 1.4 * sensorData->targetEC || sensorData->EC < 0.6 * sensorData->targetEC) {
         server->sendContent_P(PSTR("<span style=\"color:red\">")); // 40% off target - red.
       }
@@ -334,12 +339,12 @@ void HydroMonitorECSensor::dataHtml(ESP8266WebServer *server) {
     server->sendContent(buff);
     server->sendContent_P(PSTR("</span> mS/cm.</td>\n\
   </tr>"));
-    if (sensorData->EC < 0.8 * sensorData->targetEC) {      // EC low: suggest user to add fertiliser solution.
+    if (sensorData->EC < 0.8 * sensorData->targetEC) {    // EC low: suggest user to add fertiliser solution.
       if (sensorData->EC < sensorData->targetEC && sensorData->fertiliserConcentration > 0) {
         server->sendContent_P(PSTR("\n\
   <tr>\n\
     <td>Amount of fertiliser to be added:</td><td>"));
-        server->sendContent(ultoa((sensorData->targetEC - sensorData->EC) * 1000 * sensorData->solutionVolume / sensorData->fertiliserConcentration, buff, 10));
+        server->sendContent(ultoa((sensorData->targetEC - sensorData->EC) * 1000ul * sensorData->solutionVolume / sensorData->fertiliserConcentration, buff, 10));
         server->sendContent_P(PSTR("ml of each A and B.</td>\n\
   </tr>"));
       }

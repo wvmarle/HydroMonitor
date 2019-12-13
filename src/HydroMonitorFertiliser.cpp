@@ -14,7 +14,11 @@
 HydroMonitorFertiliser::HydroMonitorFertiliser() {
   runBTime = 0;
   runATime = 0;
-  fertiliserDelay = 12 * 60 * 60 * 1000; // 12 hours delay after adding fertiliser, to allow the system to mix properly.
+#ifdef IS_FRIDGE_CONTROL
+  fertiliserDelay = 12 * 60 * 60 * 1000ul;                    // 12 hours delay after adding fertiliser, to allow the system to mix properly (no active mixing).
+#else
+  fertiliserDelay = 30 * 60 * 1000ul;                         // 30 minutes delay after adding fertiliser, to allow the system to mix properly.
+#endif
   lastTimeAdded = -fertiliserDelay;
   addA = false;
   addB = false;
@@ -107,14 +111,14 @@ void HydroMonitorFertiliser::doFertiliser() {
   // The pumps are started by measurePumpA() and measurePumpB() respectively.
   if (measuring) {
     if (aRunning) {
-      if (millis() - runATime > 60 * 1000) {
+      if (millis() - runATime > 60 * 1000ul) {
         logging->writeTrace(F("HydroMonitorFertiliser: measuring pump A finished."));
         switchPumpOff(pumpA);
         measuring = false;
         aRunning = false;
       }
     }
-    else if (millis() - runBTime > 60 * 1000) {
+    else if (millis() - runBTime > 60 * 1000ul) {
       logging->writeTrace(F("HydroMonitorFertiliser: measuring pump B finished."));
       switchPumpOff(pumpB);
       measuring = false;
@@ -190,7 +194,7 @@ void HydroMonitorFertiliser::doFertiliser() {
   // Start adding after ten minutes of continuous too low EC, and at least fertiliserDelay
   // since we last added any fertiliser.
   else if (sensorData->EC < sensorData->targetEC &&
-           millis() - lastGoodEC > 10 * 60 * 1000 &&
+           millis() - lastGoodEC > 10 * 60 * 1000ul &&
            millis() - lastTimeAdded > fertiliserDelay) {
 
     // Flag that we want to add fertilisers - both, of course.
@@ -204,8 +208,8 @@ void HydroMonitorFertiliser::doFertiliser() {
     char buff[100];
     sprintf_P(buff, PSTR("HydroMonitorFertiliser: adding %3.1f ml of fertiliser solution."), addVolume);
     logging->writeInfo(buff);
-    runATime = addVolume / settings.pumpASpeed * 60 * 1000; // the time in milliseconds pump A has to run.
-    runBTime = addVolume / settings.pumpBSpeed * 60 * 1000; // the time in milliseconds pump B has to run.
+    runATime = addVolume / settings.pumpASpeed * 60 * 1000ul; // the time in milliseconds pump A has to run.
+    runBTime = addVolume / settings.pumpBSpeed * 60 * 1000ul; // the time in milliseconds pump B has to run.
     sprintf_P(buff, PSTR("HydroMonitorFertiliser: going to run pump A for %lu ms and pump B for %lu ms."), runATime, runBTime);
     logging->writeTrace(buff);
     lastTimeAdded = millis();                               // Time we last added any fertiliser - which is what we're going to do now.
@@ -215,7 +219,7 @@ void HydroMonitorFertiliser::doFertiliser() {
 #ifdef USE_DRAINAGE_PUMP
   // Start draining the reservoir after ten minutes of continuously too high EC.
   else if (sensorData->EC > (sensorData->targetEC + 0.2) &&
-           millis() - lastGoodEC > 10 * 60 * 1000) {
+           millis() - lastGoodEC > 10 * 60 * 1000ul) {
     logging->writeTrace(F("HydroMonitorFertiliser: 10 minutes of too high EC; completely refresh the reservoir."));
     logging->writeInfo(F("HydroMonitorFertiliser: refreshing reservoir to be able to reduce the EC value."));
     bitSet(sensorData->systemStatus, STATUS_DRAINAGE_NEEDED);
@@ -224,7 +228,7 @@ void HydroMonitorFertiliser::doFertiliser() {
 
   if (lastTimeAdded > 0 &&
       sensorData->EC > 0) {
-    if (millis() - lastTimeAdded < 30 * 60 * 1000) {        // Monitor EC for 30 minutes after last time added; it should be going up now.
+    if (millis() - lastTimeAdded < 30 * 60 * 1000ul) {        // Monitor EC for 30 minutes after last time added; it should be going up now.
       if (sensorData->EC > originalEC + 0.07) {
         originalEC = 0;
       }

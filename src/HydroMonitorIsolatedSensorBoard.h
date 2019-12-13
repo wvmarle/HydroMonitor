@@ -57,6 +57,7 @@ class HydroMonitorIsolatedSensorBoard: public HydroMonitorSensorBase
     ReadingState readingState;
     char buffer[6];
     uint8_t count;
+    uint32_t lastCompleteReading;
 };
 
 #endif

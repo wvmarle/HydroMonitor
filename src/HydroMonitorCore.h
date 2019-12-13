@@ -91,7 +91,7 @@ const uint16_t ISOLATED_SENSOR_BOARD_EEPROM = 0;
 const uint16_t CIRCULATION_EEPROM = 0;
 
 // Byte 0 is simply skipped; starting at byte 1.
-const uint16_t WATERLEVEL_SENSOR_EEPROM = 1;                // 4 bytes
+const uint16_t WATERLEVEL_SENSOR_EEPROM = 1;                // 8 bytes
 const uint16_t PRESSURE_SENSOR_EEPROM = 21;                 // 2 bytes
 const uint16_t GROWLIGHT_EEPROM = 39;                       // 9 bytes
 const uint16_t FERTILISER_EEPROM = 64;                      // 8 bytes

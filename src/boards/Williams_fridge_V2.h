@@ -65,4 +65,6 @@
 
 #define USE_24LC256_EEPROM
 
+#define IS_FRIDGE_CONTROL                                   // Some library functions/settings may be unique to the fridge control.
+
 #endif
