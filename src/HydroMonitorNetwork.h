@@ -47,13 +47,14 @@ class HydroMonitorNetwork
 
     void ntpUpdateInit();
     bool ntpCheck();
-    void htmlPageHeader(ESP8266WebServer*, bool);
-    void htmlPageFooter(ESP8266WebServer*);
-    void htmlResponse(ESP8266WebServer*);
-    void plainResponse(ESP8266WebServer*);
+    void htmlPageHeader(bool);
+    void htmlPageFooter();
+    void htmlResponse();
+    void plainResponse();
     void settingsHtml(ESP8266WebServer*);
     bool settingsJSON(ESP8266WebServer*);
     void updateSettings(ESP8266WebServer*);
+    void redirectTo(char*);
 
 
   private:

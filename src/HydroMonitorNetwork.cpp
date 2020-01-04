@@ -30,7 +30,7 @@ void HydroMonitorNetwork::begin(HydroMonitorCore::SensorData *sd, HydroMonitorLo
 /*
    Send html response.
 */
-void HydroMonitorNetwork::htmlResponse(ESP8266WebServer *server) {
+void HydroMonitorNetwork::htmlResponse() {
 
   server->sendHeader(F("Cache-Control"), F("no-cache, no-store, must-revalidate"));
   server->sendHeader(F("Pragma"), F("no-cache"));
@@ -43,7 +43,7 @@ void HydroMonitorNetwork::htmlResponse(ESP8266WebServer *server) {
 /*
    send plain response.
 */
-void HydroMonitorNetwork::plainResponse(ESP8266WebServer *server) {
+void HydroMonitorNetwork::plainResponse() {
   server->send_P(200, PSTR("text/plain"), "");
 }
 
@@ -168,7 +168,7 @@ bool HydroMonitorNetwork::doNtpUpdateCheck() {
 /*
    Create the header part of the main html page.
 */
-void HydroMonitorNetwork::htmlPageHeader(ESP8266WebServer *server, bool refresh) {
+void HydroMonitorNetwork::htmlPageHeader(bool refresh) {
 
   char buff[12];
   server->sendContent_P(PSTR("\
@@ -197,9 +197,26 @@ void HydroMonitorNetwork::htmlPageHeader(ESP8266WebServer *server, bool refresh)
   <p></p>\n"));
 }
 
-void HydroMonitorNetwork::htmlPageFooter(ESP8266WebServer *server) {
+void HydroMonitorNetwork::htmlPageFooter() {
   server->sendContent_P(PSTR("\
 </body></html>"));
+  server->sendContent(F("")); // this tells web client that transfer is done
+  server->client().stop();
+}
+
+void HydroMonitorNetwork::redirectTo(char* target) {
+  htmlResponse();
+  server->sendContent_P(PSTR("\
+<!DOCTYPE html>\n\
+<html>\n\
+   <head>\n\
+      <meta http-equiv = \"refresh\" content = \"0; url = "));
+  server->sendContent(target);
+  server->sendContent_P(PSTR("\" />\n\
+   </head>\n\
+   <body>\n\
+   </body>\n\
+</html>"));
   server->sendContent(F("")); // this tells web client that transfer is done
   server->client().stop();
 }
