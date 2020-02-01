@@ -276,16 +276,24 @@ void HydroMonitorLogging::transmitData() {
   char postData[size];
   Serial.print(F("Sensor data postData buffer size: "));
   Serial.println(size);
+  sprintf_P(postData, PSTR("http://%s%s?username=%s&password=%s&timestamp=%u"),
+            settings.hostname, settings.hostpath, settings.username, settings.password, timestamp);
+  char sensorDataBuff[20];
+#ifdef USE_EC_SENSOR
+  sprintf_P(sensorDataBuff, PSTR("&ec=%4.2f"), dataEntry.EC);
+  strcat(postData, sensorDataBuff);  
+#endif
+#ifdef USE_PH_SENSOR
+  sprintf_P(sensorDataBuff, PSTR("&ph=%4.2f"), dataEntry.pH);
+  strcat(postData, sensorDataBuff);  
+#endif
+#ifdef USE_WATERTEMPERATURE_SENSOR
+  sprintf_P(sensorDataBuff, PSTR("&watertemp=%4.2f"), dataEntry.waterTemp);
+  strcat(postData, sensorDataBuff);  
+#endif
 #ifdef USE_WATERLEVEL_SENSOR
-  sprintf_P(postData, PSTR("http://%s%s?username=%s&password=%s&ec=%4.2f&watertemp=%4.2f&waterlevel=%4.2f&ph=%4.2f&timestamp=%u"),
-            settings.hostname, settings.hostpath, settings.username, settings.password,
-            dataEntry.EC, dataEntry.waterTemp, dataEntry.waterLevel, dataEntry.pH,
-            timestamp);
-#else
-  sprintf_P(postData, PSTR("http://%s%s?username=%s&password=%s&ec=%4.2f&watertemp=%4.2f&waterlevel=%4.2f&ph=%4.2f&timestamp=%u"),
-            settings.hostname, settings.hostpath, settings.username, settings.password,
-            dataEntry.EC, dataEntry.waterTemp, 0, dataEntry.pH,
-            timestamp);
+  sprintf_P(sensorDataBuff, PSTR("&waterlevel=%4.2f"), dataEntry.waterLevel);
+  strcat(postData, sensorDataBuff);  
 #endif
 
   uint16_t httpCode = sendPostData(postData);

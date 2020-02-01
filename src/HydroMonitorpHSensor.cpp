@@ -1,6 +1,5 @@
 #include <HydroMonitorpHSensor.h>
 
-#ifdef USE_PH_SENSOR
 /*
    The constructor.
 */
@@ -264,5 +263,5 @@ void HydroMonitorpHSensor::saveCalibrationData() {
 */
 void HydroMonitorpHSensor::updateSettings(ESP8266WebServer * server) {
 }
-#endif
+//#endif
 

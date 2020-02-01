@@ -46,7 +46,7 @@ class HydroMonitorWaterTempSensor: public HydroMonitorSensorBase
 #elif defined(USE_MS5837)
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, MS5837*);
 #elif defined(USE_DS18B20)
-    void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, DallasTemperature*, OneWire*);
+    void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*, DallasTemperature*);
 #elif defined(USE_ISOLATED_SENSOR_BOARD)
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging*);
 #endif

@@ -1,13 +1,22 @@
 #ifndef HYDROMONITORPHSENSOR_H
 #define HYDROMONITORPHSENSOR_H
 
+
+//#ifdef USE_PH_SENSOR
+//#error pH sensor defined.
+//#else
+//#error ph sensor not defined!
+//#endif
+
+
+//#ifdef USE_PH_SENSOR
+
 #ifdef PH_SENSOR_ADS_PIN
 #include <Adafruit_ADS1015.h>
 #endif
 #ifdef PH_POS_MCP_PIN
 #include <Adafruit_MCP23008.h>
 #endif
-//#include <Arduino.h>              // Needed for the String type.
 #include <HydroMonitorCore.h>
 #include <ESP8266WebServer.h>
 #include <HydroMonitorLogging.h>
@@ -20,7 +29,8 @@ class HydroMonitorpHSensor: public HydroMonitorSensorBase
     struct Settings {
     };
 
-    HydroMonitorpHSensor(void);
+    HydroMonitorpHSensor();
+    
 #if defined(PH_SENSOR_PIN) || defined(USE_ISOLATED_SENSOR_BOARD)
     void begin(HydroMonitorCore::SensorData*, HydroMonitorLogging *logging);
 #elif defined(PH_SENSOR_ADS_PIN)
@@ -58,3 +68,4 @@ class HydroMonitorpHSensor: public HydroMonitorSensorBase
 };
 
 #endif
+//#endif

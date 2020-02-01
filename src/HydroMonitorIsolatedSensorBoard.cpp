@@ -65,7 +65,7 @@ void HydroMonitorIsolatedSensorBoard::readSensor(bool readNow) {
         else if (c == ',' || c == '>') {                    // Complete number received.
           buffer[count] = 0;                                // null termination for the string in the buffer.
 #ifndef USE_DS18B20
-          sensorData->waterTemp = atoi(buffer) / 10.0;
+          sensorData->waterTemp = atol(buffer) / 10.0;
 #endif
           if (c == ',') {                                   // Another value is coming.
             readingState = READING_VALUE;                   // Start reading.
@@ -88,13 +88,10 @@ void HydroMonitorIsolatedSensorBoard::readSensor(bool readNow) {
         if (c >= '0' && c <= '9') {
           buffer[count] = c;
           count++;
-          if (count > 5) {                                  // Max number should be 5 digits.
-            readingState = READING_IDLE;
-          }
         }
         else if (c == ',' || c == '>') {                    // Complete number received.
           buffer[count] = 0;                                // null termination.
-          sensorData->ecReading = atoi(buffer);
+          sensorData->ecReading = atol(buffer);
           if (c == ',') {                                   // Another value is coming.
             readingState = READING_VALUE;                   // Start reading.
           }
@@ -116,13 +113,10 @@ void HydroMonitorIsolatedSensorBoard::readSensor(bool readNow) {
         if (c >= '0' && c <= '9') {
           buffer[count] = c;
           count++;
-          if (count > 5) {                                  // Max number should be 5 digits.
-            readingState = READING_IDLE;
-          }
         }
         else if (c == ',' || c == '>') {                    // Complete number received.
           buffer[count] = 0;                                // null termination.
-          sensorData->phReading = atoi(buffer);
+          sensorData->phReading = atol(buffer);
           if (c == ',') {                                   // Another value is coming.
             readingState = READING_VALUE;                   // Start reading.
           }
@@ -139,6 +133,9 @@ void HydroMonitorIsolatedSensorBoard::readSensor(bool readNow) {
 #endif
         }
         break;
+    }
+    if (count > 5) {                                        // Max number should be 5 digits.
+      readingState = READING_IDLE;
     }
   }
   if (millis() - lastCompleteReading > 5000) {              // 5 seconds since latest complete reading: sensor disconnected.

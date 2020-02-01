@@ -46,7 +46,7 @@
 //#define AUX2_MCP17_PIN          7
 
 // Direct pin connections.
-#define PH_SENSOR_PIN A0
+//#define PH_SENSOR_PIN A0
 //#define CAPNEG_PIN 0
 //#define CAPPOS_PIN 13
 //#define EC_PIN 12

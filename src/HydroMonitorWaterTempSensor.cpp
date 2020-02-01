@@ -29,7 +29,7 @@ void HydroMonitorWaterTempSensor::begin(HydroMonitorCore::SensorData * sd, Hydro
   l->writeTrace(F("HydroMonitorWaterTempSensor: configured MS5837 sensor."));
 
 #elif defined(USE_DS18B20)
-void HydroMonitorWaterTempSensor::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l, DallasTemperature * ds, OneWire * oneWire) {
+void HydroMonitorWaterTempSensor::begin(HydroMonitorCore::SensorData * sd, HydroMonitorLogging * l, DallasTemperature * ds) {
   ds18b20 = ds;
   ds18b20->begin();
   ds18b20->setWaitForConversion(false);
